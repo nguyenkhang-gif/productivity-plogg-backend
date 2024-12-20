@@ -16,8 +16,8 @@ export class AuthService {
     username: string;
     password: string;
   }): Promise<{ token: string; user: IResponseUser }> {
-    console.log("some one is login...");
-    
+    console.log('some one is login...');
+
     const { username, password } = body;
     const user = await this.userModel.findOne({ username });
 

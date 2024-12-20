@@ -1,9 +1,9 @@
-import { Module, RequestMethod, MiddlewareConsumer } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { UserSchema } from '../common/Schemas/user.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthMiddleware } from '../common/middlewares/auth.middleware';
+// import { AuthMiddleware } from '../common/middlewares/auth.middleware';
 @Module({
   imports: [MongooseModule.forFeature([{ name: 'User', schema: UserSchema }])],
   controllers: [UserController],

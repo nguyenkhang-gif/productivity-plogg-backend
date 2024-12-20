@@ -1,6 +1,6 @@
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-export interface IEpub  {
+export interface IEpub {
   status?: {
     visibility?: 'public' | 'private' | 'friends'; // Enum cho phép 3 giá trị này
     likes?: number; // Số lượt thích mặc định là 0

@@ -1,4 +1,9 @@
-import { BadRequestException,ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Model } from 'mongoose';
@@ -7,14 +12,12 @@ import { IEpub } from './interfaces/epub.interface';
 import { InjectModel } from '@nestjs/mongoose';
 import { UpdateResult } from 'mongodb';
 
-
 @Injectable()
 export class EpubService {
   constructor(@InjectModel('Epub') private readonly epubModel: Model<IEpub>) {}
 
   async createEpub(createEpubI: IEpub): Promise<IEpub> {
     // Đảm bảo `userId` không bị thiếu
-
 
     const userId = createEpubI.userId;
     if (!userId) {
@@ -35,45 +38,43 @@ export class EpubService {
   async updateObject(data: any, userId: string): Promise<UpdateResult | null> {
     const { _id, $set } = data.data;
     console.log(data, _id, 'data');
-  
+
     if (!_id) {
       throw new BadRequestException('ID must be provided for update');
     }
-  
+
     if (!userId) {
       throw new BadRequestException('User ID is required to update an epub');
     }
-  
+
     // Lấy item từ cơ sở dữ liệu để kiểm tra quyền truy cập
     const item = await this.epubModel.findById(_id).exec();
-  
+
     // Kiểm tra quyền truy cập
     if (!item) {
       throw new BadRequestException('No document found with the provided ID');
     }
-    
+
     if (item.userId.toString() !== userId) {
-      throw new ForbiddenException('User does not have permission to edit this EPUB');
+      throw new ForbiddenException(
+        'User does not have permission to edit this EPUB',
+      );
     }
-  
+
     const updateData = {
       $set: { ...$set },
     };
-  
+
     const result = await this.epubModel
       .updateOne({ _id }, updateData, { new: true })
       .exec();
-  
+
     if (result.matchedCount === 0) {
       throw new BadRequestException('No document found with the provided ID');
     }
-  
+
     return result;
   }
-  
-
-
-
 
   async fetchHtml(url: string): Promise<string> {
     try {
@@ -142,16 +143,16 @@ export class EpubService {
     lightnovelInfo: { title: string; author: string },
     chapters: ChapterData[],
   ): Promise<string> {
-    const epubChapters = chapters.map((chapter) => ({
-      title: chapter.title,
-      data: chapter.data,
-    }));
+    // const epubChapters = chapters.map((chapter) => ({
+    //   title: chapter.title,
+    //   data: chapter.data,
+    // }));
 
-    const options = {
-      title: lightnovelInfo.title,
-      author: lightnovelInfo.author,
-      content: epubChapters,
-    };
+    // const options = {
+    //   title: lightnovelInfo.title,
+    //   author: lightnovelInfo.author,
+    //   content: epubChapters,
+    // };
 
     try {
       // Generate the EPUB file
@@ -163,7 +164,4 @@ export class EpubService {
       throw new Error('Error generating or uploading EPUB from bucket ???');
     }
   }
-
-
-
 }

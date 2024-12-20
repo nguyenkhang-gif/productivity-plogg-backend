@@ -1,4 +1,4 @@
-import { Types, Document } from 'mongoose';
+import { Types } from 'mongoose';
 
 export interface IPostNew {
   imgurl?: string[];
@@ -8,7 +8,7 @@ export interface IPostNew {
     visibility: 'public' | 'private' | 'friends';
     likes: number;
   };
-  properties?: Object;
+  properties?: object;
 }
 
 export interface IPost {
@@ -20,5 +20,5 @@ export interface IPost {
     readonly visibility?: 'public' | 'private' | 'friends'; // Không bắt buộc, trạng thái hiển thị
     readonly likes?: number; // Không bắt buộc, số lượt thích
   };
-  readonly properties?: Object; // Không bắt buộc, các thuộc tính khác
+  readonly properties?: object; // Không bắt buộc, các thuộc tính khác
 }

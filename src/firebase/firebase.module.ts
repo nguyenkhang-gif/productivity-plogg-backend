@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { FileUploadService } from './firebase.service';
 import { FileController } from './firebase.controller';
-import { getStorage } from 'firebase/storage';
+// import { getStorage } from 'firebase/storage';
 
 let firebaseApp = null;
 const firebaseProvider = {
@@ -37,7 +37,8 @@ const firebaseProvider = {
       databaseURL: `https://${configService.get<string>('FBprojectId')}.firebaseio.com`,
       storageBucket: `${configService.get<string>('FBbucketname')}`,
     });
-
+    console.log("firebase app initialized");
+    
     return firebaseApp;
   },
 };

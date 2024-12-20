@@ -1,11 +1,9 @@
 import {
   Body,
   Controller,
-  Get,
   HttpException,
   HttpStatus,
   Post,
-  Query,
   Req,
   Request,
   Res,
@@ -131,7 +129,7 @@ export class EpubController {
       const allHtml = await Promise.all(
         item.allChapters.map(async (urlItem, index) => {
           const url = urlItem.href;
-          const title = urlItem.title;
+          // const title = urlItem.title;
           // Giả sử bạn có một hàm để fetch HTML từ URL
           const html = await this.epubService.fetchHtml(
             `https://docln.net${url}`,
@@ -162,15 +160,15 @@ export class EpubController {
       console.log(body, 'body');
 
       // this.epubService.createEpub({...body,userId:"1"});
-      let newItem = {
-        userId: req.user._id,
-        properties: {},
-        status: {
-          visibility: 'private',
-          likes: 0,
-        },
-        ...body,
-      };
+      // const newItem = {
+      //   userId: req.user._id,
+      //   properties: {},
+      //   status: {
+      //     visibility: 'private',
+      //     likes: 0,
+      //   },
+      //   ...body,
+      // };
       return this.epubService.createEpub({
         userId: req.user._id,
         properties: {},
@@ -189,10 +187,9 @@ export class EpubController {
     }
   }
 
-
   @UseGuards(AuthGuard)
   @Post('update')
-  async update(@Body() body: any  , @Request() req) {
+  async update(@Body() body: any, @Request() req) {
     try {
       console.log('req', req.user._id);
       console.log(body, 'body');

@@ -1,7 +1,7 @@
 import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { Response, Request } from 'express'; // Bổ sung import Response từ express
 import { PostService } from './post.service';
-import { Types, Document } from 'mongoose';
+import { Types } from 'mongoose';
 // import { IPost, IPostNew } from './interfaces/post.interface';
 
 @Controller('api/post')
@@ -22,7 +22,7 @@ export class PostController {
           visibility: 'public' | 'private' | 'friends';
           likes: number;
         };
-        properties?: Object;
+        properties?: object;
       };
     },
   ) {

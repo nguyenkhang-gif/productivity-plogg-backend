@@ -1,5 +1,5 @@
-import { IsOptional, IsString, IsArray, IsMongoId } from 'class-validator';
-import { Types } from 'mongoose';
+import { IsOptional } from 'class-validator';
+// import { Types } from 'mongoose';
 
 export class CreateEpubDto {
   @IsOptional()

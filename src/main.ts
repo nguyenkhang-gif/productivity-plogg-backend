@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
-
+import * as process from 'process';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
 
@@ -19,7 +19,8 @@ async function bootstrap() {
       },
     }),
   );
+  console.log('app is listen on port : ' + process.env.PORT);
 
-  await app.listen(8000);
+  await app.listen(process.env.PORT || 4000);
 }
 bootstrap();

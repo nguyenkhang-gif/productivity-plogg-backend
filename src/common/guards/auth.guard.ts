@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import { InjectModel } from '@nestjs/mongoose';
@@ -28,10 +33,12 @@ export class AuthGuard implements CanActivate {
       };
 
       // Tìm người dùng bằng userId từ token
-      const user = await this.userModel.findById(decoded.userId).select('-password');
+      const user = await this.userModel
+        .findById(decoded.userId)
+        .select('-password');
       if (!user) {
-        console.log("no user");
-        
+        console.log('no user');
+
         throw new UnauthorizedException('User not found');
       }
 
@@ -44,7 +51,6 @@ export class AuthGuard implements CanActivate {
     }
   }
 }
-
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
@@ -69,11 +75,13 @@ export class AdminAuthGuard implements CanActivate {
       };
 
       // Tìm người dùng bằng userId từ token
-      const user = await this.userModel.findById(decoded.userId).select('-password');
+      const user = await this.userModel
+        .findById(decoded.userId)
+        .select('-password');
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-      if(user.role !== 'admin'){
+      if (user.role !== 'admin') {
         throw new UnauthorizedException('Unauthorized - Invalid Token');
       }
       // Lưu thông tin người dùng vào request

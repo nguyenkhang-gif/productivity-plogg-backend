@@ -37,8 +37,8 @@ const firebaseProvider = {
       databaseURL: `https://${configService.get<string>('FBprojectId')}.firebaseio.com`,
       storageBucket: `${configService.get<string>('FBbucketname')}`,
     });
-    console.log("firebase app initialized");
-    
+    console.log('firebase app initialized');
+
     return firebaseApp;
   },
 };

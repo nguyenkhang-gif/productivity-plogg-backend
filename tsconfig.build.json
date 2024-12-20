@@ -1,20 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "./public",
-    "rootDir": "./src"
-  },
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"],
-  "routes": [
-    {
-      "src":"/(.*)",
-      "dest":"src/main.ts",
-      "method":[
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
-    ]
-    }
-  ]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

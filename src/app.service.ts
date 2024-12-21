@@ -6,7 +6,7 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
-  async checkMongooseStatus() : Promise<string> {
+  async checkMongooseStatus() : Promise<object> {
     const state = {
       0: 'Disconnected',
       1: 'Connected',
@@ -15,6 +15,6 @@ export class AppService {
     }
 
     const connectionState = mongoose.connection.readyState;
-    return state[connectionState]||"Unknown";
+    return {status:state[connectionState],connectionString:process.env.MONGO_DB_URI};
   }
 }

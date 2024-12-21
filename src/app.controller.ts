@@ -11,7 +11,8 @@ export class AppController {
   }
 
   @Get('/mongoose-status')
-  getMongooseStatus(): Promise<string> {
+  getMongooseStatus(): Promise<object> {
+    
     return this.appService.checkMongooseStatus();
   }
 }

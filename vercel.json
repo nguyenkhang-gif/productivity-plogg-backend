@@ -7,16 +7,12 @@
       "config": {
         "distDir": "public"
       }
-    },
-    {
-      "src": "vercel-func.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "vercel-func.js"
+      "dest": "/public/$1"
     }
   ]
 }

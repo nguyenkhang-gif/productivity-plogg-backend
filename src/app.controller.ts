@@ -9,4 +9,9 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('/mongoose-status')
+  getMongooseStatus(): Promise<string> {
+    return this.appService.checkMongooseStatus();
+  }
 }

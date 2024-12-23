@@ -1,112 +1,103 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as bcryptjs from 'bcryptjs';
-import * as jwt from 'jsonwebtoken'; // Dành cho môi trường hỗ trợ ES Modules
-import { IUser, IResponseUser } from 'src/user/interfaces/user.interface';
-@Injectable({})
+import { User, UserDocument } from 'src/users/schema/user.schema';
+import { LoginDto } from './dto/login.dto';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
+interface IUser {
+  _id: string;
+  fullName: string;
+  username: string;
+  profilePic: string;
+  memberShip: string;
+  role: string;
+}
+
+@Injectable()
 export class AuthService {
-  constructor(@InjectModel('User') private userModel: Model<IUser>) {}
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  getHello(): string {
-    return 'Hello World!';
-  }
+  async login(
+    body: LoginDto,
+  ): Promise<{ access_token: string; refresh_token: string; user: IUser }> {
+    const user = await this.userModel.findOne({ username: body.username });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
-  async login(body: {
-    username: string;
-    password: string;
-  }): Promise<{ token: string; user: IResponseUser }> {
-    console.log('some one is login...');
+    const isPasswordValid = await bcrypt.compare(body.password, user.password);
 
-    const { username, password } = body;
-    const user = await this.userModel.findOne({ username });
+    if (!isPasswordValid)
+      throw new UnauthorizedException('Invalid credentials');
 
-    if (!user) {
-      throw new Error('Invalid username or password');
-    }
-
-    const isPasswordCorrect = await bcryptjs.compare(password, user.password);
-
-    if (!isPasswordCorrect) {
-      throw new Error('Invalid username or password');
-    }
-    const token = jwt.sign(
+    const access_token = jwt.sign(
       {
         userId: user._id,
         userRole: user.role,
-        userMemberShip: user.membership,
+        userMembership: user.membership,
       },
       process.env.JWT_SECRET_KEY,
       {
-        expiresIn: '24h',
+        expiresIn: '1h', // Access token hết hạn sau 15 phút
+      },
+    );
+
+    // Tạo refresh token
+    const refresh_token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
       },
     );
     return {
-      token,
+      access_token,
+      refresh_token,
       user: {
         _id: user._id.toString(),
         fullName: user.fullName,
         username: user.username,
         profilePic: user.profilePic,
-        membership: user.membership,
+        memberShip: user.membership,
         role: user.role,
       },
     };
   }
+  async refreshToken(refreshToken: string) {
+    try {
+      const decode = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY);
+      const { userId } = decode as { userId: string };
 
-  async signup(body: {
-    fullName: string;
-    username: string;
-    password: string;
-    confirmPassword: string;
-    gender: string;
-  }): Promise<{ token: string; user: IResponseUser }> {
-    const { fullName, username, password, confirmPassword, gender } = body;
+      const user = await this.userModel.findById(userId);
 
-    if (password !== confirmPassword) {
-      throw new Error("Passwords don't match");
+      if (!user) throw new UnauthorizedException('User not found');
+      const newAccessToken = jwt.sign(
+        {
+          userId: user._id,
+          userRole: user.role,
+          userMembership: user.membership,
+        },
+        process.env.JWT_SECRET_KEY,
+        { expiresIn: '1h' },
+      );
+
+      const refresh_token = jwt.sign(
+        {
+          userId: user._id,
+        },
+        process.env.JWT_SECRET_KEY,
+        {
+          expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
+        },
+      );
+      return {
+        access_token: newAccessToken,
+        refresh_token,
+      };
+    } catch (e) {
+      console.error('horror', e);
+      throw new UnauthorizedException('Invalid refresh token');
     }
-
-    const existingUser = await this.userModel.findOne({ username });
-
-    if (existingUser) {
-      throw new Error('User already exists');
-    }
-
-    const salt = await bcryptjs.genSalt(10);
-    const hashPassword = await bcryptjs.hash(password, salt);
-
-    const boyUrl = 'https://avatar.iran.liara.run/public/boy';
-    const girlUrl = 'https://avatar.iran.liara.run/public/girl';
-
-    const newUser = new this.userModel({
-      fullName,
-      username,
-      password: hashPassword,
-      gender,
-      profilePic: gender === 'male' ? boyUrl : girlUrl,
-    });
-
-    await newUser.save();
-
-    const token = jwt.sign(
-      { userId: newUser._id },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '1h',
-      },
-    );
-
-    return {
-      token,
-      user: {
-        _id: newUser._id.toString(),
-        fullName: newUser.fullName,
-        username: newUser.username,
-        profilePic: newUser.profilePic,
-        membership: newUser.membership ?? 'basic',
-        role: newUser.role ?? 'customer',
-      },
-    };
   }
 }

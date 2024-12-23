@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService } from './firebase.service';
-import { UploadFileDto } from './Dtos/file-upload.dto';
 
 @Controller('api/files')
 export class FileController {
@@ -16,9 +15,12 @@ export class FileController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @Body() { bucket_name, file_name }: UploadFileDto,
+    @Body()
+    { bucket_name, file_name }: { bucket_name: string; file_name: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log('infof debug 1 :', file);
+
     console.log('File info: ', { bucket_name, file_name });
 
     const fileUrl = await this.fileUploadService.uploadFile(file);

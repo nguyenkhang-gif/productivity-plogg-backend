@@ -16,11 +16,6 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@common/*": ["src/common/*"],
-      "@user/*": ["src/user/*"],
-      "@app/*": ["src/app/*"]
-    }
+    "noFallthroughCasesInSwitch": false
   }
 }

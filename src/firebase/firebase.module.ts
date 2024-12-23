@@ -1,43 +1,43 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
-import { FileUploadService } from './firebase.service';
 import { FileController } from './firebase.controller';
+import { FileUploadService } from './firebase.service';
 // import { getStorage } from 'firebase/storage';
 
 let firebaseApp = null;
 const firebaseProvider = {
   provide: 'FIREBASE_APP',
   inject: [ConfigService],
-  useFactory: (configService: ConfigService) => {
+  useFactory: () => {
     const firebaseConfig = {
-      type: configService.get<string>('FBType'),
-      project_id: configService.get<string>('FBprojectId'),
-      private_key_id: configService.get<string>('FBprivate_key_id'),
+      type: process.env.FBType,
+      project_id: process.env.FBprojectId,
+      private_key_id: process.env.FBprivate_key_id,
       private_key:
-        `-----BEGIN PRIVATE KEY-----\n${configService.get<string>('FBprivate_key')}==\n-----END PRIVATE KEY-----\n`?.replace(
+        `-----BEGIN PRIVATE KEY-----\n${process.env.FBprivate_key}==\n-----END PRIVATE KEY-----\n`?.replace(
           /\\n/g,
           '\n',
         ),
-      client_email: configService.get<string>('FBclient_email'),
-      client_id: configService.get<string>('FBclient_id'),
-      auth_uri: configService.get<string>('FBauth_uri'),
-      token_uri: configService.get<string>('FBtoken_uri'),
-      auth_provider_x509_cert_url: configService.get<string>(
-        'FBauth_provider_x509_cert_url',
-      ),
-      client_x509_cert_url: configService.get<string>(
-        'FBauth_provider_x509_cert_url',
-      ),
-      universe_domain: configService.get<string>('FBuniverse_domain'),
+      client_email: process.env.FBclient_email,
+      client_id: process.env.FBclient_id,
+      auth_uri: process.env.FBauth_uri,
+      token_uri: process.env.FBtoken_uri,
+      auth_provider_x509_cert_url: process.env.FBauth_provider_x509_cert_url,
+      client_x509_cert_url: process.env.FBauth_provider_x509_cert_url,
+      universe_domain: process.env.FBuniverse_domain,
     } as admin.ServiceAccount;
 
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(firebaseConfig),
-      databaseURL: `https://${configService.get<string>('FBprojectId')}.firebaseio.com`,
-      storageBucket: `${configService.get<string>('FBbucketname')}`,
+      storageBucket: `${process.env.FBstorageBucketAlt}`,
+      // storageBucket: `gs://productivity-blog-a.appspot.com`,
     });
-    console.log('firebase app initialized');
+    if (!admin.apps.length) {
+      console.error('Firebase app has not been initialized.');
+    } else {
+      console.log('Firebase app is initialized:', firebaseApp.name);
+    }
 
     return firebaseApp;
   },

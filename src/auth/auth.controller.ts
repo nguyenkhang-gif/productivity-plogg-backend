@@ -1,5 +1,6 @@
 import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { SignUpDto } from './dto/login.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -29,6 +30,17 @@ export class AuthController {
         .json({ message: 'Invalid credentials' });
     }
   }
+
+  @Post('signup')
+  async signup(@Body() body: SignUpDto, @Res() res) {
+    try {
+      await this.AuthService.signUp(body);
+      return res.status(HttpStatus.OK).json('Signup success');
+    } catch (err) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ message: err.message });
+    }
+  }
+
   @Post('refresh-token')
   async refreshToken(@Res() res, @Req() req) {
     try {

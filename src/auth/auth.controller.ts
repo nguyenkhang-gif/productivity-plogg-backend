@@ -15,7 +15,7 @@ export class AuthController {
       const { access_token, refresh_token, user } = respon;
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
-        secure: true, // Chỉ gửi qua HTTPS
+        secure: false, // Chỉ gửi qua HTTPS
         sameSite: 'None', // Hoặc 'lax' nếu cần
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
       });

@@ -17,7 +17,6 @@ interface IUser {
 @Injectable()
 export class AuthService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
-
   async signUp(body: SignUpDto) {
     // const user = await this.userModel.findOne({ username: body.username });
     // if (user) throw new UnauthorizedException('Username already exists');
@@ -27,6 +26,7 @@ export class AuthService {
     //   password: hashedPassword,
     // });
     // await newUser.save();
+
     // return { message: 'User created successfully' };
 
     const user = await this.userModel.findOne({ username: body.username });

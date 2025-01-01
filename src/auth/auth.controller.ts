@@ -1,10 +1,29 @@
 import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/login.dto';
+import { RefreshTokenService } from '../refreshToken/refresh-token.service';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly AuthService: AuthService) {}
+  constructor(
+    private readonly AuthService: AuthService,
+    private readonly refreshTokenService: RefreshTokenService,
+  ) {}
+
+  @Post('/auth-with-jwt')
+  async loginWithJwt(@Body() body: { token: string }, @Res() res) {
+    try {
+      const { token } = body;
+      const respon = await this.AuthService.signUpWithToken(token);
+      return res.status(HttpStatus.OK).json({ data: respon });
+    } catch (err) {
+      console.log(err.message);
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Invalid credentials', err: err.message });
+    }
+  }
+
   @Post('login')
   async login(
     @Body() body: { username: string; password: string },
@@ -17,9 +36,14 @@ export class AuthController {
         httpOnly: true,
         secure: true, // Chỉ gửi qua HTTPS
         sameSite: 'None', // Hoặc 'lax' nếu cần
-
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
       });
+
+      this.refreshTokenService.createRefreshToken(
+        user._id,
+        refresh_token,
+        7 * 24 * 60 * 60,
+      );
       return res.status(HttpStatus.OK).json({
         access_token,
         user,
@@ -35,8 +59,8 @@ export class AuthController {
   @Post('signup')
   async signup(@Body() body: SignUpDto, @Res() res) {
     try {
-      await this.AuthService.signUp(body);
-      return res.status(HttpStatus.OK).json('Signup success');
+      const data = await this.AuthService.signUp(body);
+      return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       return res.status(HttpStatus.BAD_REQUEST).json({ message: err.message });
     }
@@ -47,10 +71,20 @@ export class AuthController {
     try {
       const refresh_token = req.cookies.refresh_token;
 
+      console.log(refresh_token, 'refresh_token');
       if (!refresh_token) {
         return res
           .status(HttpStatus.UNAUTHORIZED)
           .json({ message: 'Refresh token not found' });
+      }
+
+      const isRevoked =
+        await this.refreshTokenService.checkRevoked(refresh_token);
+
+      if (isRevoked) {
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .json({ message: 'Refresh token revoked' });
       }
 
       const { access_token, refresh_token: newToken } =
@@ -71,6 +105,33 @@ export class AuthController {
       return res
         .status(HttpStatus.UNAUTHORIZED)
         .json({ message: 'Invalid credentials debug 1' });
+    }
+  }
+
+  @Post('logout')
+  async logout(@Req() req, @Res() res) {
+    try {
+      const refresh_token = req.cookies.refresh_token;
+      if (!refresh_token) {
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .json({ message: 'Refresh token not found' });
+      }
+      const isRevoked =
+        await this.refreshTokenService.revokeRefreshToken(refresh_token);
+      if (isRevoked) {
+        return res
+          .status(HttpStatus.UNAUTHORIZED)
+          .json({ message: 'Refresh token revoked' });
+      }
+      await this.AuthService.logout(refresh_token);
+      res.clearCookie('refresh_token');
+      return res.status(HttpStatus.OK).json({ message: 'Logout success' });
+    } catch (e) {
+      console.log(e);
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Invalid credentials' });
     }
   }
 }

@@ -52,7 +52,17 @@ export class AuthService {
     const newUser = new this.userModel(form);
 
     const user = await newUser.save();
-    const { _id } = user as { _id: string };
+    const access_token = jwt.sign(
+      {
+        userId: user._id,
+        userRole: user.role,
+        userMembership: user.membership,
+      },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: '1h', // Access token hết hạn sau 15 phút
+      },
+    );
     const refresh_token = jwt.sign(
       {
         userId: user._id,
@@ -62,14 +72,22 @@ export class AuthService {
         expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
       },
     );
-    console.log();
+
     if (user._id) {
-      await this.refreshTokenService.createRefreshToken(
-        _id,
+      return {
+        access_token,
         refresh_token,
-        7 * 24 * 60 * 60,
-        true,
-      );
+        user: {
+          _id: user._id.toString(),
+          fullName: user.fullName,
+          gender: user.gender,
+          username: user.username,
+          profilePic: user.profilePic,
+          email: user.email,
+          memberShip: user.membership,
+          role: user.role,
+        },
+      };
     }
   }
   async signUp(body: SignUpDto) {
@@ -92,7 +110,7 @@ export class AuthService {
         fullName: body.fullName,
         gender: body.gender,
         username: body.username,
-        password: hashedPassword,
+        password: body.noHashPassword ? body.password : hashedPassword,
         email: body.email,
       },
       process.env.JWT_SECRET_KEY,
@@ -100,11 +118,12 @@ export class AuthService {
         expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
       },
     );
+    const url = `${process.env.CLIENT_ORIGIN}/auth?jwt=${jwtAuthToken}`;
     const htmlContent = `
       <div>
         <h1>Welcome!</h1>
-        <p>Please verify your email by clicking the link below: ${jwtAuthToken}</p>
-        <a href="${jwtAuthToken}" target="_blank" style="color: blue; text-decoration: underline;">Verify Email</a>
+        <p>Please verify your email by clicking the link below: </p>
+        <a href="${url}" target="_blank" style="color: blue; text-decoration: underline;">Verify Email</a>
       </div>
     `;
 

@@ -14,8 +14,24 @@ export class AuthController {
   async loginWithJwt(@Body() body: { token: string }, @Res() res) {
     try {
       const { token } = body;
-      const respon = await this.AuthService.signUpWithToken(token);
-      return res.status(HttpStatus.OK).json({ data: respon });
+      const { refresh_token, access_token, user } =
+        await this.AuthService.signUpWithToken(token);
+      res.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: true, // Chỉ gửi qua HTTPS
+        sameSite: 'None', // Hoặc 'lax' nếu cần
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+      });
+
+      this.refreshTokenService.createRefreshToken(
+        user._id,
+        refresh_token,
+        7 * 24 * 60 * 60,
+      );
+      return res.status(HttpStatus.OK).json({
+        access_token,
+        user,
+      });
     } catch (err) {
       console.log(err.message);
       return res
@@ -71,7 +87,6 @@ export class AuthController {
     try {
       const refresh_token = req.cookies.refresh_token;
 
-      console.log(refresh_token, 'refresh_token');
       if (!refresh_token) {
         return res
           .status(HttpStatus.UNAUTHORIZED)

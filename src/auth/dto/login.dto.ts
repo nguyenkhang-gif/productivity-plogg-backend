@@ -12,6 +12,7 @@ export class SignUpDto {
   @Transform(({ value }) => value ?? 'John Doe') // Giá trị mặc định
   fullName: string;
 
+  @IsOptional()
   @IsString()
   email: string;
 
@@ -26,4 +27,8 @@ export class SignUpDto {
   @IsOptional()
   @Transform(({ value }) => value ?? 'male') // Giá trị mặc định
   gender: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value ?? false)
+  noHashPassword: boolean;
 }

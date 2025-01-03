@@ -19,7 +19,7 @@ export class AuthController {
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
         secure: true, // Chỉ gửi qua HTTPS
-        sameSite: 'strict', // Hoặc 'lax' nếu cần
+        sameSite: 'None', // Hoặc 'lax' nếu cần
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
       });
 

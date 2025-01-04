@@ -53,7 +53,6 @@ export class AuthController {
         secure: true, // Chỉ gửi qua HTTPS
         sameSite: 'strict', // Hoặc 'lax' nếu cần
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
-        domain: process.env.CLIENT_ORIGIN,
       });
 
       this.refreshTokenService.createRefreshToken(

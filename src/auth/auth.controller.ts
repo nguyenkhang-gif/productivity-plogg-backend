@@ -59,7 +59,6 @@ export class AuthController {
       const respon = await this.AuthService.login(body);
       const { access_token, refresh_token, user } = respon;
       res.cookie('refresh_token', refresh_token, {
-        domain: process.env.NODE_ENV == 'development' ? 'localhost' : '.vercel',
         httpOnly: true,
         secure: true, // Chỉ gửi qua HTTPS
         sameSite: 'strict', // Hoặc 'lax' nếu cần

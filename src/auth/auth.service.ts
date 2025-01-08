@@ -180,6 +180,7 @@ export class AuthService {
       },
     };
   }
+
   async refreshToken(refreshToken: string) {
     try {
       const decode = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY);
@@ -230,5 +231,19 @@ export class AuthService {
       console.error('logout', error);
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  async profile(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+    return {
+      fullName: user.fullName,
+      gender: user.gender,
+      username: user.username,
+      profilePic: user.profilePic,
+      email: user.email,
+      memberShip: user.membership,
+      role: user.role,
+    };
   }
 }

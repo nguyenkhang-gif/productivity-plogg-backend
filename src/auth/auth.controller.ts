@@ -1,7 +1,16 @@
-import { Body, Controller, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/login.dto';
 import { RefreshTokenService } from '../refreshToken/refresh-token.service';
+import { AuthGuard } from './auth.guard';
 
 @Controller('api/auth')
 export class AuthController {
@@ -46,9 +55,11 @@ export class AuthController {
     @Res() res,
   ) {
     try {
+      // TODO : check username and password -> return access_token, refresh_token, user
       const respon = await this.AuthService.login(body);
       const { access_token, refresh_token, user } = respon;
       res.cookie('refresh_token', refresh_token, {
+        domain: process.env.NODE_ENV == 'development' ? 'localhost' : '.vercel',
         httpOnly: true,
         secure: true, // Chỉ gửi qua HTTPS
         sameSite: 'strict', // Hoặc 'lax' nếu cần
@@ -142,6 +153,22 @@ export class AuthController {
       await this.AuthService.logout(refresh_token);
       res.clearCookie('refresh_token');
       return res.status(HttpStatus.OK).json({ message: 'Logout success' });
+    } catch (e) {
+      console.log(e);
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Invalid credentials' });
+    }
+  }
+  @UseGuards(AuthGuard)
+  @Post('profile')
+  async profile(@Req() req, @Res() res) {
+    try {
+      console.log('user', req.user, res.user);
+
+      const { userId } = req.user;
+      const userProfile = await this.AuthService.profile(userId);
+      return res.status(HttpStatus.OK).json(userProfile);
     } catch (e) {
       console.log(e);
       return res

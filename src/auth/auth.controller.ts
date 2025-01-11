@@ -32,11 +32,6 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
       });
 
-      this.refreshTokenService.createRefreshToken(
-        user._id,
-        refresh_token,
-        7 * 24 * 60 * 60,
-      );
       return res.status(HttpStatus.OK).json({
         access_token,
         user,
@@ -61,15 +56,9 @@ export class AuthController {
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,
         secure: true, // Chỉ gửi qua HTTPS
-        sameSite: 'strict', // Hoặc 'lax' nếu cần
+        sameSite: 'none', // Hoặc 'lax' nếu cần
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
       });
-
-      this.refreshTokenService.createRefreshToken(
-        user._id,
-        refresh_token,
-        7 * 24 * 60 * 60,
-      );
       return res.status(HttpStatus.OK).json({
         access_token,
         user,
@@ -105,7 +94,6 @@ export class AuthController {
 
       const isRevoked =
         await this.refreshTokenService.checkRevoked(refresh_token);
-
       if (isRevoked) {
         return res
           .status(HttpStatus.UNAUTHORIZED)

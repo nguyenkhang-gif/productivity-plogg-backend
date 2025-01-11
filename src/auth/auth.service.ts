@@ -11,6 +11,7 @@ import {
   RefreshToken,
   RefreshTokenDocument,
 } from 'src/refreshToken/refresh-token.schema';
+import { TokenFactory } from 'src/utils/token.factory';
 interface IUser {
   _id: string;
   fullName: string;
@@ -33,7 +34,6 @@ export class AuthService {
   ) {}
   async signUpWithToken(token: string) {
     const decodedForm = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    console.log('debug 1 : form ', decodedForm);
     const form = decodedForm as {
       fullName: string;
       username: string;
@@ -52,33 +52,24 @@ export class AuthService {
     const newUser = new this.userModel(form);
 
     const user = await newUser.save();
-    const access_token = jwt.sign(
-      {
-        userId: user._id,
-        userRole: user.role,
-        userMembership: user.membership,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '1h', // Access token hết hạn sau 15 phút
-      },
+    const access_token = TokenFactory.createAccessToken({
+      userId: user._id,
+      userRole: user.role,
+      userMembership: user.membership,
+    });
+    const refresh_token = TokenFactory.createRefreshToken({
+      userId: user._id,
+    });
+    this.refreshTokenService.createRefreshToken(
+      user._id.toString(),
+      refresh_token,
+      7 * 24 * 60 * 60,
     );
-    const refresh_token = jwt.sign(
-      {
-        userId: user._id,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
-      },
-    );
-
     if (user._id) {
       return {
         access_token,
         refresh_token,
         user: {
-          _id: user._id.toString(),
           fullName: user.fullName,
           gender: user.gender,
           username: user.username,
@@ -105,19 +96,13 @@ export class AuthService {
     }
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
-    const jwtAuthToken = jwt.sign(
-      {
-        fullName: body.fullName,
-        gender: body.gender,
-        username: body.username,
-        password: body.noHashPassword ? body.password : hashedPassword,
-        email: body.email,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
-      },
-    );
+    const jwtAuthToken = TokenFactory.createRefreshToken({
+      fullName: body.fullName,
+      gender: body.gender,
+      username: body.username,
+      password: body.noHashPassword ? body.password : hashedPassword,
+      email: body.email,
+    });
     const url = `${process.env.CLIENT_ORIGIN}/auth?jwt=${jwtAuthToken}`;
     const htmlContent = `
       <div>
@@ -127,7 +112,11 @@ export class AuthService {
       </div>
     `;
 
-    await this.mailService.sendMail(body.email, 'verify ur stuff', htmlContent);
+    await this.mailService.sendMail(
+      body.email,
+      'verify your email',
+      htmlContent,
+    );
 
     return jwtAuthToken;
   }
@@ -143,28 +132,24 @@ export class AuthService {
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
 
-    const access_token = jwt.sign(
-      {
-        userId: user._id,
-        userRole: user.role,
-        userMembership: user.membership,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '1h', // Access token hết hạn sau 15 phút
-      },
-    );
+    const access_token = TokenFactory.createAccessToken({
+      userId: user._id,
+      userRole: user.role,
+      userMembership: user.membership,
+    });
 
     // Tạo refresh token
-    const refresh_token = jwt.sign(
-      {
-        userId: user._id,
-      },
-      process.env.JWT_SECRET_KEY,
-      {
-        expiresIn: '7d', // Refresh token hết hạn sau 7 ngày
-      },
+    const refresh_token = TokenFactory.createRefreshToken({
+      userId: user._id,
+    });
+
+    const userId = user._id.toString();
+    this.refreshTokenService.createRefreshToken(
+      userId,
+      refresh_token,
+      7 * 24 * 60 * 60,
     );
+
     return {
       access_token,
       refresh_token,

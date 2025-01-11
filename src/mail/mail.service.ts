@@ -26,12 +26,14 @@ export class MailService {
     });
 
     try {
-      await this.transporter.sendMail({
+      const res = await this.transporter.sendMail({
         from: process.env.EMAIL_USER,
         to,
         subject,
         html: htmlContent,
       });
+
+      console.log('Email sent successfully:', res.response);
       console.log(`Email sent to ${to}`);
     } catch (error) {
       console.error(`Failed to send email: ${error.message}`);

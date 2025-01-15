@@ -4,7 +4,8 @@ import { Model } from 'mongoose';
 import { Epub, EpubDocument } from 'src/gemini/schema/epub.schema';
 import { epubI } from './interfaces/epub.interface';
 import { OptionsI } from './interfaces/options.interface';
-import EpubApi from "epub-gen"
+// import EpubApi from "epub-gen"
+import * as EpubApi from 'epub-gen';
 
 @Injectable()
 export class EpubService {
@@ -55,8 +56,9 @@ export class EpubService {
         content: options.content || [],
       };
 
-      const epub =  new EpubApi(epubOptions,'./book.epub');
-      await epub.promise
+      const epub = new EpubApi(epubOptions, './book.epub');
+
+      await epub.promise;
 
       return `eBook generated successfully at: ${epubOptions}`;
     } catch (error) {

@@ -8,7 +8,7 @@ import { OptionsI } from './interfaces/options.interface';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as stream from 'stream';
-import  EpubApi  from 'epub-gen-memory';
+import EpubApi from 'epub-gen-memory';
 import { FileUploadService } from 'src/firebase/firebase.service';
 
 @Injectable()
@@ -61,15 +61,18 @@ export class EpubService {
         title: options.title || 'Default Title',
         author: options.author || 'Unknown Author',
         content: options.content || [],
-        cover:"null"
+        cover: 'null',
       };
-  
+
       // Tạo file EPUB dưới dạng buffer
-      const buffer = await EpubApi(epubOptions, epubOptions.content.map((item) => ({
-        title: item.title,
-        content: item.data,
-      })))
-  
+      const buffer = await EpubApi(
+        epubOptions,
+        epubOptions.content.map((item) => ({
+          title: item.title,
+          content: item.data,
+        })),
+      );
+
       // Tạo đối tượng giả định `Express.Multer.File` để upload
       const mockFile: Express.Multer.File = {
         fieldname: 'file',
@@ -83,19 +86,16 @@ export class EpubService {
         filename: `${epubOptions.title.replace(/[^a-zA-Z0-9]/g, '_')}.epub`,
         path: '',
       };
-      console.log('Mock file:', mockFile.buffer,epubOptions);
-  
+      console.log('Mock file:', mockFile.buffer, epubOptions);
+
       // Upload file bằng FileUploadService
       const publicUrl = await this.fileUploadService.uploadFile(mockFile);
       console.log(`File uploaded to Firebase: ${publicUrl}`);
-  
+
       return publicUrl; // Trả về URL của file trên Firebase
     } catch (error) {
       console.error('Error generating and uploading EPUB:', error);
       throw error;
     }
   }
-
-
-
 }

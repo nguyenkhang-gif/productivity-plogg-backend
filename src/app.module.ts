@@ -6,6 +6,9 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { GeminiModule } from './gemini/gemini.module';
+import { MailModule } from './mail/mail.module';
+import { EpubModule } from './epub/epub.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -13,6 +16,9 @@ import { FirebaseModule } from './firebase/firebase.module';
     UserModule,
     AuthModule,
     FirebaseModule,
+    GeminiModule,
+    MailModule,
+    EpubModule,
   ],
   controllers: [AppController],
   providers: [AppService],

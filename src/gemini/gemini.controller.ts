@@ -1,0 +1,53 @@
+import {
+  Body,
+  Controller,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { GeminiService } from './gemini.service';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+
+@Controller('api/gemini')
+export class GeminiController {
+  constructor(private readonly geminiService: GeminiService) {}
+
+  @UseGuards(AuthGuard)
+  @Post('prompt')
+  async prompt(@Body() body: { prompt: string }) {
+    const content = await this.geminiService.generateContent(body.prompt);
+    return content;
+  }
+
+  // @UseGuards(AuthGuard)
+  @Post('prompt-to-get-json-from-html')
+  async promptWithjson(@Body() body: { url: string }) {
+    const html = await fetch(body.url);
+    const htmlText = await html.text(); // Lấy nội dung HTML từ phản hồi
+    const prompt = `Phân tích cấu trúc của nó cho tôi 1 json bao gồm tag,class,id của tiêu đề chapter. tag,class,id của nội dung chapter thường là thẻ p, nếu có 1 parent bao quanh các thẻ đó thì lấy nó ko cần lấy thẻ con  :${htmlText} `;
+    const content: any = await this.geminiService.generateContent(prompt);
+    console.log(content.candidates[0].content.parts[0].text, 'dhhdhd');
+    const jsonString = content.candidates[0].content.parts[0].text
+      .replace(/```json|```/g, '')
+      .trim();
+    // return content
+    // return content.candidates[0].content.parts[0].text;
+    return JSON.parse(jsonString);
+  }
+
+  @Post('prompt-with-img')
+  @UseInterceptors(FileInterceptor('file'))
+  async promptWithImg(
+    @Body() body: { prompt: string },
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      const res = await this.geminiService.promptWithImg(body.prompt, file);
+      return res;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+}

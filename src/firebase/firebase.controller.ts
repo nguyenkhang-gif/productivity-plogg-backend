@@ -3,15 +3,18 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService } from './firebase.service';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('api/files')
 export class FileController {
   constructor(private readonly fileUploadService: FileUploadService) {}
 
+  @UseGuards(AuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(

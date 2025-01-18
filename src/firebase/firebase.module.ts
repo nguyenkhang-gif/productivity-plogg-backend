@@ -48,6 +48,6 @@ const firebaseProvider = {
   imports: [ConfigModule],
   controllers: [FileController],
   providers: [firebaseProvider, FileUploadService],
-  exports: [],
+  exports: ['FIREBASE_APP'],
 })
 export class FirebaseModule {}

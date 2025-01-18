@@ -30,6 +30,8 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "epub-gen": "^0.1.0",
+    "epub-gen-memory": "^1.1.2",
+    "file-api": "^0.10.4",
     "firebase-admin": "^13.0.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.2",

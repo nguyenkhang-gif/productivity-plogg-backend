@@ -13,11 +13,11 @@ export class FileUploadService {
   async uploadFile(file: Express.Multer.File): Promise<string> {
     try {
       const bucket = this.storage.bucket();
-      console.log('file info', bucket);
+      // console.log('file info', bucket);
 
       const fileRef = bucket.file(`files/${file.originalname}`);
 
-      console.log('Uploading the file...', fileRef);
+      // console.log('Uploading the file...', fileRef);
 
       // Lưu file vào bucket
       await fileRef.save(file.buffer, {

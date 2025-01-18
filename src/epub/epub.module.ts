@@ -9,7 +9,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Epub.name, schema: Epubs }]),
-    FirebaseModule
+    FirebaseModule,
   ],
   providers: [EpubService, FileUploadService],
   controllers: [EpubController],

@@ -5,11 +5,9 @@ import { Epub, EpubDocument } from 'src/gemini/schema/epub.schema';
 import { epubI } from './interfaces/epub.interface';
 import { OptionsI } from './interfaces/options.interface';
 // import EpubApi from "epub-gen"
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import * as stream from 'stream';
 import EpubApi from 'epub-gen-memory';
 import { FileUploadService } from 'src/firebase/firebase.service';
+import * as Cheerio from 'cheerio';
 
 @Injectable()
 export class EpubService {
@@ -87,15 +85,40 @@ export class EpubService {
         path: '',
       };
       console.log('Mock file:', mockFile.buffer, epubOptions);
-
-      // Upload file bằng FileUploadService
+      // Upload file bằng FileUploadServi§ce
       const publicUrl = await this.fileUploadService.uploadFile(mockFile);
       console.log(`File uploaded to Firebase: ${publicUrl}`);
-
       return publicUrl; // Trả về URL của file trên Firebase
     } catch (error) {
       console.error('Error generating and uploading EPUB:', error);
       throw error;
     }
+  }
+
+  async parseHtml(html: string, formated: any, url: string): Promise<string> {
+    // Sử dụng cheerio để phân tích HTML
+    const content = url.length ? await fetch(url) : undefined;
+    const contentText = content ? await content.text() : undefined;
+    let $: Cheerio.CheerioAPI = null;
+    if (contentText?.length) {
+      $ = Cheerio.load(contentText);
+    } else {
+      $ = Cheerio.load(html);
+      // console.log(html, 'html');
+    }
+    console.log($, 'cheerio');
+    console.log($(`${formated.chapter_title.tag}`).text(), 'formated');
+    const finalChapter = {
+      title: $(
+        `${formated.chapter_title.tag}${formated.chapter_title.id ? `#${formated.chapter_title.id}` : ''}${formated.chapter_title.class ? `.${formated.chapter_title.class.split(' ').join('.')}` : ''}`,
+      ).text(),
+      content: $(
+        `${formated.chapter_content.tag}${formated.chapter_content.id ? `#${formated.chapter_content.id}` : ''}${formated.chapter_content.class ? `.${formated.chapter_content.class.split(' ').join('.')}` : ''}`,
+      ).html(),
+    };
+
+    // console.log(finalChapter, 'finalChapter');
+
+    return JSON.stringify(finalChapter);
   }
 }

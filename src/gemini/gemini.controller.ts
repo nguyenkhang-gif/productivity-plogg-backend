@@ -9,10 +9,14 @@ import {
 import { GeminiService } from './gemini.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { EpubService } from 'src/epub/epub.service';
 
 @Controller('api/gemini')
 export class GeminiController {
-  constructor(private readonly geminiService: GeminiService) {}
+  constructor(
+    private readonly geminiService: GeminiService,
+    private readonly epubService: EpubService,
+  ) {}
 
   @UseGuards(AuthGuard)
   @Post('prompt')
@@ -28,13 +32,21 @@ export class GeminiController {
     const htmlText = await html.text(); // Lấy nội dung HTML từ phản hồi
     const prompt = `Phân tích cấu trúc của nó cho tôi 1 json bao gồm tag,class,id của tiêu đề chapter. tag,class,id của nội dung chapter thường là thẻ p, nếu có 1 parent bao quanh các thẻ đó thì lấy nó ko cần lấy thẻ con  :${htmlText} `;
     const content: any = await this.geminiService.generateContent(prompt);
-    console.log(content.candidates[0].content.parts[0].text, 'dhhdhd');
+    console.log(htmlText, 'dhhdhd');
     const jsonString = content.candidates[0].content.parts[0].text
       .replace(/```json|```/g, '')
       .trim();
+    const chapterInfo = await this.epubService.parseHtml(
+      htmlText,
+      JSON.parse(jsonString),
+      '',
+    );
     // return content
     // return content.candidates[0].content.parts[0].text;
-    return JSON.parse(jsonString);
+    return {
+      format: JSON.parse(jsonString),
+      chapterInfo: JSON.parse(chapterInfo),
+    };
   }
 
   @Post('prompt-with-img')

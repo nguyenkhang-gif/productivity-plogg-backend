@@ -27,6 +27,7 @@
     "@nestjs/mongoose": "^10.1.0",
     "@nestjs/platform-express": "^10.0.0",
     "bcryptjs": "^2.4.3",
+    "cheerio": "^1.0.0",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "epub-gen": "^0.1.0",

@@ -1,19 +1,43 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { EpubService } from './epub.service';
 import { epubI } from './interfaces/epub.interface';
 import { OptionsI } from './interfaces/options.interface';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('api/epub')
 export class EpubController {
   constructor(private readonly epubService: EpubService) {}
 
+  @UseGuards(AuthGuard)
   @Post('create')
-  async createEpub(@Body() body: { data: epubI }) {
+  async createEpub(@Body() body: { data: epubI }, @Req() req) {
     try {
-      const epub = await this.epubService.create(body.data);
+      console.log('create epub', body, req.user);
+
+      const epub = await this.epubService.create({
+        ...body.data,
+        createdUserId: req.user.userId,
+      });
       return epub;
     } catch (err) {
       console.log(err);
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('get-user-epub')
+  async getUserEpub(@Req() req, @Res() res) {
+    try {
+      // console.log('get user epub', req.user, res.user);
+
+      const epub = await this.epubService.read({
+        createdUserId: req.user.userId,
+      });
+      console.log('epub', epub);
+
+      return res.status(200).json(epub);
+    } catch (err) {
+      console.error(err);
     }
   }
 
@@ -44,6 +68,26 @@ export class EpubController {
     try {
       const epub = await this.epubService.generateEpub(body.options);
       return epub;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  @Post('parse-epub')
+  async parseEpub(
+    @Body() body: { html?: string; formated: object; url?: string },
+  ) {
+    try {
+      console.log(body.html, 'html get from the boddy');
+
+      // prepearing the html
+
+      const epub = await this.epubService.parseHtml(
+        body.html,
+        body.formated,
+        body.url,
+      );
+      return JSON.parse(epub);
     } catch (err) {
       console.log(err);
     }

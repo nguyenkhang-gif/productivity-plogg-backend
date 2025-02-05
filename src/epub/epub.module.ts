@@ -13,5 +13,6 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
   ],
   providers: [EpubService, FileUploadService],
   controllers: [EpubController],
+  exports: [EpubService],
 })
 export class EpubModule {}

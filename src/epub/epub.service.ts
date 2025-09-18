@@ -62,17 +62,14 @@ export class EpubService {
         cover: 'null',
       };
 
-      console.log('epubOptions', epubOptions);
-      
       // Tạo file EPUB dưới dạng buffer
       const buffer = await EpubApi(
         epubOptions,
         epubOptions.content.map((item) => ({
           title: item.title,
-          content: item.data.replace(/<[^>]*\ssrc=["'][^"']*["'][^>]*>.*?<\/[^>]+>|<[^>]*\ssrc=["'][^"']*["'][^>]*\/?>/gs, ""),
+          content: item.data,
         })),
       );
-      ;
 
       // Tạo đối tượng giả định `Express.Multer.File` để upload
       const mockFile: Express.Multer.File = {
@@ -98,55 +95,29 @@ export class EpubService {
     }
   }
 
-  async parseHtml(html: string, formated?: any, url?: string): Promise<string> {
-    // Lấy nội dung HTML từ URL nếu có
-    const content = url?.length ? await fetch(url) : undefined;
+  async parseHtml(html: string, formated: any, url: string): Promise<string> {
+    // Sử dụng cheerio để phân tích HTML
+    const content = url.length ? await fetch(url) : undefined;
     const contentText = content ? await content.text() : undefined;
     let $: Cheerio.CheerioAPI = null;
-
-    if (contentText && contentText.length) {
+    if (contentText?.length) {
       $ = Cheerio.load(contentText);
-    } else if (html?.length) {
+    } else {
       $ = Cheerio.load(html);
+      // console.log(html, 'html');
     }
-
-    // Hàm loại bỏ pseudo-classes khỏi selector
-    const cleanSelector = (selector?: string) =>
-      selector?.replace(/:[a-zA-Z()-]+/g, '') ?? '';
-
-    // Hàm loại bỏ pseudo-classes khỏi class (từng phần tử trong class)
-    const cleanClass = (classStr?: string) =>
-      classStr
-        ? classStr
-            .split(' ')
-            .filter((cls) => !cls.includes(':')) // Loại bỏ các class có dấu `:`
-            .join('.')
-        : '';
-
-    // Kiểm tra và gán giá trị mặc định nếu `tag`, `id`, `class` bị `null` hoặc `undefined`
-    const chapterTitle = formated?.chapter_title ?? {};
-    const chapterContent = formated?.chapter_content ?? {};
-
-    const tagTitle = cleanSelector(chapterTitle.tag ?? ''); // Nếu null, gán ""
-    const idTitle = chapterTitle.id ? `#${chapterTitle.id}` : '';
-    const classTitle = chapterTitle.class
-      ? `.${cleanClass(chapterTitle.class)}`
-      : '';
-
-    const tagContent = cleanSelector(chapterContent.tag ?? '');
-    const idContent = chapterContent.id ? `#${chapterContent.id}` : '';
-    const classContent = chapterContent.class
-      ? `.${cleanClass(chapterContent.class)}`
-      : '';
-
-    // Xây dựng selector hợp lệ
-    const chapterTitleSelector = `${tagTitle}${idTitle}${classTitle}`;
-    const chapterContentSelector = `${tagContent}${idContent}${classContent}`;
-
+    console.log($, 'cheerio');
+    console.log($(`${formated.chapter_title.tag}`).text(), 'formated');
     const finalChapter = {
-      title: $(chapterTitleSelector).text(),
-      content: $(chapterContentSelector).html(),
+      title: $(
+        `${formated.chapter_title.tag}${formated.chapter_title.id ? `#${formated.chapter_title.id}` : ''}${formated.chapter_title.class ? `.${formated.chapter_title.class.split(' ').join('.')}` : ''}`,
+      ).text(),
+      content: $(
+        `${formated.chapter_content.tag}${formated.chapter_content.id ? `#${formated.chapter_content.id}` : ''}${formated.chapter_content.class ? `.${formated.chapter_content.class.split(' ').join('.')}` : ''}`,
+      ).html(),
     };
+
+    // console.log(finalChapter, 'finalChapter');
 
     return JSON.stringify(finalChapter);
   }

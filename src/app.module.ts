@@ -9,8 +9,6 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { GeminiModule } from './gemini/gemini.module';
 import { MailModule } from './mail/mail.module';
 import { EpubModule } from './epub/epub.module';
-import { TokenModule } from './token/token.module';
-import { SupabaseModule } from './supabase/supabase.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -21,8 +19,6 @@ import { SupabaseModule } from './supabase/supabase.module';
     GeminiModule,
     MailModule,
     EpubModule,
-    TokenModule,
-    SupabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

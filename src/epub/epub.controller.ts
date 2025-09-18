@@ -1,8 +1,8 @@
-import { Body, Controller, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { EpubService } from './epub.service';
+import { epubI } from './interfaces/epub.interface';
 import { OptionsI } from './interfaces/options.interface';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { createEpubDto, generateEpubDto, parseEpubDto } from './dto/epub.dto';
 
 @Controller('api/epub')
 export class EpubController {
@@ -10,8 +10,9 @@ export class EpubController {
 
   @UseGuards(AuthGuard)
   @Post('create')
-  async createEpub(@Body() body: { data: createEpubDto}, @Req() req) {
+  async createEpub(@Body() body: { data: epubI }, @Req() req) {
     try {
+      console.log('create epub', body, req.user);
 
       const epub = await this.epubService.create({
         ...body.data,
@@ -32,6 +33,7 @@ export class EpubController {
       const epub = await this.epubService.read({
         createdUserId: req.user.userId,
       });
+      console.log('epub', epub);
 
       return res.status(200).json(epub);
     } catch (err) {
@@ -62,33 +64,10 @@ export class EpubController {
   }
 
   @Post('generate-epub')
-  async generateEpub(@Body() body:{ data:generateEpubDto}) {
+  async generateEpub(@Body() body: { options: OptionsI }) {
     try {
-      console.log('generate epub', body.data.options);
-      
-      const epub = await this.epubService.generateEpub(body.data.options);
+      const epub = await this.epubService.generateEpub(body.options);
       return epub;
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  @Post('memory-usage')
-  async memoryUsage() {
-    try {
-      setInterval(() => {
-        const memoryUsage = process.memoryUsage();
-        console.log({
-          rss: (memoryUsage.rss / 1024 / 1024).toFixed(2) + " MB",
-          heapTotal: (memoryUsage.heapTotal / 1024 / 1024).toFixed(2) + " MB",
-          heapUsed: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + " MB",
-          external: (memoryUsage.external / 1024 / 1024).toFixed(2) + " MB",
-          arrayBuffers: (memoryUsage.arrayBuffers / 1024 / 1024).toFixed(2) + " MB"
-      });
-
-      }, 3000);
-      
-      return {data:process.memoryUsage()};
     } catch (err) {
       console.log(err);
     }
@@ -96,23 +75,21 @@ export class EpubController {
 
   @Post('parse-epub')
   async parseEpub(
-    @Body() body: parseEpubDto,
-    @Res() res,
+    @Body() body: { html?: string; formated: object; url?: string },
   ) {
     try {
-      console.log(body.html, 'html get from the body');
+      console.log(body.html, 'html get from the boddy');
 
-      // preparing the html
+      // prepearing the html
 
       const epub = await this.epubService.parseHtml(
         body.html,
         body.formated,
         body.url,
       );
-      return res.status(HttpStatus.OK).json(JSON.parse(epub));
-      // return JSON.parse(epub);
+      return JSON.parse(epub);
     } catch (err) {
       console.log(err);
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'An error occurred while parsing the EPUB' });
     }
-  }}
+  }
+}

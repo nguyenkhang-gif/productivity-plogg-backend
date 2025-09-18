@@ -30,12 +30,14 @@ export class GeminiController {
   async promptWithjson(@Body() body: { url: string }) {
     const html = await fetch(body.url);
     const htmlText = await html.text(); // Lấy nội dung HTML từ phản hồi
+    // console.log("debug parese chapter ", htmlText);
     const prompt = `Phân tích cấu trúc của nó cho tôi 1 json bao gồm tag,class,id của tiêu đề chapter. tag,class,id của nội dung chapter thường là thẻ p, nếu có 1 parent bao quanh các thẻ đó thì lấy nó ko cần lấy thẻ con  :${htmlText} `;
     const content: any = await this.geminiService.generateContent(prompt);
-    console.log(htmlText, 'dhhdhd');
     const jsonString = content.candidates[0].content.parts[0].text
       .replace(/```json|```/g, '')
       .trim();
+    console.log(JSON.parse(jsonString), 'jsonString');
+    
     const chapterInfo = await this.epubService.parseHtml(
       htmlText,
       JSON.parse(jsonString),

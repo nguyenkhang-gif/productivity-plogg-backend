@@ -163,4 +163,36 @@ export class AuthController {
         .json({ message: 'Invalid credentials' });
     }
   }
+  
+
+
+
+
+
+  @Post('forgot-password')
+  async forgotPassword(@Res() res,@Body() body: { email: string }) {
+
+    try{
+      const data =await this.AuthService.forgotPassword(body.email)
+
+
+      return res.status(HttpStatus.OK).json({message:"Email sent successfully",data})
+    }catch(e){
+      return e
+    }
+  }
+
+
+
+  @Post('validate-code')
+  async varificationCode(@Res() res,@Body() body: { email: string, code: string }) {
+    try{
+      
+      const data =await this.AuthService.validateCodeFromEmail(body.email,body.code)
+      return res.status(HttpStatus.OK).json({message:"Email sent successfully",data})
+
+    }catch(e){
+      return e
+    }
+  }
 }

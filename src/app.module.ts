@@ -11,6 +11,7 @@ import { MailModule } from './mail/mail.module';
 import { EpubModule } from './epub/epub.module';
 import { TokenModule } from './token/token.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { DriveModule } from './google/drive.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -23,6 +24,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     EpubModule,
     TokenModule,
     SupabaseModule,
+    DriveModule,
   ],
   controllers: [AppController],
   providers: [AppService],

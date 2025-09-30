@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -24,7 +25,23 @@ export class GeminiController {
     const content = await this.geminiService.generateContent(body.prompt);
     return content;
   }
+  @UseGuards(AuthGuard)
+  @Post('prompt-with-personal')
+  async promptWithPersonal(@Body() body: { prompt: string }) {
+    const content = await this.geminiService.generateContentWithPersonal(
+      body.prompt,
+    );
+    return content;
+  }
 
+  @UseGuards(AuthGuard)
+  @Post('prompt-with-personal-stream')
+  async promptWithPersonalStream(@Body() body: { prompt: string }) {
+    const content = await this.geminiService.generateContentWithPersonalStream(
+      body.prompt,
+    );
+    return content;
+  }
   // @UseGuards(AuthGuard)
   @Post('prompt-to-get-json-from-html')
   async promptWithjson(@Body() body: { url: string }) {
@@ -37,7 +54,7 @@ export class GeminiController {
       .replace(/```json|```/g, '')
       .trim();
     console.log(JSON.parse(jsonString), 'jsonString');
-    
+
     const chapterInfo = await this.epubService.parseHtml(
       htmlText,
       JSON.parse(jsonString),

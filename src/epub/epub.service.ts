@@ -8,12 +8,14 @@ import { OptionsI } from './interfaces/options.interface';
 import EpubApi from 'epub-gen-memory';
 import { FileUploadService } from 'src/firebase/firebase.service';
 import * as Cheerio from 'cheerio';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Injectable()
 export class EpubService {
   constructor(
     @InjectModel(Epub.name) private epubModel: Model<EpubDocument>,
     private readonly fileUploadService: FileUploadService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
   // Tạo mới một bản ghi EPUB
@@ -53,7 +55,7 @@ export class EpubService {
   }
 
   // Tạo file EPUB từ dữ liệu đầu vào
-  async generateEpub(options: OptionsI): Promise<string> {
+  async generateEpub(options: OptionsI, userId: string): Promise<string> {
     try {
       const epubOptions = {
         title: options.title || 'Default Title',
@@ -63,17 +65,18 @@ export class EpubService {
       };
 
       console.log('epubOptions', epubOptions);
-      
+
       // Tạo file EPUB dưới dạng buffer
       const buffer = await EpubApi(
         epubOptions,
         epubOptions.content.map((item) => ({
           title: item.title,
-          content: item.data.replace(/<[^>]*\ssrc=["'][^"']*["'][^>]*>.*?<\/[^>]+>|<[^>]*\ssrc=["'][^"']*["'][^>]*\/?>/gs, ""),
+          content: item.data.replace(
+            /<[^>]*\ssrc=["'][^"']*["'][^>]*>.*?<\/[^>]+>|<[^>]*\ssrc=["'][^"']*["'][^>]*\/?>/gs,
+            '',
+          ),
         })),
       );
-      ;
-
       // Tạo đối tượng giả định `Express.Multer.File` để upload
       const mockFile: Express.Multer.File = {
         fieldname: 'file',
@@ -89,7 +92,19 @@ export class EpubService {
       };
       console.log('Mock file:', mockFile.buffer, epubOptions);
       // Upload file bằng FileUploadServi§ce
-      const publicUrl = await this.fileUploadService.uploadFile(mockFile);
+      // const publicUrl = await this.fileUploadService.uploadFile(mockFile);
+      const bucket = process.env.SUPABASE_BUCKET_NAME; // Tên bucket đã tạo trong Supabase
+      const filePath = `uploads/${userId || 'random'}/${Date.now()}-${mockFile.originalname}`;
+      // const publicUrl = await this.supabaseService.uploadFile(mockFile, folder);
+      const result = await this.supabaseService.uploadFile(
+        bucket,
+        filePath,
+        mockFile.buffer,
+        mockFile.mimetype,
+      );
+
+      const publicUrl = this.supabaseService.getPublicUrl(bucket, filePath);
+
       console.log(`File uploaded to Firebase: ${publicUrl}`);
       return publicUrl; // Trả về URL của file trên Firebase
     } catch (error) {

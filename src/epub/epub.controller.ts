@@ -74,7 +74,6 @@ export class EpubController {
     try {
       const { user } = req;
       const userId = user.userId;
-      console.log(user);
 
       const epub = await this.epubService.generateEpub(
         body.data.options,

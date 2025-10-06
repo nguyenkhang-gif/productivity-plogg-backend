@@ -33,15 +33,14 @@ export class GeminiController {
     );
     return content;
   }
-
-  @UseGuards(AuthGuard)
-  @Post('prompt-with-personal-stream')
-  async promptWithPersonalStream(@Body() body: { prompt: string }) {
-    const content = await this.geminiService.generateContentWithPersonalStream(
+  @Post('prompt-with-actions')
+  async promptWithActions(@Body() body: { prompt: string }) {
+    const content = await this.geminiService.generateContentWithActions(
       body.prompt,
     );
     return content;
   }
+
   // @UseGuards(AuthGuard)
   @Post('prompt-to-get-json-from-html')
   async promptWithjson(@Body() body: { url: string }) {

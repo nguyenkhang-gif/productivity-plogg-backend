@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
   UploadedFile,
@@ -79,5 +80,13 @@ export class GeminiController {
     } catch (err) {
       console.log(err);
     }
+  }
+
+
+  @Get('clear-context')
+  async clearContext(@Req() req) {
+    // Logic to clear context, e.g., reset session or conversation history
+    await this.geminiService.clearConversations();
+    return { message: 'Context cleared successfully' };
   }
 }

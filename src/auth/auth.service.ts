@@ -32,6 +32,57 @@ export class AuthService {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly mailService: MailService,
   ) {}
+
+  async validateCodeFromEmail(email: string, code: string) {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const payload = jwt.verify(
+      user.resetPasswordToken,
+      process.env.JWT_SECRET_KEY,
+    ) as { status: string; userId: string; code: number };
+
+    if (payload && payload?.status === 'waiting') {
+      return { message: 'code is valid', status: 200 };
+    }
+
+    return { message: 'code is not valid' };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userModel.findOne({ email });
+    // todo:
+    // 1) check if user is exist
+    // 2) send email to user and front end check
+    //
+
+    const code = Math.floor(100000 + Math.random() * 900000);
+    const token = TokenFactory.createAccessToken({
+      status: 'waiting',
+      userId: user._id,
+      code: code,
+    });
+
+    const htmlContent = `
+      <div>
+        <h1>Welcome!</h1>
+        <p>Please verify your email by clicking the link below: ${code}</p>
+      </div>
+    `;
+
+    await this.mailService.sendMail(email, 'verify your code', htmlContent);
+
+    await this.userModel.updateOne(
+      { email: email },
+      { $set: { resetPasswordToken: token } }, // Cập nhật trường resetPasswordToken
+    );
+
+    return { code, user, token };
+    if (!user) {
+      throw new Error('User not found');
+    }
+  }
+
   async signUpWithToken(token: string) {
     const decodedForm = jwt.verify(token, process.env.JWT_SECRET_KEY);
     const form = decodedForm as {
@@ -43,6 +94,7 @@ export class AuthService {
       memberShip: string;
       email: string;
       role: string;
+      id: string;
     };
     const findUser = await this.userModel.findOne({ email: form.email });
     if (findUser) {
@@ -65,6 +117,7 @@ export class AuthService {
       refresh_token,
       7 * 24 * 60 * 60,
     );
+
     if (user._id) {
       return {
         access_token,
@@ -77,6 +130,7 @@ export class AuthService {
           email: user.email,
           memberShip: user.membership,
           role: user.role,
+          id: user._id,
         },
       };
     }
@@ -124,7 +178,10 @@ export class AuthService {
   async login(
     body: LoginDto,
   ): Promise<{ access_token: string; refresh_token: string; user: IUser }> {
-    const user = await this.userModel.findOne({ username: body.username });
+    const user = await this.userModel.findOne({
+      $or: [{ username: body.username }, { email: body.username }],
+    });
+
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isPasswordValid = await bcrypt.compare(body.password, user.password);
@@ -229,6 +286,7 @@ export class AuthService {
       email: user.email,
       memberShip: user.membership,
       role: user.role,
+      _id: user._id,
     };
   }
 }

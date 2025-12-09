@@ -14,9 +14,8 @@ import { SupabaseService } from 'src/supabase/supabase.service';
 export class EpubService {
   constructor(
     @InjectModel(Epub.name) private epubModel: Model<EpubDocument>,
-    private readonly fileUploadService: FileUploadService,
     private readonly supabaseService: SupabaseService,
-  ) {}
+  ) { }
 
   // Tạo mới một bản ghi EPUB
   async create(item: epubI): Promise<Epub> {
@@ -91,8 +90,6 @@ export class EpubService {
         path: '',
       };
       console.log('Mock file:', mockFile.buffer, epubOptions);
-      // Upload file bằng FileUploadServi§ce
-      // const publicUrl = await this.fileUploadService.uploadFile(mockFile);
       const bucket = process.env.SUPABASE_BUCKET_NAME; // Tên bucket đã tạo trong Supabase
       const filePath = `uploads/${userId || 'random'}/${Date.now()}-${mockFile.originalname}`;
       // const publicUrl = await this.supabaseService.uploadFile(mockFile, folder);
@@ -113,56 +110,67 @@ export class EpubService {
     }
   }
 
-  async parseHtml(html: string, formated?: any, url?: string): Promise<string> {
-    // Lấy nội dung HTML từ URL nếu có
-    const content = url?.length ? await fetch(url) : undefined;
-    const contentText = content ? await content.text() : undefined;
-    let $: Cheerio.CheerioAPI = null;
+  async parseHtml(html: string, formated?: any, url?: string): Promise<any> {
+    // Lấy HTML từ URL nếu không có html body
+    let rawHtml = html?.length ? html : null;
 
-    if (contentText && contentText.length) {
-      $ = Cheerio.load(contentText);
-    } else if (html?.length) {
-      $ = Cheerio.load(html);
+    if (!rawHtml && url?.length) {
+      const response = await fetch(url);
+      rawHtml = await response.text();
+      console.log("Fetched HTML from URL");
     }
 
-    // Hàm loại bỏ pseudo-classes khỏi selector
+    if (!rawHtml) {
+      throw new Error("HTML input is empty. Cannot parse.");
+    }
+
+    // Load Cheerio
+    const $ = Cheerio.load(rawHtml);
+
+    // === CLEAN FUNCTIONS ===
     const cleanSelector = (selector?: string) =>
       selector?.replace(/:[a-zA-Z()-]+/g, '') ?? '';
 
-    // Hàm loại bỏ pseudo-classes khỏi class (từng phần tử trong class)
     const cleanClass = (classStr?: string) =>
       classStr
         ? classStr
-            .split(' ')
-            .filter((cls) => !cls.includes(':')) // Loại bỏ các class có dấu `:`
-            .join('.')
+          .split(' ')
+          .filter((cls) => !cls.includes(':')) // bỏ pseudo-classes
+          .join('.')                           // nối với dấu .
         : '';
+    console.log('formated', formated);
 
-    // Kiểm tra và gán giá trị mặc định nếu `tag`, `id`, `class` bị `null` hoặc `undefined`
+    // === EXTRACT FORMAT ===
     const chapterTitle = formated?.chapter_title ?? {};
     const chapterContent = formated?.chapter_content ?? {};
 
-    const tagTitle = cleanSelector(chapterTitle.tag ?? ''); // Nếu null, gán ""
+    // Title selector
+    const tagTitle = cleanSelector(chapterTitle.tag ?? '');
     const idTitle = chapterTitle.id ? `#${chapterTitle.id}` : '';
     const classTitle = chapterTitle.class
       ? `.${cleanClass(chapterTitle.class)}`
       : '';
 
+    // Content selector
     const tagContent = cleanSelector(chapterContent.tag ?? '');
     const idContent = chapterContent.id ? `#${chapterContent.id}` : '';
     const classContent = chapterContent.class
       ? `.${cleanClass(chapterContent.class)}`
       : '';
 
-    // Xây dựng selector hợp lệ
+
+    // Build full selectors
     const chapterTitleSelector = `${tagTitle}${idTitle}${classTitle}`;
     const chapterContentSelector = `${tagContent}${idContent}${classContent}`;
 
+    // === PARSE FINAL ===
     const finalChapter = {
-      title: $(chapterTitleSelector).text(),
-      content: $(chapterContentSelector).html(),
+      title: $(chapterTitleSelector).text()?.trim() || "",
+      content: $(chapterContentSelector).html() || "",
     };
 
-    return JSON.stringify(finalChapter);
+    console.log('finalChapter', finalChapter);
+
+    return finalChapter;
   }
 }

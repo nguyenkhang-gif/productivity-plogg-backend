@@ -12,6 +12,8 @@ import { EpubModule } from './epub/epub.module';
 import { TokenModule } from './token/token.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { DriveModule } from './google/drive.module';
+import { ConversationModule } from './conversation/conversation.module';
+import { BudgetModule } from './budget/budget.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -25,6 +27,8 @@ import { DriveModule } from './google/drive.module';
     TokenModule,
     SupabaseModule,
     DriveModule,
+    ConversationModule,
+    BudgetModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -14,7 +14,7 @@ import { createEpubDto, generateEpubDto, parseEpubDto } from './dto/epub.dto';
 
 @Controller('api/epub')
 export class EpubController {
-  constructor(private readonly epubService: EpubService) {}
+  constructor(private readonly epubService: EpubService) { }
 
   @UseGuards(AuthGuard)
   @Post('create')
@@ -118,7 +118,7 @@ export class EpubController {
         body.formated,
         body.url,
       );
-      return res.status(HttpStatus.OK).json(JSON.parse(epub));
+      return res.status(HttpStatus.OK).json(epub);
       // return JSON.parse(epub);
     } catch (err) {
       console.log(err);

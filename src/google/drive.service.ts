@@ -131,7 +131,7 @@ export class DriveService implements OnModuleInit {
       );
     }
   }
-  convertJsonToXlsxBuffer(jsonData: any[], sheetName: string): Promise<Buffer> {
+  convertJsonToXlsxBuffer(jsonData: any[]): Promise<Buffer> {
     try {
       // Create a new workbook
       const workbook = XLSX.utils.book_new();

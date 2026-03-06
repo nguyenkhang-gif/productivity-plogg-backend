@@ -123,29 +123,26 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Req() req, @Res() res) {
-    try {
-      const refresh_token = req.cookies.refresh_token;
-      if (!refresh_token) {
-        return res
-          .status(HttpStatus.UNAUTHORIZED)
-          .json({ message: 'Refresh token not found' });
+    const token = req.cookies?.refresh_token;
+  
+    if (token) {
+      try {
+        // Service lo việc ở Database
+        await this.AuthService.logout(token);
+      } catch (error) {
+        // Log lỗi nhưng vẫn để code chạy tiếp xuống dưới để xóa cookie
+        console.error('Logout Service error:', error.message);
       }
-      const isRevoked =
-        await this.refreshTokenService.revokeRefreshToken(refresh_token);
-      if (isRevoked) {
-        return res
-          .status(HttpStatus.UNAUTHORIZED)
-          .json({ message: 'Refresh token revoked' });
-      }
-      await this.AuthService.logout(refresh_token);
-      res.clearCookie('refresh_token');
-      return res.status(HttpStatus.OK).json({ message: 'Logout success' });
-    } catch (e) {
-      console.log(e);
-      return res
-        .status(HttpStatus.UNAUTHORIZED)
-        .json({ message: 'Invalid credentials' });
     }
+  
+    // Controller lo việc xóa Cookie ở Browser
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+  
+    return res.status(HttpStatus.OK).json({ message: 'Logout successful' });
   }
   @UseGuards(AuthGuard)
   @Post('profile')

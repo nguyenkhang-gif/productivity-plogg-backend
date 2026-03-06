@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ _id: false })
 export class Message {
-  @Prop({ required: true, enum: ['user', 'model'] })
+  @Prop({ required: true, enum: ['user', 'model', 'assistant'] })
   role: string;
 
   @Prop({ required: true })

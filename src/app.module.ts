@@ -14,6 +14,8 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { DriveModule } from './google/drive.module';
 import { ConversationModule } from './conversation/conversation.module';
 import { BudgetModule } from './budget/budget.module';
+import { OllamaModule } from './ollama/ollama.module';
+import { PostModule } from './post/post.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -28,7 +30,9 @@ import { BudgetModule } from './budget/budget.module';
     SupabaseModule,
     DriveModule,
     ConversationModule,
-    BudgetModule
+    BudgetModule,
+    PostModule,
+    OllamaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

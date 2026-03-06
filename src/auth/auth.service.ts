@@ -28,7 +28,6 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(RefreshToken.name)
-    private refreshTokenModel: Model<RefreshTokenDocument>,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly mailService: MailService,
   ) {}

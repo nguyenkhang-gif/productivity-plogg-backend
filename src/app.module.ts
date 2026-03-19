@@ -16,6 +16,7 @@ import { ConversationModule } from './conversation/conversation.module';
 import { BudgetModule } from './budget/budget.module';
 import { OllamaModule } from './ollama/ollama.module';
 import { PostModule } from './post/post.module';
+import { TranscriptionModule } from './transcription/transcription.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -33,6 +34,7 @@ import { PostModule } from './post/post.module';
     BudgetModule,
     PostModule,
     OllamaModule,
+    TranscriptionModule
   ],
   controllers: [AppController],
   providers: [AppService],

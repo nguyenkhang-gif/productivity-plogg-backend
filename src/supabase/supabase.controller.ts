@@ -47,20 +47,7 @@ export class SupabaseController {
       publicUrl,
     };
   }
-
-  /**
-   * Tạo signed URL (nếu bucket private)
-   * GET /supabase/signed-url?path=uploads/abc.png
-   */
-  //   @Get('signed-url')
-  //   async signedUrl(@Query('path') path: string) {
-  //     const bucket = 'my-files';
-  //     const { data, error } = await this.supabaseService.client.storage
-  //       .from(bucket)
-  //       .createSignedUrl(path, 60); // URL sống 60 giây
-  //     if (error) throw new Error(error.message);
-  //     return { signedUrl: data.signedUrl };
-  //   }
+  
   @UseGuards(AuthGuard)
   @Get('my-files')
   async getMyFiles(@Req() req) {

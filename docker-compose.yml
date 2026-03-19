@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: .
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+      - WHISPER_PATH=/opt/whisper.cpp/build/bin/whisper-cli
+      - MODEL_PATH=/opt/whisper.cpp/models/ggml-base.bin
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    restart: always

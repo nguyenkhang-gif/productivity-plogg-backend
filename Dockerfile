@@ -21,11 +21,12 @@ RUN git clone https://github.com/ggerganov/whisper.cpp.git . \
         -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --config Release --target whisper-cli -j$(nproc)
 
-# Kiểm tra: Ngưỡng 800KB là an toàn cho bản build 917K của bạn
+# Kiểm tra file thực thi
 RUN ls -lh build/bin/whisper-cli && [ $(stat -c%s "build/bin/whisper-cli") -gt 800000 ]
 
-# 5. Tải model base
-RUN cd models && ./download-ggml-model.sh base
+# 5. ĐỔI TỪ BASE SANG TINY
+# Tải model tiny (nhẹ hơn, nhanh hơn)
+RUN cd models && ./download-ggml-model.sh tiny
 
 # 6. Build ứng dụng NestJS
 WORKDIR /app
@@ -34,10 +35,12 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Biến môi trường mặc định
+# --- CẤU HÌNH BIẾN MÔI TRƯỜNG ---
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV WHISPER_PATH=/opt/whisper.cpp/build/bin/whisper-cli
-ENV MODEL_PATH=/opt/whisper.cpp/models/ggml-base.bin
+
+# CẬP NHẬT ĐƯỜNG DẪN MODEL MẶC ĐỊNH SANG TINY
+ENV MODEL_PATH=/opt/whisper.cpp/models/ggml-tiny.bin
 ENV PORT=3000
 
 EXPOSE 3000

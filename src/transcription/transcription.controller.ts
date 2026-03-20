@@ -1,6 +1,6 @@
 import { 
   Controller, Post, UseInterceptors, UploadedFile, 
-  HttpException, HttpStatus, Body 
+  HttpException, HttpStatus, Body, Get, Param, NotFoundException 
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -35,10 +35,23 @@ export class TranscriptionController {
     if (!file) throw new HttpException('File not found', HttpStatus.BAD_REQUEST);
     
     try {
+      console.log(`Received file: ${file.originalname}, size: ${file.size} bytes, jobId: ${jobId}`);
+      
       const result = await this.transcriptionService.processLargeVideo(file, jobId);
       return { success: true, data: result };
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+ @Get('combined/:jobId')
+  async getCombined(@Param('jobId') jobId: string) {
+    const result = await this.transcriptionService.getCombinedContentByJobId(jobId);
+    
+    if (!result) {
+      throw new NotFoundException(`Không tìm thấy dữ liệu cho Job ID: ${jobId}`);
+    }
+
+    return result;
   }
 }

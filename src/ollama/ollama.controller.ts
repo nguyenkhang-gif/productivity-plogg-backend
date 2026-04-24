@@ -1,6 +1,5 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { OllamaService } from './ollama.service';
-import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('api/ollama')
 export class OllamaController {
@@ -12,7 +11,6 @@ export class OllamaController {
     return content;
   }
 
-  @UseGuards(AuthGuard)
   @Post('generate-with-user-id')
   async generateWithUserId(@Body() body: { prompt: string }, @Req() req) {
     const content = await this.ollamaService.promptWithUserId(

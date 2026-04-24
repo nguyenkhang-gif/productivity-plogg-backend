@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SupabaseService } from './supabase.service';
-import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('api/supabase')
 export class SupabaseController {
@@ -21,7 +20,6 @@ export class SupabaseController {
    * POST /supabase/upload
    * Body: form-data, key = file
    */
-  @UseGuards(AuthGuard)
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File, @Req() req) {
@@ -48,7 +46,6 @@ export class SupabaseController {
     };
   }
   
-  @UseGuards(AuthGuard)
   @Get('my-files')
   async getMyFiles(@Req() req) {
     const { user } = req;

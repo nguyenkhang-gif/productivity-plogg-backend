@@ -16,7 +16,6 @@ import { Types } from 'mongoose';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('api/posts')
 export class PostController {
@@ -26,7 +25,6 @@ export class PostController {
    * POST /posts
    */
 
-  @UseGuards(AuthGuard)
   @HttpPost()
   create(@Body() body: CreatePostDto, @Req() req) {
     const userId = req.user.userId;

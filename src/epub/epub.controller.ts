@@ -9,14 +9,12 @@ import {
 } from '@nestjs/common';
 import { EpubService } from './epub.service';
 import { OptionsI } from './interfaces/options.interface';
-import { AuthGuard } from 'src/auth/auth.guard';
 import { createEpubDto, generateEpubDto, parseEpubDto } from './dto/epub.dto';
 
 @Controller('api/epub')
 export class EpubController {
   constructor(private readonly epubService: EpubService) { }
 
-  @UseGuards(AuthGuard)
   @Post('create')
   async createEpub(@Body() body: { data: createEpubDto }, @Req() req) {
     try {
@@ -30,7 +28,6 @@ export class EpubController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Post('get-user-epub')
   async getUserEpub(@Req() req, @Res() res) {
     try {
@@ -68,7 +65,6 @@ export class EpubController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Post('generate-epub')
   async generateEpub(@Body() body: { data: generateEpubDto }, @Req() req) {
     try {

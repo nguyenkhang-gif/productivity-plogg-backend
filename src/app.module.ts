@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { UserModule } from './users/user.module';
-import { AuthModule } from './auth/auth.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { FirebaseModule } from './firebase/firebase.module';
 import { GeminiModule } from './gemini/gemini.module';
 import { MailModule } from './mail/mail.module';
@@ -17,12 +15,17 @@ import { BudgetModule } from './budget/budget.module';
 import { OllamaModule } from './ollama/ollama.module';
 import { PostModule } from './post/post.module';
 import { TranscriptionModule } from './transcription/transcription.module';
+import { AppConfigModule } from './infrastructure/config/config.module';
+import { AuthModule } from './infrastructure/auth/auth.module';
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-    MongooseModule.forRoot(process.env.MONGO_DB_URI),
-    UserModule,
-    AuthModule,
+    AppConfigModule,
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_DB_URI'),
+      }),
+    }),
     FirebaseModule,
     GeminiModule,
     MailModule,
@@ -34,7 +37,8 @@ import { TranscriptionModule } from './transcription/transcription.module';
     BudgetModule,
     PostModule,
     OllamaModule,
-    TranscriptionModule
+    TranscriptionModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

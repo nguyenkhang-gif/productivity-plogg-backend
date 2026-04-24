@@ -9,7 +9,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
-import { AuthGuard } from 'src/auth/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EpubService } from 'src/epub/epub.service';
 
@@ -20,14 +19,12 @@ export class GeminiController {
     private readonly epubService: EpubService,
   ) {}
 
-  @UseGuards(AuthGuard)
   @Post('prompt')
   async prompt(@Body() body: { prompt: string }) {
     const content = await this.geminiService.generateContent(body.prompt);
     return content;
   }
   
-  @UseGuards(AuthGuard)
   @Post('prompt-with-personal')
   async promptWithPersonal(@Body() body: { prompt: string },@Req() req) {
     const content = await this.geminiService.generateContentWithPersonal(
@@ -39,7 +36,6 @@ export class GeminiController {
     return content;
   }
 
-  @UseGuards(AuthGuard)
   @Post('prompt-with-actions')
   async promptWithActions(@Body() body: { prompt: string }, @Req() req) {
     const { user } = req;
@@ -112,7 +108,6 @@ export class GeminiController {
     }
   }
 
-  @UseGuards(AuthGuard)
   @Get('clear-context')
   async clearContext(@Req() req) {
     // Logic to clear context, e.g., reset session or conversation history

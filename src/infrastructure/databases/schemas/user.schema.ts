@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -14,13 +15,13 @@ export class User {
   email: string;
 
   @Prop({ required: true })
-  password: string;
-
+  passwordHash: string; // Tên ở database có thể mapping, nhưng ta giữ tên password/passwordHash tương đồng với entity. Để chuẩn, ta lưu passwordHash vì Clean Architecture. Mongoose coi đây là trường entity.
+  
   @Prop({ enum: ['male', 'female', 'other'], required: true })
   gender: string;
 
   @Prop({ required: false })
-  profilePic: string;
+  profilePic?: string;
 
   @Prop({ enum: ['basic', 'advance', 'premium'], default: 'basic' })
   membership: string;
@@ -28,11 +29,8 @@ export class User {
   @Prop({ enum: ['user', 'admin', 'moderator'], default: 'user' })
   role: string;
 
-
-
-
   @Prop({ required: false })
-  resetPasswordToken: string;
+  resetPasswordToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

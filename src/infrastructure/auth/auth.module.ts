@@ -20,10 +20,20 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET_KEY') || 'defaultSecret',
-        signOptions: { expiresIn: (configService.get<string>('JWT_EXPIRATION_TIME') || '3600s') as any },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET_KEY')?.trim() || 'defaultSecret';
+        let expiresIn = configService.get<string>('JWT_EXPIRATION_TIME') || '3600s';
+        
+        // Nếu là số thuần túy (string chỉ toàn số), thêm 's' để đảm bảo là giây thay vì miligiây
+        if (/^\d+$/.test(expiresIn)) {
+          expiresIn = `${expiresIn}s`;
+        }
+
+        return {
+          secret,
+          signOptions: { expiresIn: expiresIn as any },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

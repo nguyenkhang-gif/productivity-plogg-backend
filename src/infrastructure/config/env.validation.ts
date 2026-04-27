@@ -13,6 +13,12 @@ class EnvironmentVariables {
 
   @IsString()
   MONGO_DB_URI: string;
+
+  @IsString()
+  EMAIL_USER: string;
+
+  @IsString()
+  EMAIL_PASS: string;
 }
 
 export function validate(config: Record<string, unknown>) {

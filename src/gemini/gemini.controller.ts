@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { EpubService } from 'src/epub/epub.service';
+import { EpubService } from 'src/infrastructure/epub/epub.service';
 
 @Controller('api/gemini')
 export class GeminiController {
@@ -30,9 +30,6 @@ export class GeminiController {
     const content = await this.geminiService.generateContentWithPersonal(
       body.prompt,
     );
-    // const content = await this.geminiService.generateContentWithActionsV2(
-    //   body.prompt, req.user.userId
-    // );
     return content;
   }
 
@@ -47,14 +44,11 @@ export class GeminiController {
     return content;
   }
 
-  // @UseGuards(AuthGuard)
   @Post('prompt-to-get-json-from-html')
   async promptWithjson(@Body() body: { url: string }) {
     const html = await fetch(body.url);
+    const htmlText = await html.text(); 
 
-    const htmlText = await html.text(); // Lấy nội dung HTML từ phản hồi
-
-    // console.log("debug parese chapter ", htmlText);
     const prompt = `
       Phân tích HTML sau và TRẢ VỀ DUY NHẤT một JSON hợp lệ (không giải thích thêm).
       Nếu không tìm thấy phần nào thì để null.
@@ -72,13 +66,9 @@ export class GeminiController {
       `;
     const content: any = await this.geminiService.generateContent(prompt);
 
-    console.log(content, 'content');
-
     const jsonString = content.data.candidates[0].content.parts[0].text
       .replace(/```json|```/g, '')
       .trim();
-
-    console.log(jsonString, 'jsonString');
 
     const chapterInfo = await this.epubService.parseHtml(
       htmlText,
@@ -86,38 +76,9 @@ export class GeminiController {
       '',
     );
 
-    // return content
-    // return content.candidates[0].content.parts[0].text;
     return {
       format: JSON.parse(jsonString),
       chapterInfo: JSON.parse(JSON.stringify(chapterInfo)),
     };
-  }
-
-  @Post('prompt-with-img')
-  @UseInterceptors(FileInterceptor('file'))
-  async promptWithImg(
-    @Body() body: { prompt: string },
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    try {
-      const res = await this.geminiService.promptWithImg(body.prompt, file);
-      return res;
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  @Get('clear-context')
-  async clearContext(@Req() req) {
-    // Logic to clear context, e.g., reset session or conversation history
-    await this.geminiService.clearConversations(req.user.userId);
-    return { message: 'Context cleared successfully' };
-  }
-
-  @Post('create-brain')
-  async createBrain() {
-    const brain = await this.geminiService.createBrain({});
-    return brain;
-  }
+  } 
 }

@@ -9,7 +9,7 @@ import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
 
 // $lookup pipeline reused across all read queries
-const AUTHOR_LOOKUP = [
+const READ_PIPELINE = [
   { $addFields: { _authorObjId: { $toObjectId: '$authorId' } } },
   {
     $lookup: {
@@ -21,6 +21,22 @@ const AUTHOR_LOOKUP = [
     },
   },
   { $unwind: { path: '$_author', preserveNullAndEmptyArrays: true } },
+  {
+    $lookup: {
+      from: 'comments',
+      let: { postId: { $toString: '$_id' } },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
+        { $count: 'total' },
+      ],
+      as: '_commentCount',
+    },
+  },
+  {
+    $addFields: {
+      commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
+    },
+  },
 ];
 
 @Injectable()
@@ -47,13 +63,14 @@ export class MongoPostRepository implements PostRepository {
             profilePic: doc._author.profilePic,
           }
         : undefined,
+      commentCount: doc.commentCount ?? 0,
     });
   }
 
   async findById(id: string): Promise<PostEntity | null> {
     const [doc] = await this.postModel.aggregate([
       { $match: { $expr: { $and: [{ $eq: [{ $toString: '$_id' }, id] }, { $eq: ['$isPublished', true] }] } } },
-      ...AUTHOR_LOOKUP,
+      ...READ_PIPELINE,
     ]);
     return doc ? this.mapToDomain(doc) : null;
   }
@@ -66,7 +83,7 @@ export class MongoPostRepository implements PostRepository {
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
-        ...AUTHOR_LOOKUP,
+        ...READ_PIPELINE,
       ]),
       this.postModel.countDocuments({ isPublished: true }),
     ]);
@@ -85,7 +102,7 @@ export class MongoPostRepository implements PostRepository {
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
-        ...AUTHOR_LOOKUP,
+        ...READ_PIPELINE,
       ]),
       this.postModel.countDocuments({ authorId }),
     ]);

@@ -10,6 +10,10 @@ import {
 } from 'src/core/domain/entities/friendship.entity';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
 
+const USER_LOOKUP = [
+  { $project: { fullName: 1, username: 1, profilePic: 1 } },
+];
+
 @Injectable()
 export class MongoFriendshipRepository implements FriendshipRepository {
   constructor(
@@ -17,14 +21,22 @@ export class MongoFriendshipRepository implements FriendshipRepository {
     private readonly model: Model<FriendshipDocument>,
   ) {}
 
-  private mapToDomain(doc: FriendshipDocument): FriendshipEntity {
+  private mapToDomain(doc: any): FriendshipEntity {
     return new FriendshipEntity({
       id: doc._id.toString(),
       userId: doc.userId,
       friendId: doc.friendId,
       status: doc.status as FriendshipStatus,
-      createdAt: (doc as any).createdAt,
-      updatedAt: (doc as any).updatedAt,
+      friendInfo: doc._friendInfo
+        ? {
+            id: doc._friendInfo._id.toString(),
+            fullName: doc._friendInfo.fullName,
+            username: doc._friendInfo.username,
+            profilePic: doc._friendInfo.profilePic,
+          }
+        : undefined,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     });
   }
 
@@ -45,28 +57,35 @@ export class MongoFriendshipRepository implements FriendshipRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
+  // friendInfo = người kia (không phải currentUser)
   async findFriends(userId: string): Promise<FriendshipEntity[]> {
-    const docs = await this.model
-      .find({
-        $or: [{ userId }, { friendId: userId }],
-        status: 'accepted',
-      })
-      .exec();
-    return docs.map((d) => this.mapToDomain(d));
+    return this.model.aggregate([
+      { $match: { $or: [{ userId }, { friendId: userId }], status: 'accepted' } },
+      { $addFields: { _otherUserId: { $cond: [{ $eq: ['$userId', userId] }, '$friendId', '$userId'] } } },
+      { $addFields: { _otherObjId: { $toObjectId: '$_otherUserId' } } },
+      { $lookup: { from: 'users', localField: '_otherObjId', foreignField: '_id', pipeline: USER_LOOKUP, as: '_friendArr' } },
+      { $addFields: { _friendInfo: { $arrayElemAt: ['$_friendArr', 0] } } },
+    ]).then((docs) => docs.map((d) => this.mapToDomain(d)));
   }
 
+  // friendInfo = người gửi (userId)
   async findPendingReceived(userId: string): Promise<FriendshipEntity[]> {
-    const docs = await this.model
-      .find({ friendId: userId, status: 'pending' })
-      .exec();
-    return docs.map((d) => this.mapToDomain(d));
+    return this.model.aggregate([
+      { $match: { friendId: userId, status: 'pending' } },
+      { $addFields: { _senderObjId: { $toObjectId: '$userId' } } },
+      { $lookup: { from: 'users', localField: '_senderObjId', foreignField: '_id', pipeline: USER_LOOKUP, as: '_friendArr' } },
+      { $addFields: { _friendInfo: { $arrayElemAt: ['$_friendArr', 0] } } },
+    ]).then((docs) => docs.map((d) => this.mapToDomain(d)));
   }
 
+  // friendInfo = người nhận (friendId)
   async findPendingSent(userId: string): Promise<FriendshipEntity[]> {
-    const docs = await this.model
-      .find({ userId, status: 'pending' })
-      .exec();
-    return docs.map((d) => this.mapToDomain(d));
+    return this.model.aggregate([
+      { $match: { userId, status: 'pending' } },
+      { $addFields: { _receiverObjId: { $toObjectId: '$friendId' } } },
+      { $lookup: { from: 'users', localField: '_receiverObjId', foreignField: '_id', pipeline: USER_LOOKUP, as: '_friendArr' } },
+      { $addFields: { _friendInfo: { $arrayElemAt: ['$_friendArr', 0] } } },
+    ]).then((docs) => docs.map((d) => this.mapToDomain(d)));
   }
 
   async create(friendship: FriendshipEntity): Promise<FriendshipEntity> {

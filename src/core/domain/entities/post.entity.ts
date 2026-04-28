@@ -15,6 +15,7 @@ export class Post {
   createdAt?: Date;
   updatedAt?: Date;
   author?: PostAuthor;
+  commentCount?: number;
 
   constructor(partial: Partial<Post>) {
     Object.assign(this, partial);

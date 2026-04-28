@@ -5,13 +5,10 @@ import { Epub, EpubDocument } from 'src/infrastructure/databases/schemas/epub.sc
 import { epubI, OptionsI } from 'src/core/domain/epub.interfaces';
 import EpubApi from 'epub-gen-memory';
 import * as Cheerio from 'cheerio';
-import { SupabaseService } from 'src/supabase/supabase.service';
-
 @Injectable()
 export class EpubService {
   constructor(
     @InjectModel(Epub.name) private epubModel: Model<EpubDocument>,
-    private readonly supabaseService: SupabaseService,
   ) { }
 
   async create(item: epubI): Promise<Epub> {
@@ -78,7 +75,7 @@ export class EpubService {
     return epub;
   }
 
-  async generateEpub(options: OptionsI, userId: string): Promise<string> {
+  async generateEpub(options: OptionsI, userId: string): Promise<Buffer> {
     try {
       const epubOptions = {
         title: options.title || 'Default Title',
@@ -100,33 +97,7 @@ export class EpubService {
         })),
       );
 
-      const mockFile: Express.Multer.File = {
-        fieldname: 'file',
-        originalname: `${epubOptions.title.replace(/[^a-zA-Z0-9]/g, '_')}.epub`,
-        encoding: '7bit',
-        mimetype: 'application/epub+zip',
-        buffer: buffer,
-        size: buffer.length,
-        stream: null,
-        destination: '',
-        filename: `${epubOptions.title.replace(/[^a-zA-Z0-9]/g, '_')}.epub`,
-        path: '',
-      };
-
-      const bucket = process.env.SUPABASE_BUCKET_NAME;
-      const filePath = `uploads/${userId || 'random'}/${Date.now()}-${mockFile.originalname}`;
-
-      await this.supabaseService.uploadFile(
-        bucket,
-        filePath,
-        mockFile.buffer,
-        mockFile.mimetype,
-      );
-
-      const publicUrl = this.supabaseService.getPublicUrl(bucket, filePath);
-
-      console.log(`File uploaded to Supabase: ${publicUrl}`);
-      return publicUrl;
+      return buffer;
     } catch (error) {
       console.error('Error generating and uploading EPUB:', error);
       throw error;

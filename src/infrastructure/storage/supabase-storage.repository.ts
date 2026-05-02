@@ -52,4 +52,10 @@ export class SupabaseStorageRepository implements FileStorageRepository {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
+
+  async deleteFile(fileName: string, userId: string, bucket: StorageBucket): Promise<void> {
+    const path = `${userId}/${fileName}`;
+    const { error } = await this.client.storage.from(bucket).remove([path]);
+    if (error) throw new Error(error.message);
+  }
 }

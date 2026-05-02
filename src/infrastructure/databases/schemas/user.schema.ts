@@ -29,6 +29,9 @@ export class User {
   @Prop({ enum: ['user', 'admin', 'moderator'], default: 'user' })
   role: string;
 
+  @Prop({ default: false })
+  isPrivate: boolean;
+
   @Prop({ required: false })
   resetPasswordToken?: string;
 }

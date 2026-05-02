@@ -22,4 +22,5 @@ export interface PaginatedFiles {
 export interface FileStorageRepository {
   upload(file: Express.Multer.File, userId: string, bucket?: StorageBucket): Promise<string>;
   listFiles(userId: string, bucket: StorageBucket, page: number, limit: number): Promise<PaginatedFiles>;
+  deleteFile(fileName: string, userId: string, bucket: StorageBucket): Promise<void>;
 }

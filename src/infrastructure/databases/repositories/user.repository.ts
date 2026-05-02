@@ -22,6 +22,7 @@ export class MongoUserRepository implements UserRepository {
       profilePic: userDoc.profilePic,
       membership: userDoc.membership,
       role: userDoc.role,
+      isPrivate: userDoc.isPrivate,
       resetPasswordToken: userDoc.resetPasswordToken,
       createdAt: (userDoc as any).createdAt,
       updatedAt: (userDoc as any).updatedAt,
@@ -55,6 +56,19 @@ export class MongoUserRepository implements UserRepository {
     });
     const savedUser = await createdUser.save();
     return this.mapToDomain(savedUser);
+  }
+
+  async search(query: string, excludeUserId: string): Promise<UserEntity[]> {
+    const regex = new RegExp(query, 'i');
+    const docs = await this.userModel
+      .find({
+        _id: { $ne: excludeUserId },
+        $or: [{ username: regex }, { fullName: regex }],
+      })
+      .select('fullName username profilePic')
+      .limit(20)
+      .exec();
+    return docs.map((doc) => this.mapToDomain(doc));
   }
 
   async update(id: string, userUpdate: Partial<UserEntity>): Promise<UserEntity> {

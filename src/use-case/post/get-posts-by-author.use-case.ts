@@ -11,7 +11,7 @@ export class GetPostsByAuthorUseCase {
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
   ) {}
 
-  async execute(authorId: string, page = 1, limit = 10): Promise<PaginatedPosts> {
-    return this.postRepo.findByAuthor(authorId, page, limit);
+  async execute(authorId: string, page = 1, limit = 10, currentUserId: string): Promise<PaginatedPosts> {
+    return this.postRepo.findByAuthor(authorId, page, limit, currentUserId);
   }
 }

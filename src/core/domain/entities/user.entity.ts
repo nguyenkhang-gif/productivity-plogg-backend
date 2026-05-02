@@ -8,6 +8,7 @@ export class User {
     profilePic?: string;
     membership?: string;
     role?: string;
+    isPrivate?: boolean;
     resetPasswordToken?: string;
     createdAt?: Date;
     updatedAt?: Date;

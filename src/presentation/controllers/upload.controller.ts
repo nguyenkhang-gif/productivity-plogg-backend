@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { UploadFileUseCase } from 'src/use-case/storage/upload-file.use-case';
@@ -40,5 +40,17 @@ export class UploadController {
     @Query('limit') limit = '20',
   ) {
     return this.uploadFile.listFiles(req.user.userId, 'icons', +page, +limit);
+  }
+
+  @Delete('files/:fileName')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteFile(@Param('fileName') fileName: string, @Req() req) {
+    await this.uploadFile.deleteFile(fileName, req.user.userId, 'upload');
+  }
+
+  @Delete('icons/:fileName')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteIcon(@Param('fileName') fileName: string, @Req() req) {
+    await this.uploadFile.deleteFile(fileName, req.user.userId, 'icons');
   }
 }

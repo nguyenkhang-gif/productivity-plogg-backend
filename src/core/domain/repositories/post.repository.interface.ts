@@ -14,8 +14,8 @@ export interface PaginatedPosts {
 
 export interface PostRepository {
   findById(id: string): Promise<Post | null>;
-  findAll(page: number, limit: number): Promise<PaginatedPosts>;
-  findByAuthor(authorId: string, page: number, limit: number): Promise<PaginatedPosts>;
+  findAll(page: number, limit: number, currentUserId: string): Promise<PaginatedPosts>;
+  findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts>;
   create(post: Post): Promise<Post>;
   update(id: string, post: Partial<Post>): Promise<Post>;
   delete(id: string): Promise<void>;

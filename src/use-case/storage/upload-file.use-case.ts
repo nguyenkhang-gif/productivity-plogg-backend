@@ -14,4 +14,8 @@ export class UploadFileUseCase {
   async listFiles(userId: string, bucket: StorageBucket, page = 1, limit = 20): Promise<PaginatedFiles> {
     return this.storageRepo.listFiles(userId, bucket, page, limit);
   }
+
+  async deleteFile(fileName: string, userId: string, bucket: StorageBucket): Promise<void> {
+    return this.storageRepo.deleteFile(fileName, userId, bucket);
+  }
 }

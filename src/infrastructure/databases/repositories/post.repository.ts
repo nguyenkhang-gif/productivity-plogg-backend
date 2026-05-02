@@ -8,7 +8,7 @@ import {
 import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
 
-// $lookup pipeline reused across all read queries
+// Joins author info (including isPrivate) and comment count
 const READ_PIPELINE = [
   { $addFields: { _authorObjId: { $toObjectId: '$authorId' } } },
   {
@@ -17,7 +17,7 @@ const READ_PIPELINE = [
       localField: '_authorObjId',
       foreignField: '_id',
       as: '_author',
-      pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1 } }],
+      pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1, isPrivate: 1 } }],
     },
   },
   { $unwind: { path: '$_author', preserveNullAndEmptyArrays: true } },
@@ -35,6 +35,55 @@ const READ_PIPELINE = [
   {
     $addFields: {
       commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
+    },
+  },
+];
+
+// Build privacy filter stages for a given viewer:
+// - author is public, OR viewer is the author, OR viewer is an accepted friend
+const buildVisibilityPipeline = (currentUserId: string) => [
+  { $addFields: { _authorObjId: { $toObjectId: '$authorId' } } },
+  {
+    $lookup: {
+      from: 'users',
+      localField: '_authorObjId',
+      foreignField: '_id',
+      as: '_authorMeta',
+      pipeline: [{ $project: { isPrivate: 1 } }],
+    },
+  },
+  { $unwind: { path: '$_authorMeta', preserveNullAndEmptyArrays: true } },
+  {
+    $lookup: {
+      from: 'friendships',
+      let: { authorId: '$authorId' },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ['$status', 'accepted'] },
+                {
+                  $or: [
+                    { $and: [{ $eq: ['$userId', currentUserId] }, { $eq: ['$friendId', '$$authorId'] }] },
+                    { $and: [{ $eq: ['$friendId', currentUserId] }, { $eq: ['$userId', '$$authorId'] }] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+      as: '_friendship',
+    },
+  },
+  {
+    $match: {
+      $or: [
+        { '_authorMeta.isPrivate': { $ne: true } },
+        { '_friendship': { $ne: [] } },
+        { authorId: currentUserId },
+      ],
     },
   },
 ];
@@ -75,40 +124,46 @@ export class MongoPostRepository implements PostRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
-  async findAll(page: number, limit: number): Promise<PaginatedPosts> {
+  async findAll(page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      this.postModel.aggregate([
-        { $match: { isPublished: true } },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit },
-        ...READ_PIPELINE,
-      ]),
-      this.postModel.countDocuments({ isPublished: true }),
+
+    const [result] = await this.postModel.aggregate([
+      { $match: { isPublished: true } },
+      ...buildVisibilityPipeline(currentUserId),
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          items: [{ $skip: skip }, { $limit: limit }, ...READ_PIPELINE],
+          total: [{ $count: 'count' }],
+        },
+      },
     ]);
 
+    const total = result.total[0]?.count ?? 0;
     return {
-      items: items.map((doc) => this.mapToDomain(doc)),
+      items: result.items.map((doc) => this.mapToDomain(doc)),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  async findByAuthor(authorId: string, page: number, limit: number): Promise<PaginatedPosts> {
+  async findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      this.postModel.aggregate([
-        { $match: { authorId } },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit },
-        ...READ_PIPELINE,
-      ]),
-      this.postModel.countDocuments({ authorId }),
+
+    const [result] = await this.postModel.aggregate([
+      { $match: { authorId, isPublished: true } },
+      ...buildVisibilityPipeline(currentUserId),
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          items: [{ $skip: skip }, { $limit: limit }, ...READ_PIPELINE],
+          total: [{ $count: 'count' }],
+        },
+      },
     ]);
 
+    const total = result.total[0]?.count ?? 0;
     return {
-      items: items.map((doc) => this.mapToDomain(doc)),
+      items: result.items.map((doc) => this.mapToDomain(doc)),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

@@ -11,7 +11,7 @@ export class GetPostsUseCase {
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
   ) {}
 
-  async execute(page = 1, limit = 10): Promise<PaginatedPosts> {
-    return this.postRepo.findAll(page, limit);
+  async execute(page = 1, limit = 10, currentUserId: string): Promise<PaginatedPosts> {
+    return this.postRepo.findAll(page, limit, currentUserId);
   }
 }

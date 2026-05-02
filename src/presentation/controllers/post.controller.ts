@@ -39,23 +39,28 @@ export class PostController {
     return this.createPost.execute({ ...body, authorId: req.user.userId });
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Req() req,
   ) {
-    return this.getPosts.execute(Number(page), Number(limit));
+    return this.getPosts.execute(Number(page), Number(limit), req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('author/:authorId')
   findByAuthor(
     @Param('authorId') authorId: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Req() req,
   ) {
-    return this.getPostsByAuthor.execute(authorId, Number(page), Number(limit));
+    return this.getPostsByAuthor.execute(authorId, Number(page), Number(limit), req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.getPost.execute(id);

@@ -11,6 +11,10 @@ import { ValidateUserUseCase } from 'src/use-case/auth/validate-user.use-case';
 import { LoginUseCase } from 'src/use-case/auth/login.use-case';
 import { RegisterUseCase } from 'src/use-case/auth/register.use-case';
 import { ProfileUseCase } from 'src/use-case/auth/profile.use-case';
+import { UpdateProfileUseCase } from 'src/use-case/auth/update-profile.use-case';
+import { SearchUsersUseCase } from 'src/use-case/auth/search-users.use-case';
+import { GetUserProfileUseCase } from 'src/use-case/auth/get-user-profile.use-case';
+import { UserController } from 'src/presentation/controllers/user.controller';
 import { LocalStrategy } from './strategies/local.stradegy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -36,7 +40,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UserController],
   providers: [
     {
       provide: USER_REPOSITORY,
@@ -46,6 +50,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     LoginUseCase,
     RegisterUseCase,
     ProfileUseCase,
+    UpdateProfileUseCase,
+    SearchUsersUseCase,
+    GetUserProfileUseCase,
     LocalStrategy,
     JwtStrategy,
   ],

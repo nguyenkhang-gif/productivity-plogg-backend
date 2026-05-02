@@ -38,6 +38,7 @@
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.0.0",
     "class-validator": "^0.14.1",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "epub-gen": "^0.1.0",
     "epub-gen-memory": "^1.1.2",

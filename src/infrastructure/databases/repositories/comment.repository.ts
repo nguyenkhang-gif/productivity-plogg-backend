@@ -83,14 +83,7 @@ export class MongoCommentRepository implements CommentRepository {
       iconUrl: comment.iconUrl,
     });
     const saved = await created.save();
-    return new CommentEntity({
-      id: saved._id.toString(),
-      postId: saved.postId,
-      authorId: saved.authorId,
-      content: saved.content,
-      createdAt: (saved as any).createdAt,
-      updatedAt: (saved as any).updatedAt,
-    });
+    return this.findById(saved._id.toString());
   }
 
   async update(id: string, content: string): Promise<CommentEntity> {

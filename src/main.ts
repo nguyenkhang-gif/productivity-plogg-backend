@@ -16,7 +16,7 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
 
   app.enableCors({
-    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000'], 
+    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000', 'http://34.206.37.238'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true, 
   });

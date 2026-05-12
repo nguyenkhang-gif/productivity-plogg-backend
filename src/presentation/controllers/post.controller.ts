@@ -62,8 +62,8 @@ export class PostController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.getPost.execute(id);
+  findOne(@Param('id') id: string, @Req() req) {
+    return this.getPost.execute(id, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)

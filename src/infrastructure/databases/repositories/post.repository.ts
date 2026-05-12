@@ -8,85 +8,163 @@ import {
 import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
 
-// Joins author info (including isPrivate) and comment count
-const READ_PIPELINE = [
-  { $addFields: { _authorObjId: { $toObjectId: '$authorId' } } },
-  {
-    $lookup: {
-      from: 'users',
-      localField: '_authorObjId',
-      foreignField: '_id',
-      as: '_author',
-      pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1, isPrivate: 1 } }],
-    },
-  },
-  { $unwind: { path: '$_author', preserveNullAndEmptyArrays: true } },
-  {
-    $lookup: {
-      from: 'comments',
-      let: { postId: { $toString: '$_id' } },
-      pipeline: [
-        { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
-        { $count: 'total' },
-      ],
-      as: '_commentCount',
-    },
-  },
-  {
-    $addFields: {
-      commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
-    },
-  },
-];
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
-// Build privacy filter stages for a given viewer:
-// - author is public, OR viewer is the author, OR viewer is an accepted friend
-const buildVisibilityPipeline = (currentUserId: string) => [
-  { $addFields: { _authorObjId: { $toObjectId: '$authorId' } } },
-  {
-    $lookup: {
-      from: 'users',
-      localField: '_authorObjId',
-      foreignField: '_id',
-      as: '_authorMeta',
-      pipeline: [{ $project: { isPrivate: 1 } }],
-    },
+const ADD_AUTHOR_OBJ_ID = {
+  $addFields: { _authorObjId: { $toObjectId: '$authorId' } },
+};
+
+// ─── Read pipeline ────────────────────────────────────────────────────────────
+
+const LOOKUP_AUTHOR = {
+  $lookup: {
+    from: 'users',
+    localField: '_authorObjId',
+    foreignField: '_id',
+    as: '_author',
+    pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1, isPrivate: 1 } }],
   },
-  { $unwind: { path: '$_authorMeta', preserveNullAndEmptyArrays: true } },
-  {
-    $lookup: {
-      from: 'friendships',
-      let: { authorId: '$authorId' },
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $and: [
-                { $eq: ['$status', 'accepted'] },
-                {
-                  $or: [
-                    { $and: [{ $eq: ['$userId', currentUserId] }, { $eq: ['$friendId', '$$authorId'] }] },
-                    { $and: [{ $eq: ['$friendId', currentUserId] }, { $eq: ['$userId', '$$authorId'] }] },
-                  ],
-                },
-              ],
-            },
+};
+
+const UNWIND_AUTHOR = {
+  $unwind: { path: '$_author', preserveNullAndEmptyArrays: true },
+};
+
+const LOOKUP_COMMENT_COUNT = {
+  $lookup: {
+    from: 'comments',
+    let: { postId: { $toString: '$_id' } },
+    pipeline: [
+      { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
+      { $count: 'total' },
+    ],
+    as: '_commentCount',
+  },
+};
+
+const LOOKUP_REACT_COUNT = {
+  $lookup: {
+    from: 'reactions',
+    let: { postId: { $toString: '$_id' } },
+    pipeline: [
+      { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
+      { $count: 'total' },
+    ],
+    as: '_reactCount',
+  },
+};
+
+const buildLookupUserReaction = (userId: string) => ({
+  $lookup: {
+    from: 'reactions',
+    let: { postId: { $toString: '$_id' } },
+    pipeline: [
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: ['$postId', '$$postId'] },
+              { $eq: ['$userId', userId] },
+            ],
           },
         },
-      ],
-      as: '_friendship',
-    },
+      },
+    ],
+    as: '_userReaction',
   },
-  {
-    $match: {
-      $or: [
-        { '_authorMeta.isPrivate': { $ne: true } },
-        { '_friendship': { $ne: [] } },
-        { authorId: currentUserId },
-      ],
-    },
+});
+
+const buildAddComputedFields = (currentUserId?: string) => ({
+  $addFields: {
+    commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
+    reactCount: { $ifNull: [{ $arrayElemAt: ['$_reactCount.total', 0] }, 0] },
+    userReaction: currentUserId
+      ? {
+          $cond: {
+            if: { $gt: [{ $size: '$_userReaction' }, 0] },
+            then: {
+              type: { $arrayElemAt: ['$_userReaction.type', 0] },
+              icon: { $arrayElemAt: ['$_userReaction.icon', 0] },
+            },
+            else: null,
+          },
+        }
+      : null,
   },
+});
+
+const buildReadPipeline = (currentUserId?: string) => [
+  ADD_AUTHOR_OBJ_ID,
+  LOOKUP_AUTHOR,
+  UNWIND_AUTHOR,
+  LOOKUP_COMMENT_COUNT,
+  LOOKUP_REACT_COUNT,
+  ...(currentUserId ? [buildLookupUserReaction(currentUserId)] : []),
+  buildAddComputedFields(currentUserId),
 ];
+
+// ─── Visibility pipeline ──────────────────────────────────────────────────────
+
+const LOOKUP_AUTHOR_PRIVACY = {
+  $lookup: {
+    from: 'users',
+    localField: '_authorObjId',
+    foreignField: '_id',
+    as: '_authorMeta',
+    pipeline: [{ $project: { isPrivate: 1 } }],
+  },
+};
+
+const UNWIND_AUTHOR_META = {
+  $unwind: { path: '$_authorMeta', preserveNullAndEmptyArrays: true },
+};
+
+const buildLookupFriendship = (currentUserId: string) => ({
+  $lookup: {
+    from: 'friendships',
+    let: { authorId: '$authorId' },
+    pipeline: [
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: ['$status', 'accepted'] },
+              {
+                $or: [
+                  { $and: [{ $eq: ['$userId', currentUserId] }, { $eq: ['$friendId', '$$authorId'] }] },
+                  { $and: [{ $eq: ['$friendId', currentUserId] }, { $eq: ['$userId', '$$authorId'] }] },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    ],
+    as: '_friendship',
+  },
+});
+
+const buildVisibilityMatch = (currentUserId: string) => ({
+  $match: {
+    $or: [
+      { '_authorMeta.isPrivate': { $ne: true } },
+      { '_friendship': { $ne: [] } },
+      { authorId: currentUserId },
+    ],
+  },
+});
+
+// Filters out posts the viewer has no right to see:
+// - author is public, OR viewer is the author, OR viewer is an accepted friend
+const buildVisibilityPipeline = (currentUserId: string) => [
+  ADD_AUTHOR_OBJ_ID,
+  LOOKUP_AUTHOR_PRIVACY,
+  UNWIND_AUTHOR_META,
+  buildLookupFriendship(currentUserId),
+  buildVisibilityMatch(currentUserId),
+];
+
+// ─── Repository ───────────────────────────────────────────────────────────────
 
 @Injectable()
 export class MongoPostRepository implements PostRepository {
@@ -100,7 +178,7 @@ export class MongoPostRepository implements PostRepository {
       authorId: doc.authorId,
       content: doc.content,
       imageUrls: doc.imageUrls,
-      likesCount: doc.likesCount,
+      reactCount: doc.reactCount ?? 0,
       isPublished: doc.isPublished,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
@@ -113,13 +191,14 @@ export class MongoPostRepository implements PostRepository {
           }
         : undefined,
       commentCount: doc.commentCount ?? 0,
+      userReaction: doc.userReaction ?? null,
     });
   }
 
-  async findById(id: string): Promise<PostEntity | null> {
+  async findById(id: string, currentUserId?: string): Promise<PostEntity | null> {
     const [doc] = await this.postModel.aggregate([
       { $match: { $expr: { $and: [{ $eq: [{ $toString: '$_id' }, id] }, { $eq: ['$isPublished', true] }] } } },
-      ...READ_PIPELINE,
+      ...buildReadPipeline(currentUserId),
     ]);
     return doc ? this.mapToDomain(doc) : null;
   }
@@ -133,7 +212,7 @@ export class MongoPostRepository implements PostRepository {
       { $sort: { createdAt: -1 } },
       {
         $facet: {
-          items: [{ $skip: skip }, { $limit: limit }, ...READ_PIPELINE],
+          items: [{ $skip: skip }, { $limit: limit }, ...buildReadPipeline(currentUserId)],
           total: [{ $count: 'count' }],
         },
       },
@@ -155,7 +234,7 @@ export class MongoPostRepository implements PostRepository {
       { $sort: { createdAt: -1 } },
       {
         $facet: {
-          items: [{ $skip: skip }, { $limit: limit }, ...READ_PIPELINE],
+          items: [{ $skip: skip }, { $limit: limit }, ...buildReadPipeline(currentUserId)],
           total: [{ $count: 'count' }],
         },
       },
@@ -181,7 +260,7 @@ export class MongoPostRepository implements PostRepository {
       authorId: saved.authorId,
       content: saved.content,
       imageUrls: saved.imageUrls,
-      likesCount: saved.likesCount,
+      reactCount: 0,
       isPublished: saved.isPublished,
       createdAt: (saved as any).createdAt,
       updatedAt: (saved as any).updatedAt,
@@ -198,7 +277,7 @@ export class MongoPostRepository implements PostRepository {
       authorId: updated.authorId,
       content: updated.content,
       imageUrls: updated.imageUrls,
-      likesCount: updated.likesCount,
+      reactCount: 0,
       isPublished: updated.isPublished,
       createdAt: (updated as any).createdAt,
       updatedAt: (updated as any).updatedAt,

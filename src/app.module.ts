@@ -16,6 +16,7 @@ import { FriendshipModule } from './infrastructure/friendship/friendship.module'
 import { CommentModule } from './infrastructure/comment/comment.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
+import { ReactionModule } from './infrastructure/reaction/reaction.module';
 @Module({
   imports: [
     AppConfigModule,
@@ -37,6 +38,7 @@ import { StorageModule } from './infrastructure/storage/storage.module';
     CommentModule,
     ChatModule,
     StorageModule,
+    ReactionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

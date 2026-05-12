@@ -13,7 +13,7 @@ export interface PaginatedPosts {
 }
 
 export interface PostRepository {
-  findById(id: string): Promise<Post | null>;
+  findById(id: string, currentUserId?: string): Promise<Post | null>;
   findAll(page: number, limit: number, currentUserId: string): Promise<PaginatedPosts>;
   findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts>;
   create(post: Post): Promise<Post>;

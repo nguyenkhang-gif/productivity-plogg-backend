@@ -11,8 +11,8 @@ export class GetPostUseCase {
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
   ) {}
 
-  async execute(id: string): Promise<Post> {
-    const post = await this.postRepo.findById(id);
+  async execute(id: string, currentUserId?: string): Promise<Post> {
+    const post = await this.postRepo.findById(id, currentUserId);
     if (!post) throw new NotFoundException('Post not found');
     return post;
   }

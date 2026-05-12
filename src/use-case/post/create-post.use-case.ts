@@ -22,7 +22,7 @@ export class CreatePostUseCase {
       authorId: input.authorId,
       content: input.content,
       imageUrls: input.imageUrls ?? [],
-      likesCount: 0,
+      reactCount: 0,
       isPublished: true,
     });
     return this.postRepo.create(post);

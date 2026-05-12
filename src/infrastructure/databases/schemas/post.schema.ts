@@ -14,9 +14,6 @@ export class Post {
   @Prop({ type: [String], default: [] })
   imageUrls: string[];
 
-  @Prop({ default: 0 })
-  likesCount: number;
-
   @Prop({ default: true })
   isPublished: boolean;
 }

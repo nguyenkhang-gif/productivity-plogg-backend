@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { GeminiModule } from './gemini/gemini.module';
 import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './google/drive.module';
@@ -26,7 +25,6 @@ import { ReactionModule } from './infrastructure/reaction/reaction.module';
         uri: configService.get<string>('MONGO_DB_URI'),
       }),
     }),
-    GeminiModule,
     MailModule,
     EpubModule,
     DriveModule,

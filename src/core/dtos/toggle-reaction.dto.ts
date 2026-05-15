@@ -1,8 +1,17 @@
-import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEnum, IsOptional, IsUrl } from 'class-validator';
+
+export enum ReactionType {
+  LIKE = 'like',
+  LOVE = 'love',
+  HAHA = 'haha',
+  WOW = 'wow',
+  SAD = 'sad',
+  ANGRY = 'angry',
+}
 
 export class ToggleReactionDto {
-  @IsString()
-  type: string;
+  @IsEnum(ReactionType)
+  type: ReactionType;
 
   @IsOptional()
   @IsUrl()

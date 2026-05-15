@@ -63,3 +63,6 @@ UPLOAD_API.md
 
 # Claude Code
 .claude/
+
+# Docs (internal planning, not for repo)
+docs/

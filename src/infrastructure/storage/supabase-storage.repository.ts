@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { FileItem, FileStorageRepository, PaginatedFiles, StorageBucket } from 'src/core/domain/repositories/file-storage.repository.interface';
-
+import * as ws from 'ws';
 @Injectable()
 export class SupabaseStorageRepository implements FileStorageRepository {
   private client: SupabaseClient;
@@ -11,7 +11,10 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     this.client = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } },
+      {
+        auth: { persistSession: false },
+        realtime: { transport: ws as any },
+      },
     );
   }
 

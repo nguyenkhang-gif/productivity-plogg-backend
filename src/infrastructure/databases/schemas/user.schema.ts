@@ -14,10 +14,10 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
-  passwordHash: string; // Tên ở database có thể mapping, nhưng ta giữ tên password/passwordHash tương đồng với entity. Để chuẩn, ta lưu passwordHash vì Clean Architecture. Mongoose coi đây là trường entity.
+  @Prop({ required: false, default: '' })
+  passwordHash: string;
   
-  @Prop({ enum: ['male', 'female', 'other'], required: true })
+  @Prop({ enum: ['male', 'female', 'other'], required: false, default: 'other' })
   gender: string;
 
   @Prop({ required: false })
@@ -34,6 +34,12 @@ export class User {
 
   @Prop({ required: false })
   resetPasswordToken?: string;
+
+  @Prop({ required: false })
+  googleId?: string;
+
+  @Prop({ required: false })
+  facebookId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

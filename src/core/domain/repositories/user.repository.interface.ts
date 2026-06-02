@@ -9,4 +9,6 @@ export interface UserRepository {
   create(user: User): Promise<User>;
   update(id: string, user: Partial<User>): Promise<User>;
   search(query: string, excludeUserId: string): Promise<User[]>;
+  findByGoogleId(googleId: string): Promise<User | null>;
+  findByFacebookId(facebookId: string): Promise<User | null>;
 }

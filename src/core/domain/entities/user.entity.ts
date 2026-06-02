@@ -10,6 +10,8 @@ export class User {
     role?: string;
     isPrivate?: boolean;
     resetPasswordToken?: string;
+    googleId?: string;
+  facebookId?: string;
     createdAt?: Date;
     updatedAt?: Date;
   

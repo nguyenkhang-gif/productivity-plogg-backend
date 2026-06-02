@@ -24,6 +24,8 @@ export class MongoUserRepository implements UserRepository {
       role: userDoc.role,
       isPrivate: userDoc.isPrivate,
       resetPasswordToken: userDoc.resetPasswordToken,
+      googleId: (userDoc as any).googleId,
+      facebookId: (userDoc as any).facebookId,
       createdAt: (userDoc as any).createdAt,
       updatedAt: (userDoc as any).updatedAt,
     });
@@ -45,6 +47,16 @@ export class MongoUserRepository implements UserRepository {
     return this.mapToDomain(userDoc);
   }
 
+  async findByGoogleId(googleId: string): Promise<UserEntity | null> {
+    const userDoc = await this.userModel.findOne({ googleId }).exec();
+    return userDoc ? this.mapToDomain(userDoc) : null;
+  }
+
+  async findByFacebookId(facebookId: string): Promise<UserEntity | null> {
+    const userDoc = await this.userModel.findOne({ facebookId }).exec();
+    return userDoc ? this.mapToDomain(userDoc) : null;
+  }
+
   async create(user: UserEntity): Promise<UserEntity> {
     const createdUser = new this.userModel({
       fullName: user.fullName,
@@ -53,6 +65,8 @@ export class MongoUserRepository implements UserRepository {
       passwordHash: user.passwordHash,
       gender: user.gender,
       profilePic: user.profilePic,
+      googleId: user.googleId,
+      facebookId: user.facebookId,
     });
     const savedUser = await createdUser.save();
     return this.mapToDomain(savedUser);

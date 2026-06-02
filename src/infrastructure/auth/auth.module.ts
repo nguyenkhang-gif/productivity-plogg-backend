@@ -17,6 +17,8 @@ import { GetUserProfileUseCase } from 'src/use-case/auth/get-user-profile.use-ca
 import { UserController } from 'src/presentation/controllers/user.controller';
 import { LocalStrategy } from './strategies/local.stradegy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleAuthUseCase } from 'src/use-case/auth/google-auth.use-case';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     GetUserProfileUseCase,
     LocalStrategy,
     JwtStrategy,
+    GoogleStrategy,
+    GoogleAuthUseCase,
   ],
 })
 export class AuthModule {}

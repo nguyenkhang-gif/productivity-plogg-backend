@@ -1,3 +1,4 @@
+import './polyfills';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { IoAdapter } from '@nestjs/platform-socket.io';
@@ -16,7 +17,7 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
 
   app.enableCors({
-    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000', 'http://34.206.37.238'],
+    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000', 'http://34.206.37.238', 'http://107.21.107.160', 'http://knnpb.duckdns.org'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true, 
   });

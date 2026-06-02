@@ -4,6 +4,8 @@ import { Reaction, ReactionSchema } from 'src/infrastructure/databases/schemas/r
 import { MongoReactionRepository } from 'src/infrastructure/databases/repositories/reaction.repository';
 import { REACTION_REPOSITORY } from 'src/core/domain/repositories/reaction.repository.interface';
 import { Post, PostSchema } from 'src/infrastructure/databases/schemas/post.schema';
+import { User, UserSchema } from 'src/infrastructure/databases/schemas/user.schema';
+import { Friendship, FriendshipSchema } from 'src/infrastructure/databases/schemas/friendship.schema';
 import { MongoPostRepository } from 'src/infrastructure/databases/repositories/post.repository';
 import { POST_REPOSITORY } from 'src/core/domain/repositories/post.repository.interface';
 import { ReactionController } from 'src/presentation/controllers/reaction.controller';
@@ -15,6 +17,8 @@ import { RemoveReactionUseCase } from 'src/use-case/reaction/remove-reaction.use
     MongooseModule.forFeature([
       { name: Reaction.name, schema: ReactionSchema },
       { name: Post.name, schema: PostSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Friendship.name, schema: FriendshipSchema },
     ]),
   ],
   controllers: [ReactionController],

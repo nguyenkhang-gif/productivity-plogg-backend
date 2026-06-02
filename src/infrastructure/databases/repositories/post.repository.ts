@@ -7,6 +7,8 @@ import {
 } from 'src/core/domain/repositories/post.repository.interface';
 import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
+import { User, UserDocument } from '../schemas/user.schema';
+import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -103,66 +105,6 @@ const buildReadPipeline = (currentUserId?: string) => [
   buildAddComputedFields(currentUserId),
 ];
 
-// ─── Visibility pipeline ──────────────────────────────────────────────────────
-
-const LOOKUP_AUTHOR_PRIVACY = {
-  $lookup: {
-    from: 'users',
-    localField: '_authorObjId',
-    foreignField: '_id',
-    as: '_authorMeta',
-    pipeline: [{ $project: { isPrivate: 1 } }],
-  },
-};
-
-const UNWIND_AUTHOR_META = {
-  $unwind: { path: '$_authorMeta', preserveNullAndEmptyArrays: true },
-};
-
-const buildLookupFriendship = (currentUserId: string) => ({
-  $lookup: {
-    from: 'friendships',
-    let: { authorId: '$authorId' },
-    pipeline: [
-      {
-        $match: {
-          $expr: {
-            $and: [
-              { $eq: ['$status', 'accepted'] },
-              {
-                $or: [
-                  { $and: [{ $eq: ['$userId', currentUserId] }, { $eq: ['$friendId', '$$authorId'] }] },
-                  { $and: [{ $eq: ['$friendId', currentUserId] }, { $eq: ['$userId', '$$authorId'] }] },
-                ],
-              },
-            ],
-          },
-        },
-      },
-    ],
-    as: '_friendship',
-  },
-});
-
-const buildVisibilityMatch = (currentUserId: string) => ({
-  $match: {
-    $or: [
-      { '_authorMeta.isPrivate': { $ne: true } },
-      { '_friendship': { $ne: [] } },
-      { authorId: currentUserId },
-    ],
-  },
-});
-
-// Filters out posts the viewer has no right to see:
-// - author is public, OR viewer is the author, OR viewer is an accepted friend
-const buildVisibilityPipeline = (currentUserId: string) => [
-  ADD_AUTHOR_OBJ_ID,
-  LOOKUP_AUTHOR_PRIVACY,
-  UNWIND_AUTHOR_META,
-  buildLookupFriendship(currentUserId),
-  buildVisibilityMatch(currentUserId),
-];
 
 // ─── Repository ───────────────────────────────────────────────────────────────
 
@@ -170,7 +112,31 @@ const buildVisibilityPipeline = (currentUserId: string) => [
 export class MongoPostRepository implements PostRepository {
   constructor(
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
+
+  // Pre-fetch visibility filter: 2 bulk queries thay vì per-doc $lookup × N
+  private async buildVisibilityFilter(currentUserId: string) {
+    const [friendships, privateUsers] = await Promise.all([
+      this.friendshipModel.find(
+        { status: 'accepted', $or: [{ userId: currentUserId }, { friendId: currentUserId }] },
+        { userId: 1, friendId: 1, _id: 0 },
+      ).lean(),
+      this.userModel.find({ isPrivate: true }, { _id: 1 }).lean(),
+    ]);
+
+    const friendIds = new Set(
+      friendships.map((f: any) => f.userId === currentUserId ? f.friendId : f.userId),
+    );
+    const blockedIds = (privateUsers as any[])
+      .map(u => u._id.toString())
+      .filter(id => !friendIds.has(id) && id !== currentUserId);
+
+    return blockedIds.length > 0
+      ? { isPublished: true, authorId: { $nin: blockedIds } }
+      : { isPublished: true };
+  }
 
   private mapToDomain(doc: any): PostEntity {
     return new PostEntity({
@@ -205,44 +171,43 @@ export class MongoPostRepository implements PostRepository {
 
   async findAll(page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
+    const filter = await this.buildVisibilityFilter(currentUserId);
 
-    const [result] = await this.postModel.aggregate([
-      { $match: { isPublished: true } },
-      ...buildVisibilityPipeline(currentUserId),
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          items: [{ $skip: skip }, { $limit: limit }, ...buildReadPipeline(currentUserId)],
-          total: [{ $count: 'count' }],
-        },
-      },
+    const [total, items] = await Promise.all([
+      this.postModel.countDocuments(filter),
+      this.postModel.aggregate([
+        { $match: filter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        ...buildReadPipeline(currentUserId),
+      ]),
     ]);
 
-    const total = result.total[0]?.count ?? 0;
     return {
-      items: result.items.map((doc) => this.mapToDomain(doc)),
+      items: items.map((doc) => this.mapToDomain(doc)),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
   async findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
+    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
+    const filter = { ...visibilityFilter, authorId };
 
-    const [result] = await this.postModel.aggregate([
-      { $match: { authorId, isPublished: true } },
-      ...buildVisibilityPipeline(currentUserId),
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          items: [{ $skip: skip }, { $limit: limit }, ...buildReadPipeline(currentUserId)],
-          total: [{ $count: 'count' }],
-        },
-      },
+    const [total, items] = await Promise.all([
+      this.postModel.countDocuments(filter),
+      this.postModel.aggregate([
+        { $match: filter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        ...buildReadPipeline(currentUserId),
+      ]),
     ]);
 
-    const total = result.total[0]?.count ?? 0;
     return {
-      items: result.items.map((doc) => this.mapToDomain(doc)),
+      items: items.map((doc) => this.mapToDomain(doc)),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

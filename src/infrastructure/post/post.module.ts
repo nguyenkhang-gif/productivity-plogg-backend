@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from 'src/infrastructure/databases/schemas/post.schema';
+import { User, UserSchema } from 'src/infrastructure/databases/schemas/user.schema';
+import { Friendship, FriendshipSchema } from 'src/infrastructure/databases/schemas/friendship.schema';
 import { MongoPostRepository } from 'src/infrastructure/databases/repositories/post.repository';
 import { POST_REPOSITORY } from 'src/core/domain/repositories/post.repository.interface';
 import { PostController } from 'src/presentation/controllers/post.controller';
@@ -13,7 +15,11 @@ import { DeletePostUseCase } from 'src/use-case/post/delete-post.use-case';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
+    MongooseModule.forFeature([
+      { name: Post.name, schema: PostSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Friendship.name, schema: FriendshipSchema },
+    ]),
   ],
   controllers: [PostController],
   providers: [

@@ -16,9 +16,13 @@ import { CommentModule } from './infrastructure/comment/comment.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 import { ReactionModule } from './infrastructure/reaction/reaction.module';
+import { AiModule } from './infrastructure/ai/ai.module';
+import { TranslationContextModule } from './infrastructure/translation-context/translation-context.module';
+import { CacheModule } from './infrastructure/cache/cache.module';
 @Module({
   imports: [
     AppConfigModule,
+    CacheModule,
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
@@ -37,6 +41,8 @@ import { ReactionModule } from './infrastructure/reaction/reaction.module';
     ChatModule,
     StorageModule,
     ReactionModule,
+    AiModule,
+    TranslationContextModule,
   ],
   controllers: [AppController],
   providers: [AppService],

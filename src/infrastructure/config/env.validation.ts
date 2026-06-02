@@ -19,6 +19,9 @@ class EnvironmentVariables {
 
   @IsString()
   EMAIL_PASS: string;
+
+  @IsString()
+  GEMINI_API_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {

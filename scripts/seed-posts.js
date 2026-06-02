@@ -2,9 +2,10 @@
 // Paste your userId vào biến AUTHOR_ID bên dưới trước khi chạy
 
 const { MongoClient } = require('mongodb');
+const Redis = require('ioredis');
 require('dotenv').config();
 
-const AUTHOR_ID = '69ec688ca65da460d460254b'; // ← thay bằng userId thật
+const AUTHOR_ID = '69c36de4d73bba595e060d2c'; // ← thay bằng userId thật
 const TOTAL = 1000;
 const BATCH_SIZE = 100;
 
@@ -77,6 +78,26 @@ async function main() {
 
   console.log(`\n✅ Xong! Đã tạo ${inserted} posts cho authorId: ${AUTHOR_ID}`);
   await client.close();
+
+  // Flush Redis cache — seed bypass use-case layer nên phải xóa thủ công
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    const redis = new Redis(redisUrl);
+    let cursor = '0';
+    let deleted = 0;
+    do {
+      const [next, keys] = await redis.scan(cursor, 'MATCH', 'posts:*', 'COUNT', 100);
+      cursor = next;
+      if (keys.length) {
+        await redis.del(...keys);
+        deleted += keys.length;
+      }
+    } while (cursor !== '0');
+    console.log(`🗑  Đã xóa ${deleted} Redis cache keys (posts:*)`);
+    redis.disconnect();
+  } else {
+    console.log('⚠️  REDIS_URL không có — bỏ qua flush cache');
+  }
 }
 
 main().catch((err) => {

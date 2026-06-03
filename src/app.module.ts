@@ -18,6 +18,7 @@ import { StorageModule } from './infrastructure/storage/storage.module';
 import { ReactionModule } from './infrastructure/reaction/reaction.module';
 import { AiModule } from './infrastructure/ai/ai.module';
 import { TranslationContextModule } from './infrastructure/translation-context/translation-context.module';
+import { StoryContextModule } from './infrastructure/story-context/story-context.module';
 import { CacheModule } from './infrastructure/cache/cache.module';
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CacheModule } from './infrastructure/cache/cache.module';
     ReactionModule,
     AiModule,
     TranslationContextModule,
+    StoryContextModule,
   ],
   controllers: [AppController],
   providers: [AppService],

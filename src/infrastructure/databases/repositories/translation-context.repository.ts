@@ -19,7 +19,12 @@ export class MongoTranslationContextRepository implements TranslationContextRepo
     return new TranslationContextEntity({
       id: doc._id.toString(),
       userId: doc.userId,
-      projectInfo: doc.projectInfo,
+      title: doc.title,
+      genre: doc.genre,
+      setting: doc.setting,
+      targetTone: doc.targetTone,
+      sourceLanguage: doc.sourceLanguage,
+      targetLanguage: doc.targetLanguage,
       characters: doc.characters,
       glossary: doc.glossary,
       styleGuide: doc.styleGuide,
@@ -32,7 +37,12 @@ export class MongoTranslationContextRepository implements TranslationContextRepo
   async create(context: TranslationContextEntity): Promise<TranslationContextEntity> {
     const created = new this.model({
       userId: context.userId,
-      projectInfo: context.projectInfo,
+      title: context.title,
+      genre: context.genre,
+      setting: context.setting,
+      targetTone: context.targetTone,
+      sourceLanguage: context.sourceLanguage,
+      targetLanguage: context.targetLanguage,
       characters: context.characters ?? [],
       glossary: context.glossary ?? [],
       styleGuide: context.styleGuide,

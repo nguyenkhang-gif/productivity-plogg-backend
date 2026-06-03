@@ -16,7 +16,12 @@ export class CreateTranslationContextUseCase {
   async execute(userId: string, dto: CreateTranslationContextDto): Promise<TranslationContext> {
     const context = new TranslationContext({
       userId,
-      projectInfo: { sourceLanguage: 'en', targetLanguage: 'vi', ...dto.projectInfo },
+      title: dto.title,
+      genre: dto.genre,
+      setting: dto.setting,
+      targetTone: dto.targetTone,
+      sourceLanguage: dto.sourceLanguage ?? 'en',
+      targetLanguage: dto.targetLanguage ?? 'vi',
       characters: dto.characters ?? [],
       glossary: dto.glossary ?? [],
       styleGuide: dto.styleGuide,

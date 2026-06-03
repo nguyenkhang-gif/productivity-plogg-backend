@@ -4,16 +4,6 @@ import { Document } from 'mongoose';
 export type TranslationContextDocument = TranslationContext & Document;
 
 @Schema({ _id: false })
-class ProjectInfo {
-  @Prop({ required: true }) title: string;
-  @Prop({ required: true }) genre: string;
-  @Prop({ required: true }) setting: string;
-  @Prop({ required: true }) targetTone: string;
-  @Prop({ default: 'en' }) sourceLanguage: string;
-  @Prop({ default: 'vi' }) targetLanguage: string;
-}
-
-@Schema({ _id: false })
 class CharacterProfile {
   @Prop({ required: true }) name: string;
   @Prop() vietnameseName: string;
@@ -42,14 +32,19 @@ class StyleGuide {
 
 @Schema({ _id: false })
 class ChapterSummary {
-  @Prop({ required: true }) chapterNumber: number;
+  @Prop({ required: true }) chapterNumber: string;
   @Prop({ required: true }) summary: string;
 }
 
 @Schema({ timestamps: true })
 export class TranslationContext {
   @Prop({ required: true, index: true }) userId: string;
-  @Prop({ type: ProjectInfo, required: true }) projectInfo: ProjectInfo;
+  @Prop({ required: true }) title: string;
+  @Prop({ required: true }) genre: string;
+  @Prop({ required: true }) setting: string;
+  @Prop({ required: true }) targetTone: string;
+  @Prop({ default: 'en' }) sourceLanguage: string;
+  @Prop({ default: 'vi' }) targetLanguage: string;
   @Prop({ type: [CharacterProfile], default: [] }) characters: CharacterProfile[];
   @Prop({ type: [GlossaryEntry], default: [] }) glossary: GlossaryEntry[];
   @Prop({ type: StyleGuide, required: true }) styleGuide: StyleGuide;

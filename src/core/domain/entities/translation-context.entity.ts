@@ -1,12 +1,3 @@
-export interface ProjectInfo {
-  title: string;
-  genre: string;
-  setting: string;
-  targetTone: string;
-  sourceLanguage: string;
-  targetLanguage: string;
-}
-
 export interface CharacterProfile {
   name: string;
   vietnameseName?: string;
@@ -32,14 +23,19 @@ export interface StyleGuide {
 }
 
 export interface ChapterSummary {
-  chapterNumber: number;
+  chapterNumber: string;
   summary: string;
 }
 
 export class TranslationContext {
   id: string;
   userId: string;
-  projectInfo: ProjectInfo;
+  title: string;
+  genre: string;
+  setting: string;
+  targetTone: string;
+  sourceLanguage: string;
+  targetLanguage: string;
   characters: CharacterProfile[];
   glossary: GlossaryEntry[];
   styleGuide: StyleGuide;

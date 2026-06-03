@@ -3,20 +3,10 @@ import {
   IsArray,
   IsBoolean,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-
-class ProjectInfoDto {
-  @IsString() @IsNotEmpty() title: string;
-  @IsString() @IsNotEmpty() genre: string;
-  @IsString() @IsNotEmpty() setting: string;
-  @IsString() @IsNotEmpty() targetTone: string;
-  @IsString() @IsOptional() sourceLanguage?: string;
-  @IsString() @IsOptional() targetLanguage?: string;
-}
 
 class CharacterProfileDto {
   @IsString() @IsNotEmpty() name: string;
@@ -43,14 +33,17 @@ class StyleGuideDto {
 }
 
 class ChapterSummaryDto {
-  @IsNumber() chapterNumber: number;
+  @IsString() @IsNotEmpty() chapterNumber: string;
   @IsString() @IsNotEmpty() summary: string;
 }
 
 export class CreateTranslationContextDto {
-  @ValidateNested()
-  @Type(() => ProjectInfoDto)
-  projectInfo: ProjectInfoDto;
+  @IsString() @IsNotEmpty() title: string;
+  @IsString() @IsNotEmpty() genre: string;
+  @IsString() @IsNotEmpty() setting: string;
+  @IsString() @IsNotEmpty() targetTone: string;
+  @IsString() @IsOptional() sourceLanguage?: string;
+  @IsString() @IsOptional() targetLanguage?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -74,10 +67,12 @@ export class CreateTranslationContextDto {
 }
 
 export class UpdateTranslationContextDto {
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ProjectInfoDto)
-  projectInfo?: ProjectInfoDto;
+  @IsString() @IsOptional() title?: string;
+  @IsString() @IsOptional() genre?: string;
+  @IsString() @IsOptional() setting?: string;
+  @IsString() @IsOptional() targetTone?: string;
+  @IsString() @IsOptional() sourceLanguage?: string;
+  @IsString() @IsOptional() targetLanguage?: string;
 
   @IsOptional()
   @IsArray()

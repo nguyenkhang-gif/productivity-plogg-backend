@@ -6,6 +6,8 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
 import { RegisterUseCase } from 'src/use-case/auth/register.use-case';
 import { LoginUseCase } from 'src/use-case/auth/login.use-case';
+import { LogoutUseCase } from 'src/use-case/auth/logout.use-case';
+import { RefreshTokenUseCase } from 'src/use-case/auth/refresh-token.use-case';
 import { ProfileUseCase } from 'src/use-case/auth/profile.use-case';
 import { UpdateProfileUseCase } from 'src/use-case/auth/update-profile.use-case';
 import { UpdateProfileDto } from 'src/core/dtos/update-profile.dto';
@@ -16,6 +18,8 @@ export class AuthController {
   constructor(
     private readonly registerUseCase: RegisterUseCase,
     private readonly loginUseCase: LoginUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly profileUseCase: ProfileUseCase,
     private readonly updateProfileUseCase: UpdateProfileUseCase,
     private readonly configService: ConfigService,
@@ -28,18 +32,27 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: any) { // Log request body
-    
-    // req.user is set by the LocalStrategy
+  async login(@Request() req: any) {
     return this.loginUseCase.execute(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Request() req: any, @Body('refresh_token') refreshToken?: string) {
+    const authHeader: string = req.headers['authorization'] ?? '';
+    const accessToken = authHeader.replace('Bearer ', '');
+    await this.logoutUseCase.execute(accessToken, refreshToken);
+    return { message: 'Logged out successfully' };
+  }
+
+  @Post('refresh')
+  async refresh(@Body('refresh_token') refreshToken: string) {
+    return this.refreshTokenUseCase.execute(refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@Request() req: any) {
-    console.log('Authenticated user:', req.user);
-
-    // req.user is set by the JwtStrategy
     return this.profileUseCase.execute(req.user);
   }
 
@@ -51,16 +64,13 @@ export class AuthController {
 
   @UseGuards(GoogleAuthGuard)
   @Get('google')
-  googleLogin() {
-    // Passport redirects to Google — no body needed
-  }
+  googleLogin() {}
 
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleCallback(@Request() req: any, @Res() res: Response) {
-    const { access_token } = await this.loginUseCase.execute(req.user);
+    const { access_token, refresh_token } = await this.loginUseCase.execute(req.user);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
+    return res.redirect(`${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`);
   }
-
 }

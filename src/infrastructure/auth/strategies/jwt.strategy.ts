@@ -1,13 +1,17 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { TokenService } from '../token/token.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly tokenService: TokenService,
+  ) {
     const secret = configService.get<string>('JWT_SECRET_KEY')?.trim();
     const logger = new Logger(JwtStrategy.name);
     if (!secret) {
@@ -24,7 +28,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    this.logger.log(`Validating JWT payload for user: ${payload.sub || payload.email}`);
+    if (payload.jti && await this.tokenService.isBlacklisted(payload.jti)) {
+      throw new UnauthorizedException('Token has been revoked');
+    }
     return { id: payload.sub, userId: payload.sub, email: payload.email, role: payload.role };
   }
 }

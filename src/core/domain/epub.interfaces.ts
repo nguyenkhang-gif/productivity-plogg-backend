@@ -1,11 +1,5 @@
 export class epubI {
-  sampleUrl: string;
+  sampleUrl?: string;
   createdUserId: string;
-  properties: object;
-}
-
-export interface OptionsI {
-  title: string;
-  author: string;
-  content: { title: string; data: string }[];
+  properties: Record<string, any>;
 }

@@ -8,8 +8,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
 
       # --- Auth ---
       - key: JWT_SECRET_KEY

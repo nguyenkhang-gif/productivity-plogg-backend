@@ -70,7 +70,7 @@ export class AuthController {
   @Get('google/callback')
   async googleCallback(@Request() req: any, @Res() res: Response) {
     const { access_token, refresh_token } = await this.loginUseCase.execute(req.user);
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://knn-productivity.vercel.app';
     return res.redirect(`${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`);
   }
 }

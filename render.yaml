@@ -16,21 +16,13 @@ services:
         sync: false
       - key: JWT_EXPIRATION_TIME
         sync: false
-      - key: REFRESH_TOKEN_SECRET
-        sync: false
-      - key: REFRESH_TOKEN_EXPIRATION_TIME
-        sync: false
 
       # --- Database ---
       - key: MONGO_DB_URI
         sync: false
 
       # --- Redis ---
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_PASSWORD
+      - key: REDIS_URL
         sync: false
 
       # --- Mail ---
@@ -59,6 +51,34 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-      # --- CORS ---
+      # --- CORS / Frontend ---
       - key: CLIENT_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+      # --- Google OAuth (login) ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+
+      # --- Facebook OAuth (login) ---
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_CALLBACK_URL
+        sync: false
+
+      # --- Google Drive ---
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
         sync: false

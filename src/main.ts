@@ -16,18 +16,25 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const allowedOrigins = [
+  const allowedOrigins = new Set([
     'http://localhost:3000',
     'https://knn-productivity.vercel.app',
     'http://knnpb.duckdns.org',
     'http://34.206.37.238',
     'http://107.21.107.160',
     ...(process.env.CLIENT_ORIGIN ? [process.env.CLIENT_ORIGIN] : []),
-  ];
+  ]);
 
   app.enableCors({
-    origin: allowedOrigins,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization,Accept',
     credentials: true,
   });
 

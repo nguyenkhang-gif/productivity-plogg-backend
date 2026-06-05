@@ -7,7 +7,6 @@ import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './google/drive.module';
 import { BudgetModule } from './budget/budget.module';
-import { TranscriptionModule } from './transcription/transcription.module';
 import { AppConfigModule } from './infrastructure/config/config.module';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
@@ -34,7 +33,6 @@ import { CacheModule } from './infrastructure/cache/cache.module';
     EpubModule,
     DriveModule,
     BudgetModule,
-    TranscriptionModule,
     AuthModule,
     PostModule,
     FriendshipModule,

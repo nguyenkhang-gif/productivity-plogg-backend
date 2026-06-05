@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: plog-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+      # --- Auth ---
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: JWT_EXPIRATION_TIME
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_EXPIRATION_TIME
+        sync: false
+
+      # --- Database ---
+      - key: MONGO_DB_URI
+        sync: false
+
+      # --- Redis ---
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+
+      # --- Mail ---
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+
+      # --- Supabase ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET_NAME
+        sync: false
+
+      # --- Cloudinary ---
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # --- Gemini ---
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # --- CORS ---
+      - key: CLIENT_ORIGIN
+        sync: false

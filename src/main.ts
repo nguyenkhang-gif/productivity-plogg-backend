@@ -16,10 +16,19 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://knn-productivity.vercel.app',
+    'http://knnpb.duckdns.org',
+    'http://34.206.37.238',
+    'http://107.21.107.160',
+    ...(process.env.CLIENT_ORIGIN ? [process.env.CLIENT_ORIGIN] : []),
+  ];
+
   app.enableCors({
-    origin: [process.env.CLIENT_ORIGIN, 'http://localhost:3000', 'http://34.206.37.238', 'http://107.21.107.160', 'http://knnpb.duckdns.org'],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
-    credentials: true, 
+    origin: allowedOrigins,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
   });
 
   app.use(cookieParser());

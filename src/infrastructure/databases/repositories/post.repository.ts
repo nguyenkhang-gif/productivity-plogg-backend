@@ -3,7 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
   PaginatedPosts,
+  PostFeedFilter,
   PostRepository,
+  PostStats,
 } from 'src/core/domain/repositories/post.repository.interface';
 import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
@@ -56,6 +58,30 @@ const LOOKUP_REACT_COUNT = {
   },
 };
 
+const LOOKUP_CATEGORY = {
+  $lookup: {
+    from: 'categories',
+    let: { catId: { $toObjectId: '$categoryId' } },
+    pipeline: [
+      { $match: { $expr: { $eq: ['$_id', '$$catId'] } } },
+      { $project: { name: 1, slug: 1 } },
+    ],
+    as: '_category',
+  },
+};
+
+const LOOKUP_TAGS = {
+  $lookup: {
+    from: 'tags',
+    let: { tagIds: { $map: { input: '$tagIds', as: 't', in: { $toObjectId: '$$t' } } } },
+    pipeline: [
+      { $match: { $expr: { $in: ['$_id', '$$tagIds'] } } },
+      { $project: { name: 1, slug: 1 } },
+    ],
+    as: '_tags',
+  },
+};
+
 const buildLookupUserReaction = (userId: string) => ({
   $lookup: {
     from: 'reactions',
@@ -76,10 +102,48 @@ const buildLookupUserReaction = (userId: string) => ({
   },
 });
 
+const buildLookupBookmark = (userId: string) => ({
+  $lookup: {
+    from: 'bookmarks',
+    let: { postId: { $toString: '$_id' } },
+    pipeline: [
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: ['$postId', '$$postId'] },
+              { $eq: ['$userId', userId] },
+            ],
+          },
+        },
+      },
+    ],
+    as: '_bookmark',
+  },
+});
+
 const buildAddComputedFields = (currentUserId?: string) => ({
   $addFields: {
     commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
     reactCount: { $ifNull: [{ $arrayElemAt: ['$_reactCount.total', 0] }, 0] },
+    category: {
+      $cond: {
+        if: { $gt: [{ $size: '$_category' }, 0] },
+        then: {
+          id: { $toString: { $arrayElemAt: ['$_category._id', 0] } },
+          name: { $arrayElemAt: ['$_category.name', 0] },
+          slug: { $arrayElemAt: ['$_category.slug', 0] },
+        },
+        else: null,
+      },
+    },
+    tags: {
+      $map: {
+        input: '$_tags',
+        as: 't',
+        in: { id: { $toString: '$$t._id' }, name: '$$t.name', slug: '$$t.slug' },
+      },
+    },
     userReaction: currentUserId
       ? {
           $cond: {
@@ -92,6 +156,9 @@ const buildAddComputedFields = (currentUserId?: string) => ({
           },
         }
       : null,
+    isBookmarked: currentUserId
+      ? { $gt: [{ $size: '$_bookmark' }, 0] }
+      : false,
   },
 });
 
@@ -101,10 +168,12 @@ const buildReadPipeline = (currentUserId?: string) => [
   UNWIND_AUTHOR,
   LOOKUP_COMMENT_COUNT,
   LOOKUP_REACT_COUNT,
+  LOOKUP_CATEGORY,
+  LOOKUP_TAGS,
   ...(currentUserId ? [buildLookupUserReaction(currentUserId)] : []),
+  ...(currentUserId ? [buildLookupBookmark(currentUserId)] : []),
   buildAddComputedFields(currentUserId),
 ];
-
 
 // ─── Repository ───────────────────────────────────────────────────────────────
 
@@ -116,7 +185,6 @@ export class MongoPostRepository implements PostRepository {
     @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
 
-  // Pre-fetch visibility filter: 2 bulk queries thay vì per-doc $lookup × N
   private async buildVisibilityFilter(currentUserId: string) {
     const [friendships, privateUsers] = await Promise.all([
       this.friendshipModel.find(
@@ -144,6 +212,9 @@ export class MongoPostRepository implements PostRepository {
       authorId: doc.authorId,
       content: doc.content,
       imageUrls: doc.imageUrls,
+      categoryId: doc.categoryId ?? null,
+      tagIds: doc.tagIds ?? [],
+      viewCount: doc.viewCount ?? 0,
       reactCount: doc.reactCount ?? 0,
       isPublished: doc.isPublished,
       createdAt: doc.createdAt,
@@ -156,8 +227,11 @@ export class MongoPostRepository implements PostRepository {
             profilePic: doc._author.profilePic,
           }
         : undefined,
+      category: doc.category ?? null,
+      tags: doc.tags ?? [],
       commentCount: doc.commentCount ?? 0,
       userReaction: doc.userReaction ?? null,
+      isBookmarked: doc.isBookmarked ?? false,
     });
   }
 
@@ -169,14 +243,25 @@ export class MongoPostRepository implements PostRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
-  async findAll(page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
+  async findAll(page: number, limit: number, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
-    const filter = await this.buildVisibilityFilter(currentUserId);
+    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
+
+    const extraFilter: Record<string, any> = {};
+    if (filter?.categoryId) extraFilter.categoryId = filter.categoryId;
+    if (filter?.tags?.length) {
+      const tagSlugs = filter.tags;
+      const tagDocs = await this.postModel.db.collection('tags').find({ slug: { $in: tagSlugs } }, { projection: { _id: 1 } }).toArray();
+      const tagIds = tagDocs.map((t: any) => t._id.toString());
+      if (tagIds.length) extraFilter.tagIds = { $in: tagIds };
+    }
+
+    const matchFilter = { ...visibilityFilter, ...extraFilter };
 
     const [total, items] = await Promise.all([
-      this.postModel.countDocuments(filter),
+      this.postModel.countDocuments(matchFilter),
       this.postModel.aggregate([
-        { $match: filter },
+        { $match: matchFilter },
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
@@ -212,45 +297,86 @@ export class MongoPostRepository implements PostRepository {
     };
   }
 
+  async findTrending(limit: number, currentUserId: string): Promise<PostEntity[]> {
+    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
+    const items = await this.postModel.aggregate([
+      { $match: visibilityFilter },
+      ...buildReadPipeline(currentUserId),
+      { $sort: { reactCount: -1, createdAt: -1 } },
+      { $limit: limit },
+    ]);
+    return items.map((doc) => this.mapToDomain(doc));
+  }
+
+  async getStatsByAuthor(authorId: string): Promise<PostStats> {
+    const [result] = await this.postModel.aggregate([
+      { $match: { authorId, isPublished: true } },
+      {
+        $lookup: {
+          from: 'reactions',
+          let: { postId: { $toString: '$_id' } },
+          pipeline: [{ $match: { $expr: { $eq: ['$postId', '$$postId'] } } }],
+          as: '_reactions',
+        },
+      },
+      {
+        $lookup: {
+          from: 'comments',
+          let: { postId: { $toString: '$_id' } },
+          pipeline: [{ $match: { $expr: { $eq: ['$postId', '$$postId'] } } }],
+          as: '_comments',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          postCount: { $sum: 1 },
+          totalReactionsReceived: { $sum: { $size: '$_reactions' } },
+          totalComments: { $sum: { $size: '$_comments' } },
+        },
+      },
+    ]);
+
+    return {
+      postCount: result?.postCount ?? 0,
+      totalReactionsReceived: result?.totalReactionsReceived ?? 0,
+      totalComments: result?.totalComments ?? 0,
+    };
+  }
+
   async create(post: PostEntity): Promise<PostEntity> {
     const created = new this.postModel({
       authorId: post.authorId,
       content: post.content,
       imageUrls: post.imageUrls ?? [],
       isPublished: post.isPublished ?? true,
+      categoryId: post.categoryId ?? null,
+      tagIds: post.tagIds ?? [],
+      viewCount: 0,
     });
     const saved = await created.save();
-    return new PostEntity({
-      id: saved._id.toString(),
-      authorId: saved.authorId,
-      content: saved.content,
-      imageUrls: saved.imageUrls,
-      reactCount: 0,
-      isPublished: saved.isPublished,
-      createdAt: (saved as any).createdAt,
-      updatedAt: (saved as any).updatedAt,
-    });
+    const full = await this.findById(saved._id.toString(), post.authorId);
+    return full!;
   }
 
   async update(id: string, data: Partial<PostEntity>): Promise<PostEntity> {
-    const updated = await this.postModel
-      .findByIdAndUpdate(id, data, { new: true })
-      .exec();
+    const updated = await this.postModel.findByIdAndUpdate(id, data, { new: true }).exec();
     if (!updated) throw new NotFoundException('Post not found');
-    return new PostEntity({
-      id: updated._id.toString(),
-      authorId: updated.authorId,
-      content: updated.content,
-      imageUrls: updated.imageUrls,
-      reactCount: 0,
-      isPublished: updated.isPublished,
-      createdAt: (updated as any).createdAt,
-      updatedAt: (updated as any).updatedAt,
-    });
+    const full = await this.findById(id);
+    return full!;
   }
 
   async delete(id: string): Promise<void> {
     const result = await this.postModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('Post not found');
+  }
+
+  async incrementViewCount(id: string): Promise<void> {
+    const result = await this.postModel.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+    if (!result) throw new NotFoundException('Post not found');
+  }
+
+  async nullifyCategoryOnPosts(categoryId: string): Promise<void> {
+    await this.postModel.updateMany({ categoryId }, { $set: { categoryId: null } });
   }
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserRepository } from 'src/core/domain/repositories/user.repository.interface';
 import { User, UserDocument } from '../schemas/user.schema';
+import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
 import { Model } from 'mongoose';
 import { User as UserEntity } from 'src/core/domain/entities/user.entity';
 
@@ -9,6 +10,7 @@ import { User as UserEntity } from 'src/core/domain/entities/user.entity';
 export class MongoUserRepository implements UserRepository {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
 
   private mapToDomain(userDoc: UserDocument): UserEntity {
@@ -91,5 +93,25 @@ export class MongoUserRepository implements UserRepository {
       .exec();
     if (!updatedUser) throw new Error('User not found');
     return this.mapToDomain(updatedUser);
+  }
+
+  async findSuggestions(currentUserId: string, limit: number): Promise<UserEntity[]> {
+    const friendships = await this.friendshipModel
+      .find({ $or: [{ userId: currentUserId }, { friendId: currentUserId }] }, { userId: 1, friendId: 1, _id: 0 })
+      .lean();
+
+    const excludeIds = new Set<string>([currentUserId]);
+    for (const f of friendships as any[]) {
+      excludeIds.add(f.userId);
+      excludeIds.add(f.friendId);
+    }
+
+    const docs = await this.userModel
+      .find({ _id: { $nin: [...excludeIds] }, isPrivate: false })
+      .select('fullName username profilePic')
+      .limit(limit)
+      .lean();
+
+    return docs.map((doc: any) => this.mapToDomain(doc));
   }
 }

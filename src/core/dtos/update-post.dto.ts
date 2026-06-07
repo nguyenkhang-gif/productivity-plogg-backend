@@ -14,4 +14,13 @@ export class UpdatePostDto {
   @IsBoolean()
   @IsOptional()
   isPublished?: boolean;
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string | null;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tagNames?: string[];
 }

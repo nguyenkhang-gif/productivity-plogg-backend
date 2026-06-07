@@ -10,4 +10,13 @@ export class CreatePostDto {
   @IsString({ each: true })
   @IsOptional()
   imageUrls?: string[];
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  tagNames?: string[];
 }

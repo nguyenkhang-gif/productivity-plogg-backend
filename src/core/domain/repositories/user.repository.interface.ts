@@ -11,4 +11,5 @@ export interface UserRepository {
   search(query: string, excludeUserId: string): Promise<User[]>;
   findByGoogleId(googleId: string): Promise<User | null>;
   findByFacebookId(facebookId: string): Promise<User | null>;
+  findSuggestions(currentUserId: string, limit: number): Promise<User[]>;
 }

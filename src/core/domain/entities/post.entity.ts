@@ -5,6 +5,18 @@ export interface PostAuthor {
   profilePic?: string;
 }
 
+export interface PostCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface PostTag {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface UserReaction {
   type: string;
   icon?: string;
@@ -15,11 +27,17 @@ export class Post {
   authorId: string;
   content: string;
   imageUrls?: string[];
+  categoryId?: string | null;
+  tagIds?: string[];
+  viewCount?: number;
   reactCount: number;
   isPublished: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   author?: PostAuthor;
+  category?: PostCategory | null;
+  tags?: PostTag[];
+  isBookmarked?: boolean;
   commentCount?: number;
   userReaction?: UserReaction | null;
 

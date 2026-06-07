@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { LastSeenMiddleware } from './presentation/middleware/last-seen.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailModule } from './infrastructure/mail/mail.module';
@@ -19,16 +20,25 @@ import { AiModule } from './infrastructure/ai/ai.module';
 import { TranslationContextModule } from './infrastructure/translation-context/translation-context.module';
 import { StoryContextModule } from './infrastructure/story-context/story-context.module';
 import { CacheModule } from './infrastructure/cache/cache.module';
+import { TagModule } from './infrastructure/tag/tag.module';
+import { CategoryModule } from './infrastructure/category/category.module';
+import { BookmarkModule } from './infrastructure/bookmark/bookmark.module';
+import { User, UserSchema } from './infrastructure/databases/schemas/user.schema';
+
 @Module({
   imports: [
     AppConfigModule,
     CacheModule,
+    TagModule,
+    CategoryModule,
+    BookmarkModule,
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_DB_URI'),
       }),
     }),
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MailModule,
     EpubModule,
     DriveModule,
@@ -45,6 +55,10 @@ import { CacheModule } from './infrastructure/cache/cache.module';
     StoryContextModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LastSeenMiddleware],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LastSeenMiddleware).forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
+  }
+}

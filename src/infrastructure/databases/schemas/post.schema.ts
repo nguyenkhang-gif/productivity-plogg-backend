@@ -16,6 +16,19 @@ export class Post {
 
   @Prop({ default: true })
   isPublished: boolean;
+
+  @Prop({ type: String, default: null })
+  categoryId: string | null;
+
+  @Prop({ type: [String], default: [] })
+  tagIds: string[];
+
+  @Prop({ default: 0 })
+  viewCount: number;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
+
+PostSchema.index({ isPublished: 1, categoryId: 1, createdAt: -1 });
+PostSchema.index({ isPublished: 1, tagIds: 1, createdAt: -1 });
+PostSchema.index({ isPublished: 1, authorId: 1, createdAt: -1 });

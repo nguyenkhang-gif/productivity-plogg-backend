@@ -40,6 +40,9 @@ export class User {
 
   @Prop({ required: false })
   facebookId?: string;
+
+  @Prop({ type: Date, default: null })
+  lastSeen: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

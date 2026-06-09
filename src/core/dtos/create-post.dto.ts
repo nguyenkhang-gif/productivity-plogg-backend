@@ -2,6 +2,11 @@ import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-vali
 
 export class CreatePostDto {
   @IsString()
+  @IsOptional()
+  @MaxLength(300)
+  title?: string;
+
+  @IsString()
   @IsNotEmpty()
   @MaxLength(2000)
   content: string;

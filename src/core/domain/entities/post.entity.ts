@@ -25,6 +25,7 @@ export interface UserReaction {
 export class Post {
   id: string;
   authorId: string;
+  title?: string;
   content: string;
   imageUrls?: string[];
   categoryId?: string | null;

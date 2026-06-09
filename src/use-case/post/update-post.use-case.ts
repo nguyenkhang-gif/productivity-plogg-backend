@@ -6,6 +6,7 @@ import { Post } from 'src/core/domain/entities/post.entity';
 import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface UpdatePostInput {
+  title?: string;
   content?: string;
   imageUrls?: string[];
   isPublished?: boolean;
@@ -28,6 +29,7 @@ export class UpdatePostUseCase {
     if (post.authorId !== requesterId) throw new ForbiddenException('Not your post');
 
     const updateData: Partial<Post> = {};
+    if (input.title !== undefined) updateData.title = input.title;
     if (input.content !== undefined) updateData.content = input.content;
     if (input.imageUrls !== undefined) updateData.imageUrls = input.imageUrls;
     if (input.isPublished !== undefined) updateData.isPublished = input.isPublished;

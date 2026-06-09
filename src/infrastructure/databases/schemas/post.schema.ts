@@ -8,6 +8,9 @@ export class Post {
   @Prop({ required: true })
   authorId: string;
 
+  @Prop({ type: String, default: null })
+  title: string | null;
+
   @Prop({ required: true, maxlength: 10000 })
   content: string;
 

@@ -3,6 +3,11 @@ import { IsArray, IsBoolean, IsOptional, IsString, MaxLength } from 'class-valid
 export class UpdatePostDto {
   @IsString()
   @IsOptional()
+  @MaxLength(300)
+  title?: string;
+
+  @IsString()
+  @IsOptional()
   @MaxLength(2000)
   content?: string;
 

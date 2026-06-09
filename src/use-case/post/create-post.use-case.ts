@@ -7,6 +7,7 @@ import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface CreatePostInput {
   authorId: string;
+  title?: string;
   content: string;
   imageUrls?: string[];
   categoryId?: string | null;
@@ -39,6 +40,7 @@ export class CreatePostUseCase {
 
     const post = new Post({
       authorId: input.authorId,
+      title: input.title,
       content: input.content,
       imageUrls: input.imageUrls ?? [],
       categoryId: input.categoryId ?? null,

@@ -249,6 +249,7 @@ export class MongoPostRepository implements PostRepository {
 
     const extraFilter: Record<string, any> = {};
     if (filter?.categoryId) extraFilter.categoryId = filter.categoryId;
+    if (filter?.excludeId) extraFilter._id = { $ne: filter.excludeId };
     if (filter?.tags?.length) {
       const tagSlugs = filter.tags;
       const tagDocs = await this.postModel.db.collection('tags').find({ slug: { $in: tagSlugs } }, { projection: { _id: 1 } }).toArray();
@@ -378,5 +379,9 @@ export class MongoPostRepository implements PostRepository {
 
   async nullifyCategoryOnPosts(categoryId: string): Promise<void> {
     await this.postModel.updateMany({ categoryId }, { $set: { categoryId: null } });
+  }
+
+  async countByAuthor(authorId: string): Promise<number> {
+    return this.postModel.countDocuments({ authorId });
   }
 }

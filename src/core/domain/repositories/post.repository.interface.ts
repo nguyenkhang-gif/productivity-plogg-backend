@@ -15,6 +15,7 @@ export interface PaginatedPosts {
 export interface PostFeedFilter {
   categoryId?: string;
   tags?: string[];
+  excludeId?: string;
 }
 
 export interface PostStats {
@@ -34,4 +35,5 @@ export interface PostRepository {
   delete(id: string): Promise<void>;
   incrementViewCount(id: string): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;
+  countByAuthor(authorId: string): Promise<number>;
 }

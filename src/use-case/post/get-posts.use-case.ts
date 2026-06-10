@@ -16,7 +16,7 @@ export class GetPostsUseCase {
   ) {}
 
   async execute(page = 1, limit = 10, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts> {
-    const filterKey = filter ? `:cat=${filter.categoryId ?? ''}:tags=${(filter.tags ?? []).join(',')}` : '';
+    const filterKey = filter ? `:cat=${filter.categoryId ?? ''}:tags=${(filter.tags ?? []).join(',')}:excl=${filter.excludeId ?? ''}` : '';
     const key = `posts:all:${currentUserId}:${page}:${limit}${filterKey}`;
     const cached = await this.cache.get<PaginatedPosts>(key);
     if (cached) return cached;

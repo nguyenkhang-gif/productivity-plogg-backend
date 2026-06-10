@@ -56,11 +56,13 @@ export class PostController {
     @Query('limit') limit = 10,
     @Query('categoryId') categoryId?: string,
     @Query('tags') tags?: string,
+    @Query('excludeId') excludeId?: string,
     @Req() req = null,
   ) {
     const filter = {
       categoryId,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+      excludeId,
     };
     return this.getPosts.execute(Number(page), Number(limit), req.user.userId, filter);
   }

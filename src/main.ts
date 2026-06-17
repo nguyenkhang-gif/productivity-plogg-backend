@@ -1,7 +1,9 @@
 import './polyfills';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { IoAdapter } from '@nestjs/platform-socket.io';
+import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 
@@ -15,6 +17,8 @@ async function bootstrap() {
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   app.useWebSocketAdapter(new IoAdapter(app));
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }));
 
   const allowedOrigins = new Set([
     'http://localhost:3000',

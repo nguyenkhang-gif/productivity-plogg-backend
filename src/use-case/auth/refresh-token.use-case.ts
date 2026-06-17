@@ -6,13 +6,19 @@ export class RefreshTokenUseCase {
   constructor(private readonly tokenService: TokenService) {}
 
   async execute(refreshToken: string): Promise<{ access_token: string; refresh_token: string }> {
-    const payload = await this.tokenService.verifyRefreshToken(refreshToken);
-    if (!payload) throw new UnauthorizedException('Invalid or expired refresh token');
+    const result = await this.tokenService.verifyRefreshToken(refreshToken);
+    if (!result) throw new UnauthorizedException('Invalid or expired refresh token');
 
-    await this.tokenService.revokeRefreshToken(refreshToken);
+    const { payload, sessionId } = result;
 
+    // Revoke current token (rotation)
+    await this.tokenService.revokeRefreshToken(refreshToken, payload.sub);
+
+    // Issue new pair — preserve sessionId metadata by passing empty metadata
+    // (metadata already stored, new token gets fresh sessionId intentionally for rotation)
     const { token: access_token } = this.tokenService.issueAccessToken(payload);
     const refresh_token = await this.tokenService.issueRefreshToken(payload);
+
     return { access_token, refresh_token };
   }
 }

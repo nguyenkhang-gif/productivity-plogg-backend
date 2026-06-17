@@ -9,7 +9,7 @@ export class LogoutUseCase {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(accessToken: string, refreshToken?: string): Promise<void> {
+  async execute(accessToken: string, userId: string, refreshToken?: string): Promise<void> {
     try {
       const payload = this.jwtService.decode(accessToken) as { jti?: string; exp?: number } | null;
       if (payload?.jti && payload?.exp) {
@@ -20,7 +20,7 @@ export class LogoutUseCase {
     }
 
     if (refreshToken) {
-      await this.tokenService.revokeRefreshToken(refreshToken);
+      await this.tokenService.revokeRefreshToken(refreshToken, userId);
     }
   }
 }

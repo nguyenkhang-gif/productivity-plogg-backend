@@ -5,6 +5,9 @@ import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../databases/schemas/user.schema';
 import { Friendship, FriendshipSchema } from '../databases/schemas/friendship.schema';
+import { Post, PostSchema } from '../databases/schemas/post.schema';
+import { POST_REPOSITORY } from 'src/core/domain/repositories/post.repository.interface';
+import { MongoPostRepository } from '../databases/repositories/post.repository';
 import { AuthController } from 'src/presentation/controllers/auth.controller';
 import { USER_REPOSITORY } from 'src/core/domain/repositories/user.repository.interface';
 import { MongoUserRepository } from '../databases/repositories/user.repository';
@@ -15,6 +18,8 @@ import { RefreshTokenUseCase } from 'src/use-case/auth/refresh-token.use-case';
 import { RegisterUseCase } from 'src/use-case/auth/register.use-case';
 import { ProfileUseCase } from 'src/use-case/auth/profile.use-case';
 import { UpdateProfileUseCase } from 'src/use-case/auth/update-profile.use-case';
+import { ListSessionsUseCase } from 'src/use-case/auth/list-sessions.use-case';
+import { RevokeSessionUseCase } from 'src/use-case/auth/revoke-session.use-case';
 import { SearchUsersUseCase } from 'src/use-case/auth/search-users.use-case';
 import { GetUserProfileUseCase } from 'src/use-case/auth/get-user-profile.use-case';
 import { UserController } from 'src/presentation/controllers/user.controller';
@@ -30,6 +35,7 @@ import { TokenService } from './token/token.service';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Friendship.name, schema: FriendshipSchema },
+      { name: Post.name, schema: PostSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({
@@ -55,9 +61,15 @@ import { TokenService } from './token/token.service';
       provide: USER_REPOSITORY,
       useClass: MongoUserRepository,
     },
+    {
+      provide: POST_REPOSITORY,
+      useClass: MongoPostRepository,
+    },
     TokenService,
     ValidateUserUseCase,
     LoginUseCase,
+    ListSessionsUseCase,
+    RevokeSessionUseCase,
     LogoutUseCase,
     RefreshTokenUseCase,
     RegisterUseCase,

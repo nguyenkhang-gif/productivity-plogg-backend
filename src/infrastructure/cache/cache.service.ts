@@ -21,12 +21,51 @@ export class CacheService {
     }
   }
 
-  async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
-    if (!this.redis) return;
+  async set(key: string, value: unknown, ttlSeconds: number): Promise<boolean> {
+    if (!this.redis) return false;
     try {
       await this.redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+      return true;
     } catch (err) {
       this.logger.error(`Cache set failed: ${key}`, err);
+      return false;
+    }
+  }
+
+  async sadd(key: string, ...members: string[]): Promise<void> {
+    if (!this.redis) return;
+    try {
+      await this.redis.sadd(key, ...members);
+    } catch (err) {
+      this.logger.error(`Cache sadd failed: ${key}`, err);
+    }
+  }
+
+  async srem(key: string, ...members: string[]): Promise<void> {
+    if (!this.redis) return;
+    try {
+      await this.redis.srem(key, ...members);
+    } catch (err) {
+      this.logger.error(`Cache srem failed: ${key}`, err);
+    }
+  }
+
+  async smembers(key: string): Promise<string[]> {
+    if (!this.redis) return [];
+    try {
+      return await this.redis.smembers(key);
+    } catch (err) {
+      this.logger.error(`Cache smembers failed: ${key}`, err);
+      return [];
+    }
+  }
+
+  async expire(key: string, ttlSeconds: number): Promise<void> {
+    if (!this.redis) return;
+    try {
+      await this.redis.expire(key, ttlSeconds);
+    } catch (err) {
+      this.logger.error(`Cache expire failed: ${key}`, err);
     }
   }
 

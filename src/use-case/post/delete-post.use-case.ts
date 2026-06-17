@@ -26,6 +26,7 @@ export class DeletePostUseCase {
       this.cache.delByPattern(`post:${id}:*`),
       this.cache.delByPattern('posts:all:*'),
       this.cache.delByPattern(`posts:author:${post.authorId}:*`),
+      this.cache.del(`user:postCount:${post.authorId}`),
     ]);
   }
 }

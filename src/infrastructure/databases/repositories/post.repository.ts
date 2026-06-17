@@ -210,6 +210,7 @@ export class MongoPostRepository implements PostRepository {
     return new PostEntity({
       id: doc._id.toString(),
       authorId: doc.authorId,
+      title: doc.title ?? undefined,
       content: doc.content,
       imageUrls: doc.imageUrls,
       categoryId: doc.categoryId ?? null,
@@ -348,6 +349,7 @@ export class MongoPostRepository implements PostRepository {
   async create(post: PostEntity): Promise<PostEntity> {
     const created = new this.postModel({
       authorId: post.authorId,
+      title: post.title ?? null,
       content: post.content,
       imageUrls: post.imageUrls ?? [],
       isPublished: post.isPublished ?? true,

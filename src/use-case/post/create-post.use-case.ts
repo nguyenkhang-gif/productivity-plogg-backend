@@ -56,6 +56,7 @@ export class CreatePostUseCase {
       tagIds.length ? this.tagRepo.incrementPostCount(tagIds) : Promise.resolve(),
       this.cache.delByPattern('posts:all:*'),
       this.cache.delByPattern(`posts:author:${input.authorId}:*`),
+      this.cache.del(`user:postCount:${input.authorId}`),
     ]);
 
     return created;

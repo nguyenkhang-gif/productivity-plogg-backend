@@ -15,3 +15,4 @@ export class Bookmark {
 export const BookmarkSchema = SchemaFactory.createForClass(Bookmark);
 
 BookmarkSchema.index({ userId: 1, postId: 1 }, { unique: true });
+BookmarkSchema.index({ postId: 1, userId: 1 });

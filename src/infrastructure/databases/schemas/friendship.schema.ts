@@ -23,4 +23,5 @@ export const FriendshipSchema = SchemaFactory.createForClass(Friendship);
 
 // Prevent duplicate pairs and enable fast lookups
 FriendshipSchema.index({ userId: 1, friendId: 1 }, { unique: true });
+FriendshipSchema.index({ userId: 1, status: 1 });
 FriendshipSchema.index({ friendId: 1, status: 1 });

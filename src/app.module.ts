@@ -1,4 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LastSeenMiddleware } from './presentation/middleware/last-seen.middleware';
@@ -29,6 +31,11 @@ import { User, UserSchema } from './infrastructure/databases/schemas/user.schema
   imports: [
     AppConfigModule,
     CacheModule,
+    ServeStaticModule.forRoot({
+      rootPath: path.resolve(process.env.LOCAL_STORAGE_PATH ?? '/app/storage'),
+      serveRoot: '/files',
+      serveStaticOptions: { index: false, fallthrough: false },
+    }),
     TagModule,
     CategoryModule,
     BookmarkModule,

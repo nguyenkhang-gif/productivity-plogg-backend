@@ -14,4 +14,9 @@ export class AppController {
   getMongooseStatus(): Promise<object> {
     return this.appService.checkMongooseStatus();
   }
+
+  @Get('/health')
+  health(): object {
+    return { status: 'ok' };
+  }
 }

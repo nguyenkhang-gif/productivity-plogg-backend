@@ -57,12 +57,14 @@ export class PostController {
     @Query('categoryId') categoryId?: string,
     @Query('tags') tags?: string,
     @Query('excludeId') excludeId?: string,
+    @Query('sortByUpdatedAt') sortByUpdatedAt?: string,
     @Req() req = null,
   ) {
     const filter = {
       categoryId,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       excludeId,
+      sortByUpdatedAt: sortByUpdatedAt === '1' ? 1 as const : sortByUpdatedAt === '-1' ? -1 as const : undefined,
     };
     return this.getPosts.execute(Number(page), Number(limit), req.user.userId, filter);
   }

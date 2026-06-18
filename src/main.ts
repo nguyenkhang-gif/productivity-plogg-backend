@@ -31,7 +31,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin) || origin?.endsWith('.trycloudflare.com')) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));

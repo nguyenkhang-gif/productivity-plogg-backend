@@ -16,6 +16,7 @@ export interface PostFeedFilter {
   categoryId?: string;
   tags?: string[];
   excludeId?: string;
+  sortByUpdatedAt?: 1 | -1;
 }
 
 export interface PostStats {

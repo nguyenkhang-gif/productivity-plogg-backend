@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   api:
-    build: 
+    build:
       context: .
     ports:
-      - "3001:3000"
+      - "8080:3000"
     env_file:
       - .env
     environment:
@@ -14,8 +14,19 @@ services:
       - FFMPEG_PATH=/usr/bin/ffmpeg
       - WHISPER_PATH=/opt/whisper.cpp/build/bin/whisper-cli
       - MODEL_PATH=/opt/whisper.cpp/models/ggml-base.bin
+    restart: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --protocol http2 --config /home/nonroot/.cloudflared/config.yml run plog-backend
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/dist
+      - ./.cloudflared:/home/nonroot/.cloudflared
+    depends_on:
+      api:
+        condition: service_healthy
     restart: always

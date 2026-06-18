@@ -264,7 +264,7 @@ export class MongoPostRepository implements PostRepository {
       this.postModel.countDocuments(matchFilter),
       this.postModel.aggregate([
         { $match: matchFilter },
-        { $sort: { createdAt: -1 } },
+        { $sort: filter?.sortByUpdatedAt != null ? { updatedAt: filter.sortByUpdatedAt } : { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
         ...buildReadPipeline(currentUserId),

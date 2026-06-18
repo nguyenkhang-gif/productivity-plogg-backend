@@ -67,3 +67,4 @@ UPLOAD_API.md
 # Docs (internal planning, not for repo)
 docs/
 /generated/prisma
+.cloudflared/

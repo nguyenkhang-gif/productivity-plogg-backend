@@ -14,7 +14,7 @@ export class DeletePostUseCase {
   ) {}
 
   async execute(id: string, requesterId: string): Promise<void> {
-    const post = await this.postRepo.findById(id);
+    const post = await this.postRepo.findById(id, requesterId);
     if (!post) throw new NotFoundException('Post not found');
     if (post.authorId !== requesterId) throw new ForbiddenException('Not your post');
 

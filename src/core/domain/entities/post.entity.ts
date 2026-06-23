@@ -22,9 +22,14 @@ export interface UserReaction {
   icon?: string;
 }
 
+export type PostType = 'ORIGINAL' | 'REPOST';
+export type PostVisibility = 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
+
 export class Post {
   id: string;
   authorId: string;
+  type: PostType;
+  visibility: PostVisibility;
   title?: string;
   content: string;
   imageUrls?: string[];
@@ -32,6 +37,7 @@ export class Post {
   tagIds?: string[];
   viewCount?: number;
   reactCount: number;
+  shareCount: number;
   isPublished: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -41,6 +47,11 @@ export class Post {
   isBookmarked?: boolean;
   commentCount?: number;
   userReaction?: UserReaction | null;
+  // repost fields
+  originalPostId?: string;
+  caption?: string;
+  originalPost?: Post | null;
+  hasShared?: boolean;
 
   constructor(partial: Partial<Post>) {
     Object.assign(this, partial);

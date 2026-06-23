@@ -12,6 +12,7 @@ export interface CreatePostInput {
   imageUrls?: string[];
   categoryId?: string | null;
   tagNames?: string[];
+  visibility?: 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 }
 
 @Injectable()
@@ -47,6 +48,7 @@ export class CreatePostUseCase {
       tagIds,
       reactCount: 0,
       isPublished: true,
+      visibility: input.visibility ?? 'PUBLIC',
     });
 
     const created = await this.postRepo.create(post);

@@ -37,4 +37,9 @@ export interface PostRepository {
   incrementViewCount(id: string): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;
   countByAuthor(authorId: string): Promise<number>;
+  // share
+  findRepostByUser(originalPostId: string, userId: string): Promise<Post | null>;
+  getShareCount(postId: string): Promise<number>;
+  incrementShareCount(postId: string): Promise<void>;
+  decrementShareCount(postId: string): Promise<void>;
 }

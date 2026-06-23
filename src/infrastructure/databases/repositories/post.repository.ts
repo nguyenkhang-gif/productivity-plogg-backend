@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -185,31 +185,67 @@ export class MongoPostRepository implements PostRepository {
     @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
 
+  private async getFriendIds(currentUserId: string): Promise<Set<string>> {
+    const friendships = await this.friendshipModel.find(
+      { status: 'accepted', $or: [{ userId: currentUserId }, { friendId: currentUserId }] },
+      { userId: 1, friendId: 1, _id: 0 },
+    ).lean();
+    return new Set(
+      friendships.map((f: any) => f.userId === currentUserId ? f.friendId : f.userId),
+    );
+  }
+
   private async buildVisibilityFilter(currentUserId: string) {
-    const [friendships, privateUsers] = await Promise.all([
-      this.friendshipModel.find(
-        { status: 'accepted', $or: [{ userId: currentUserId }, { friendId: currentUserId }] },
-        { userId: 1, friendId: 1, _id: 0 },
-      ).lean(),
+    const [friendIds, privateUsers] = await Promise.all([
+      this.getFriendIds(currentUserId),
       this.userModel.find({ isPrivate: true }, { _id: 1 }).lean(),
     ]);
 
-    const friendIds = new Set(
-      friendships.map((f: any) => f.userId === currentUserId ? f.friendId : f.userId),
-    );
-    const blockedIds = (privateUsers as any[])
+    // account-level: private account + not friend + not self → block entirely
+    const privateAccountBlockedIds = (privateUsers as any[])
       .map(u => u._id.toString())
       .filter(id => !friendIds.has(id) && id !== currentUserId);
 
-    return blockedIds.length > 0
-      ? { isPublished: true, authorId: { $nin: blockedIds } }
-      : { isPublished: true };
+    const friendIdsArray = Array.from(friendIds);
+
+    // per-post visibility filter:
+    // PUBLIC  → show (unless author is private account blocked above)
+    // FRIENDS → show only if currentUser is friend or author
+    // PRIVATE → never show in feed (only author sees via findByAuthor)
+    const visibilityConditions: any[] = [
+      // PUBLIC posts from non-blocked accounts
+      {
+        visibility: 'PUBLIC',
+        ...(privateAccountBlockedIds.length > 0 ? { authorId: { $nin: privateAccountBlockedIds } } : {}),
+      },
+      // FRIENDS posts from friends
+      {
+        visibility: 'FRIENDS',
+        authorId: { $in: friendIdsArray },
+      },
+      // own PRIVATE posts
+      {
+        visibility: 'PRIVATE',
+        authorId: currentUserId,
+      },
+      // own FRIENDS posts
+      {
+        visibility: 'FRIENDS',
+        authorId: currentUserId,
+      },
+    ];
+
+    return {
+      isPublished: true,
+      $or: visibilityConditions,
+    };
   }
 
   private mapToDomain(doc: any): PostEntity {
     return new PostEntity({
       id: doc._id.toString(),
       authorId: doc.authorId,
+      type: doc.type ?? 'ORIGINAL',
       title: doc.title ?? undefined,
       content: doc.content,
       imageUrls: doc.imageUrls,
@@ -217,9 +253,13 @@ export class MongoPostRepository implements PostRepository {
       tagIds: doc.tagIds ?? [],
       viewCount: doc.viewCount ?? 0,
       reactCount: doc.reactCount ?? 0,
+      shareCount: doc.shareCount ?? 0,
+      visibility: (doc.visibility ?? 'PUBLIC') as any,
       isPublished: doc.isPublished,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
+      originalPostId: doc.originalPostId ?? undefined,
+      caption: doc.caption ?? undefined,
       author: doc._author
         ? {
             id: doc._author._id.toString(),
@@ -241,7 +281,22 @@ export class MongoPostRepository implements PostRepository {
       { $match: { $expr: { $and: [{ $eq: [{ $toString: '$_id' }, id] }, { $eq: ['$isPublished', true] }] } } },
       ...buildReadPipeline(currentUserId),
     ]);
-    return doc ? this.mapToDomain(doc) : null;
+    if (!doc) return null;
+
+    const visibility = doc.visibility ?? 'PUBLIC';
+    const authorId = doc.authorId;
+
+    if (visibility === 'PRIVATE') {
+      if (currentUserId !== authorId) throw new ForbiddenException('This post is private');
+    } else if (visibility === 'FRIENDS') {
+      if (currentUserId !== authorId) {
+        if (!currentUserId) throw new ForbiddenException('This post is for friends only');
+        const friendIds = await this.getFriendIds(currentUserId);
+        if (!friendIds.has(authorId)) throw new ForbiddenException('This post is for friends only');
+      }
+    }
+
+    return this.mapToDomain(doc);
   }
 
   async findAll(page: number, limit: number, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts> {
@@ -258,7 +313,7 @@ export class MongoPostRepository implements PostRepository {
       if (tagIds.length) extraFilter.tagIds = { $in: tagIds };
     }
 
-    const matchFilter = { ...visibilityFilter, ...extraFilter };
+    const matchFilter = { ...visibilityFilter, ...extraFilter, type: { $ne: 'REPOST' } };
 
     const [total, items] = await Promise.all([
       this.postModel.countDocuments(matchFilter),
@@ -279,8 +334,24 @@ export class MongoPostRepository implements PostRepository {
 
   async findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
-    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
-    const filter = { ...visibilityFilter, authorId };
+    const isSelf = currentUserId === authorId;
+    let visibilityCondition: any;
+
+    if (isSelf) {
+      // author sees all their own posts
+      visibilityCondition = {};
+    } else if (currentUserId) {
+      const friendIds = await this.getFriendIds(currentUserId);
+      const isFriend = friendIds.has(authorId);
+      visibilityCondition = isFriend
+        ? { visibility: { $in: ['PUBLIC', 'FRIENDS'] } }
+        : { visibility: 'PUBLIC' };
+    } else {
+      // unauthenticated — only PUBLIC
+      visibilityCondition = { visibility: 'PUBLIC' };
+    }
+
+    const filter = { isPublished: true, authorId, type: { $ne: 'REPOST' }, ...visibilityCondition };
 
     const [total, items] = await Promise.all([
       this.postModel.countDocuments(filter),
@@ -349,6 +420,7 @@ export class MongoPostRepository implements PostRepository {
   async create(post: PostEntity): Promise<PostEntity> {
     const created = new this.postModel({
       authorId: post.authorId,
+      type: post.type ?? 'ORIGINAL',
       title: post.title ?? null,
       content: post.content,
       imageUrls: post.imageUrls ?? [],
@@ -356,6 +428,10 @@ export class MongoPostRepository implements PostRepository {
       categoryId: post.categoryId ?? null,
       tagIds: post.tagIds ?? [],
       viewCount: 0,
+      shareCount: 0,
+      originalPostId: post.originalPostId ?? null,
+      caption: post.caption ?? null,
+      visibility: post.visibility ?? 'PUBLIC',
     });
     const saved = await created.save();
     const full = await this.findById(saved._id.toString(), post.authorId);
@@ -385,5 +461,39 @@ export class MongoPostRepository implements PostRepository {
 
   async countByAuthor(authorId: string): Promise<number> {
     return this.postModel.countDocuments({ authorId });
+  }
+
+  async findRepostByUser(originalPostId: string, userId: string): Promise<PostEntity | null> {
+    const doc = await this.postModel.findOne({
+      type: 'REPOST',
+      originalPostId,
+      authorId: userId,
+      isPublished: true,
+    }).lean().exec();
+    if (!doc) return null;
+    return new PostEntity({
+      id: (doc as any)._id.toString(),
+      authorId: (doc as any).authorId,
+      type: (doc as any).type,
+      originalPostId: (doc as any).originalPostId,
+      caption: (doc as any).caption ?? undefined,
+      content: (doc as any).content,
+      isPublished: (doc as any).isPublished,
+      shareCount: (doc as any).shareCount ?? 0,
+      reactCount: (doc as any).reactCount ?? 0,
+    });
+  }
+
+  async getShareCount(postId: string): Promise<number> {
+    const doc = await this.postModel.findById(postId, { shareCount: 1 }).lean().exec();
+    return (doc as any)?.shareCount ?? 0;
+  }
+
+  async incrementShareCount(postId: string): Promise<void> {
+    await this.postModel.findByIdAndUpdate(postId, { $inc: { shareCount: 1 } }).exec();
+  }
+
+  async decrementShareCount(postId: string): Promise<void> {
+    await this.postModel.findByIdAndUpdate(postId, { $inc: { shareCount: -1 } }).exec();
   }
 }

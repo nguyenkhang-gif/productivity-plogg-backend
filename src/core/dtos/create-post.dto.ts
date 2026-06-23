@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreatePostDto {
   @IsString()
@@ -24,4 +24,8 @@ export class CreatePostDto {
   @IsString({ each: true })
   @IsOptional()
   tagNames?: string[];
+
+  @IsEnum(['PUBLIC', 'FRIENDS', 'PRIVATE'])
+  @IsOptional()
+  visibility?: 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 }

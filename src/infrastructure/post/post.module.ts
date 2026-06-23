@@ -17,6 +17,10 @@ import { BOOKMARK_REPOSITORY } from 'src/core/domain/repositories/bookmark.repos
 import { PostController } from 'src/presentation/controllers/post.controller';
 import { TagController } from 'src/presentation/controllers/tag.controller';
 import { CategoryController } from 'src/presentation/controllers/category.controller';
+import { ShareController } from 'src/presentation/controllers/share.controller';
+import { SharePostUseCase } from 'src/use-case/share/share-post.use-case';
+import { UnsharePostUseCase } from 'src/use-case/share/unshare-post.use-case';
+import { GetShareInfoUseCase } from 'src/use-case/share/get-share-info.use-case';
 import { CreatePostUseCase } from 'src/use-case/post/create-post.use-case';
 import { GetPostsUseCase } from 'src/use-case/post/get-posts.use-case';
 import { GetPostUseCase } from 'src/use-case/post/get-post.use-case';
@@ -46,7 +50,7 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
       { name: Bookmark.name, schema: BookmarkSchema },
     ]),
   ],
-  controllers: [PostController, TagController, CategoryController],
+  controllers: [ShareController, PostController, TagController, CategoryController],
   providers: [
     { provide: POST_REPOSITORY, useClass: MongoPostRepository },
     { provide: TAG_REPOSITORY, useClass: MongoTagRepository },
@@ -69,6 +73,9 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
     CreateCategoryUseCase,
     UpdateCategoryUseCase,
     DeleteCategoryUseCase,
+    SharePostUseCase,
+    UnsharePostUseCase,
+    GetShareInfoUseCase,
   ],
 })
 export class PostModule {}

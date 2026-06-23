@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdatePostDto {
   @IsString()
@@ -28,4 +28,8 @@ export class UpdatePostDto {
   @IsString({ each: true })
   @IsOptional()
   tagNames?: string[];
+
+  @IsEnum(['PUBLIC', 'FRIENDS', 'PRIVATE'])
+  @IsOptional()
+  visibility?: 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 }

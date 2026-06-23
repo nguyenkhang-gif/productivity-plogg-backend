@@ -10,7 +10,7 @@ export class AddBookmarkUseCase {
   ) {}
 
   async execute(userId: string, postId: string): Promise<void> {
-    const post = await this.postRepo.findById(postId);
+    const post = await this.postRepo.findById(postId, userId);
     if (!post) throw new NotFoundException('Post not found');
     await this.bookmarkRepo.upsert(userId, postId);
   }

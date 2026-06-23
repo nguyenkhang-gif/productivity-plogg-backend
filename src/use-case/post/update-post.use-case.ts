@@ -12,6 +12,7 @@ export interface UpdatePostInput {
   isPublished?: boolean;
   categoryId?: string | null;
   tagNames?: string[];
+  visibility?: 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
 }
 
 @Injectable()
@@ -24,7 +25,7 @@ export class UpdatePostUseCase {
   ) {}
 
   async execute(id: string, requesterId: string, input: UpdatePostInput): Promise<Post> {
-    const post = await this.postRepo.findById(id);
+    const post = await this.postRepo.findById(id, requesterId);
     if (!post) throw new NotFoundException('Post not found');
     if (post.authorId !== requesterId) throw new ForbiddenException('Not your post');
 
@@ -33,6 +34,7 @@ export class UpdatePostUseCase {
     if (input.content !== undefined) updateData.content = input.content;
     if (input.imageUrls !== undefined) updateData.imageUrls = input.imageUrls;
     if (input.isPublished !== undefined) updateData.isPublished = input.isPublished;
+    if (input.visibility !== undefined) updateData.visibility = input.visibility;
 
     // Category change
     if (input.categoryId !== undefined) {

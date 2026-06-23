@@ -2,9 +2,12 @@ export const LOCAL_STORAGE = 'LOCAL_STORAGE';
 
 export type LocalBucket = 'upload' | 'icons';
 
+export type LocalFileType = 'file' | 'directory';
+
 export interface LocalFileItem {
   name: string;
-  publicUrl: string;
+  type: LocalFileType;
+  publicUrl: string | null;
   size: number;
   createdAt: string;
 }
@@ -21,6 +24,6 @@ export interface LocalPaginatedFiles {
 
 export interface LocalStorageRepository {
   upload(file: Express.Multer.File, userId: string, bucket: LocalBucket): Promise<string>;
-  listFiles(userId: string, bucket: LocalBucket, page: number, limit: number): Promise<LocalPaginatedFiles>;
+  listFiles(userId: string, bucket: LocalBucket, page: number, limit: number, subPath?: string): Promise<LocalPaginatedFiles>;
   deleteFile(fileName: string, userId: string, bucket: LocalBucket): Promise<void>;
 }

@@ -11,8 +11,8 @@ export class UploadLocalUseCase {
     return this.storage.upload(file, userId, bucket);
   }
 
-  async listFiles(userId: string, bucket: LocalBucket, page = 1, limit = 20): Promise<LocalPaginatedFiles> {
-    return this.storage.listFiles(userId, bucket, page, limit);
+  async listFiles(userId: string, bucket: LocalBucket, page = 1, limit = 20, subPath = ''): Promise<LocalPaginatedFiles> {
+    return this.storage.listFiles(userId, bucket, page, limit, subPath);
   }
 
   async deleteFile(fileName: string, userId: string, bucket: LocalBucket): Promise<void> {

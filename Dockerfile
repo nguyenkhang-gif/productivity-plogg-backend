@@ -18,9 +18,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# Copy Prisma schema + generated client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+# Copy Prisma generated client (output = "../generated/prisma" in schema)
+COPY --from=builder /app/generated ./generated
 COPY prisma ./prisma
 
 # Copy compiled output

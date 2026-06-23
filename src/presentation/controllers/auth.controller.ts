@@ -116,6 +116,9 @@ export class AuthController {
     };
     const { access_token, refresh_token } = await this.loginUseCase.execute(req.user, metadata);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://knn-productivity.vercel.app';
-    return res.redirect(`${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`);
+    const redirectUrl = `${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`;
+    console.log('[GoogleCallback] FRONTEND_URL env:', this.configService.get<string>('FRONTEND_URL'));
+    console.log('[GoogleCallback] Redirecting to:', redirectUrl.split('?')[0]);
+    return res.redirect(redirectUrl);
   }
 }

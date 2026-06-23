@@ -29,4 +29,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "-r", "tsconfig-paths/register", "dist/src/main"]
+CMD ["node", "dist/main"]

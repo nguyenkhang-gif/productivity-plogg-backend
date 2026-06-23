@@ -438,10 +438,10 @@ export class MongoPostRepository implements PostRepository {
     return full!;
   }
 
-  async update(id: string, data: Partial<PostEntity>): Promise<PostEntity> {
+  async update(id: string, data: Partial<PostEntity>, currentUserId?: string): Promise<PostEntity> {
     const updated = await this.postModel.findByIdAndUpdate(id, data, { new: true }).exec();
     if (!updated) throw new NotFoundException('Post not found');
-    const full = await this.findById(id);
+    const full = await this.findById(id, currentUserId);
     return full!;
   }
 

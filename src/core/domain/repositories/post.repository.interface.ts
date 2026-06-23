@@ -32,7 +32,7 @@ export interface PostRepository {
   findTrending(limit: number, currentUserId: string): Promise<Post[]>;
   getStatsByAuthor(authorId: string): Promise<PostStats>;
   create(post: Post): Promise<Post>;
-  update(id: string, post: Partial<Post>): Promise<Post>;
+  update(id: string, post: Partial<Post>, currentUserId?: string): Promise<Post>;
   delete(id: string): Promise<void>;
   incrementViewCount(id: string): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;

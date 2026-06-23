@@ -61,7 +61,7 @@ export class UpdatePostUseCase {
       updateData.tagIds = newTagIds;
     }
 
-    const updated = await this.postRepo.update(id, updateData);
+    const updated = await this.postRepo.update(id, updateData, requesterId);
 
     const sideEffects: Promise<any>[] = [
       this.cache.delByPattern(`post:${id}:*`),

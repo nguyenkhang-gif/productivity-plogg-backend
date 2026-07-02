@@ -1,11 +1,29 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Post, PostSchema } from 'src/infrastructure/databases/schemas/post.schema';
-import { User, UserSchema } from 'src/infrastructure/databases/schemas/user.schema';
-import { Friendship, FriendshipSchema } from 'src/infrastructure/databases/schemas/friendship.schema';
-import { Tag, TagSchema } from 'src/infrastructure/databases/schemas/tag.schema';
-import { Category, CategorySchema } from 'src/infrastructure/databases/schemas/category.schema';
-import { Bookmark, BookmarkSchema } from 'src/infrastructure/databases/schemas/bookmark.schema';
+import {
+  Post,
+  PostSchema,
+} from 'src/infrastructure/databases/schemas/post.schema';
+import {
+  User,
+  UserSchema,
+} from 'src/infrastructure/databases/schemas/user.schema';
+import {
+  Friendship,
+  FriendshipSchema,
+} from 'src/infrastructure/databases/schemas/friendship.schema';
+import {
+  Tag,
+  TagSchema,
+} from 'src/infrastructure/databases/schemas/tag.schema';
+import {
+  Category,
+  CategorySchema,
+} from 'src/infrastructure/databases/schemas/category.schema';
+import {
+  Bookmark,
+  BookmarkSchema,
+} from 'src/infrastructure/databases/schemas/bookmark.schema';
 import { MongoPostRepository } from 'src/infrastructure/databases/repositories/post.repository';
 import { MongoTagRepository } from 'src/infrastructure/databases/repositories/tag.repository';
 import { MongoCategoryRepository } from 'src/infrastructure/databases/repositories/category.repository';
@@ -30,6 +48,9 @@ import { DeletePostUseCase } from 'src/use-case/post/delete-post.use-case';
 import { IncrementViewUseCase } from 'src/use-case/post/increment-view.use-case';
 import { GetTrendingPostsUseCase } from 'src/use-case/post/get-trending-posts.use-case';
 import { GetMyStatsUseCase } from 'src/use-case/post/get-my-stats.use-case';
+import { GetPendingPostsUseCase } from 'src/use-case/post/get-pending-posts.use-case';
+import { ApprovePostUseCase } from 'src/use-case/post/approve-post.use-case';
+import { RejectPostUseCase } from 'src/use-case/post/reject-post.use-case';
 import { AddBookmarkUseCase } from 'src/use-case/bookmark/add-bookmark.use-case';
 import { RemoveBookmarkUseCase } from 'src/use-case/bookmark/remove-bookmark.use-case';
 import { SearchTagsUseCase } from 'src/use-case/tag/search-tags.use-case';
@@ -50,7 +71,12 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
       { name: Bookmark.name, schema: BookmarkSchema },
     ]),
   ],
-  controllers: [ShareController, PostController, TagController, CategoryController],
+  controllers: [
+    ShareController,
+    PostController,
+    TagController,
+    CategoryController,
+  ],
   providers: [
     { provide: POST_REPOSITORY, useClass: MongoPostRepository },
     { provide: TAG_REPOSITORY, useClass: MongoTagRepository },
@@ -65,6 +91,9 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
     IncrementViewUseCase,
     GetTrendingPostsUseCase,
     GetMyStatsUseCase,
+    GetPendingPostsUseCase,
+    ApprovePostUseCase,
+    RejectPostUseCase,
     AddBookmarkUseCase,
     RemoveBookmarkUseCase,
     SearchTagsUseCase,

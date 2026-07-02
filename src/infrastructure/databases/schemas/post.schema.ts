@@ -35,8 +35,29 @@ export class Post {
   @Prop({ default: 0 })
   shareCount: number;
 
-  @Prop({ type: String, enum: ['PUBLIC', 'FRIENDS', 'PRIVATE'], default: 'PUBLIC' })
+  @Prop({
+    type: String,
+    enum: ['PUBLIC', 'FRIENDS', 'PRIVATE'],
+    default: 'PUBLIC',
+  })
   visibility: string;
+
+  // moderation — only PUBLIC posts require approval; everything else defaults APPROVED
+  @Prop({
+    type: String,
+    enum: ['APPROVED', 'PENDING', 'REJECTED'],
+    default: 'APPROVED',
+  })
+  moderationStatus: string;
+
+  @Prop({ type: String, default: null })
+  moderatedBy: string | null;
+
+  @Prop({ type: Date, default: null })
+  moderatedAt: Date | null;
+
+  @Prop({ type: String, default: null, maxlength: 500 })
+  rejectionReason: string | null;
 
   // repost fields
   @Prop({ type: String, default: null })
@@ -52,4 +73,8 @@ PostSchema.index({ isPublished: 1, categoryId: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, tagIds: 1, createdAt: -1 });
 PostSchema.index({ isPublished: 1, authorId: 1, createdAt: -1 });
 PostSchema.index({ originalPostId: 1 });
-PostSchema.index({ originalPostId: 1, authorId: 1 }, { unique: true, sparse: true });
+PostSchema.index(
+  { originalPostId: 1, authorId: 1 },
+  { unique: true, sparse: true },
+);
+PostSchema.index({ moderationStatus: 1, visibility: 1, createdAt: -1 });

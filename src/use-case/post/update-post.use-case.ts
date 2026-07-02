@@ -1,8 +1,27 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { POST_REPOSITORY, PostRepository } from 'src/core/domain/repositories/post.repository.interface';
-import { TAG_REPOSITORY, TagRepository } from 'src/core/domain/repositories/tag.repository.interface';
-import { CATEGORY_REPOSITORY, CategoryRepository } from 'src/core/domain/repositories/category.repository.interface';
-import { Post } from 'src/core/domain/entities/post.entity';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+} from 'src/core/domain/repositories/post.repository.interface';
+import {
+  TAG_REPOSITORY,
+  TagRepository,
+} from 'src/core/domain/repositories/tag.repository.interface';
+import {
+  CATEGORY_REPOSITORY,
+  CategoryRepository,
+} from 'src/core/domain/repositories/category.repository.interface';
+import {
+  Post,
+  PostModerationStatus,
+  PostVisibility,
+  deriveModerationStatus,
+} from 'src/core/domain/entities/post.entity';
 import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface UpdatePostInput {
@@ -20,21 +39,48 @@ export class UpdatePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
     @Inject(TAG_REPOSITORY) private readonly tagRepo: TagRepository,
-    @Inject(CATEGORY_REPOSITORY) private readonly categoryRepo: CategoryRepository,
+    @Inject(CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepository,
     private readonly cache: CacheService,
   ) {}
 
-  async execute(id: string, requesterId: string, input: UpdatePostInput): Promise<Post> {
+  async execute(
+    id: string,
+    requesterId: string,
+    input: UpdatePostInput,
+  ): Promise<Post> {
     const post = await this.postRepo.findById(id, requesterId);
     if (!post) throw new NotFoundException('Post not found');
-    if (post.authorId !== requesterId) throw new ForbiddenException('Not your post');
+    if (post.authorId !== requesterId)
+      throw new ForbiddenException('Not your post');
 
     const updateData: Partial<Post> = {};
     if (input.title !== undefined) updateData.title = input.title;
     if (input.content !== undefined) updateData.content = input.content;
     if (input.imageUrls !== undefined) updateData.imageUrls = input.imageUrls;
-    if (input.isPublished !== undefined) updateData.isPublished = input.isPublished;
-    if (input.visibility !== undefined) updateData.visibility = input.visibility;
+    if (input.isPublished !== undefined)
+      updateData.isPublished = input.isPublished;
+    if (input.visibility !== undefined)
+      updateData.visibility = input.visibility;
+
+    // Re-derive moderation status from the (possibly new) visibility + whether content changed.
+    const nextVisibility = (input.visibility ??
+      post.visibility) as PostVisibility;
+    const isContentChanged =
+      input.content !== undefined ||
+      input.title !== undefined ||
+      input.imageUrls !== undefined;
+    const nextStatus = deriveModerationStatus(nextVisibility, {
+      isContentChanged,
+      prevStatus: post.moderationStatus as PostModerationStatus,
+    });
+    if (nextStatus !== post.moderationStatus) {
+      updateData.moderationStatus = nextStatus;
+      // Leaving the decided state — clear the prior moderation verdict.
+      updateData.moderatedBy = null;
+      updateData.moderatedAt = null;
+      updateData.rejectionReason = null;
+    }
 
     // Category change
     if (input.categoryId !== undefined) {
@@ -56,8 +102,8 @@ export class UpdatePostUseCase {
         newTagIds.push(tag.id);
       }
       const oldTagIds = post.tagIds ?? [];
-      addedTagIds = newTagIds.filter(id => !oldTagIds.includes(id));
-      removedTagIds = oldTagIds.filter(id => !newTagIds.includes(id));
+      addedTagIds = newTagIds.filter((id) => !oldTagIds.includes(id));
+      removedTagIds = oldTagIds.filter((id) => !newTagIds.includes(id));
       updateData.tagIds = newTagIds;
     }
 
@@ -69,14 +115,18 @@ export class UpdatePostUseCase {
       this.cache.delByPattern(`posts:author:${post.authorId}:*`),
     ];
 
-    if (addedTagIds.length) sideEffects.push(this.tagRepo.incrementPostCount(addedTagIds));
-    if (removedTagIds.length) sideEffects.push(this.tagRepo.decrementPostCount(removedTagIds));
+    if (addedTagIds.length)
+      sideEffects.push(this.tagRepo.incrementPostCount(addedTagIds));
+    if (removedTagIds.length)
+      sideEffects.push(this.tagRepo.decrementPostCount(removedTagIds));
 
     if (input.categoryId !== undefined) {
       const oldCat = post.categoryId;
       const newCat = input.categoryId;
-      if (oldCat && oldCat !== newCat) sideEffects.push(this.categoryRepo.decrementPostCount(oldCat));
-      if (newCat && newCat !== oldCat) sideEffects.push(this.categoryRepo.incrementPostCount(newCat));
+      if (oldCat && oldCat !== newCat)
+        sideEffects.push(this.categoryRepo.decrementPostCount(oldCat));
+      if (newCat && newCat !== oldCat)
+        sideEffects.push(this.categoryRepo.incrementPostCount(newCat));
     }
 
     await Promise.all(sideEffects);

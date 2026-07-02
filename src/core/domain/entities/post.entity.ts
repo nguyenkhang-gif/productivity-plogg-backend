@@ -24,6 +24,23 @@ export interface UserReaction {
 
 export type PostType = 'ORIGINAL' | 'REPOST';
 export type PostVisibility = 'PUBLIC' | 'FRIENDS' | 'PRIVATE';
+export type PostModerationStatus = 'APPROVED' | 'PENDING' | 'REJECTED';
+
+/**
+ * Derive the moderation status of a post from its visibility.
+ * - Non-PUBLIC posts (FRIENDS/PRIVATE) never need review → APPROVED.
+ * - A new PUBLIC post enters the queue → PENDING.
+ * - Editing the content of an already-APPROVED PUBLIC post forces re-review → PENDING.
+ * - An untouched PUBLIC post keeps its prior status.
+ */
+export function deriveModerationStatus(
+  visibility: PostVisibility,
+  opts: { isContentChanged?: boolean; prevStatus?: PostModerationStatus } = {},
+): PostModerationStatus {
+  if (visibility !== 'PUBLIC') return 'APPROVED';
+  if (opts.prevStatus === 'APPROVED' && opts.isContentChanged) return 'PENDING';
+  return opts.prevStatus ?? 'PENDING';
+}
 
 export class Post {
   id: string;
@@ -39,6 +56,10 @@ export class Post {
   reactCount: number;
   shareCount: number;
   isPublished: boolean;
+  moderationStatus: PostModerationStatus;
+  moderatedBy?: string | null;
+  moderatedAt?: Date | null;
+  rejectionReason?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
   author?: PostAuthor;

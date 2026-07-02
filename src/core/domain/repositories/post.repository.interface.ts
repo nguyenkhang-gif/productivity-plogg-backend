@@ -1,4 +1,4 @@
-import { Post } from '../entities/post.entity';
+import { Post, PostModerationStatus } from '../entities/post.entity';
 
 export const POST_REPOSITORY = 'POST_REPOSITORY';
 
@@ -27,18 +27,45 @@ export interface PostStats {
 
 export interface PostRepository {
   findById(id: string, currentUserId?: string): Promise<Post | null>;
-  findAll(page: number, limit: number, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts>;
-  findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts>;
+  // raw fetch without visibility/moderation enforcement (moderator/internal use)
+  findByIdRaw(id: string): Promise<Post | null>;
+  findAll(
+    page: number,
+    limit: number,
+    currentUserId: string,
+    filter?: PostFeedFilter,
+  ): Promise<PaginatedPosts>;
+  findByAuthor(
+    authorId: string,
+    page: number,
+    limit: number,
+    currentUserId: string,
+  ): Promise<PaginatedPosts>;
   findTrending(limit: number, currentUserId: string): Promise<Post[]>;
   getStatsByAuthor(authorId: string): Promise<PostStats>;
+  // moderation
+  findPendingPublic(page: number, limit: number): Promise<PaginatedPosts>;
+  setModerationStatus(
+    id: string,
+    status: PostModerationStatus,
+    moderatorId: string,
+    reason?: string | null,
+  ): Promise<Post>;
   create(post: Post): Promise<Post>;
-  update(id: string, post: Partial<Post>, currentUserId?: string): Promise<Post>;
+  update(
+    id: string,
+    post: Partial<Post>,
+    currentUserId?: string,
+  ): Promise<Post>;
   delete(id: string): Promise<void>;
   incrementViewCount(id: string): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;
   countByAuthor(authorId: string): Promise<number>;
   // share
-  findRepostByUser(originalPostId: string, userId: string): Promise<Post | null>;
+  findRepostByUser(
+    originalPostId: string,
+    userId: string,
+  ): Promise<Post | null>;
   getShareCount(postId: string): Promise<number>;
   incrementShareCount(postId: string): Promise<void>;
   decrementShareCount(postId: string): Promise<void>;

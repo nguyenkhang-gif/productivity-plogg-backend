@@ -1,8 +1,20 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { POST_REPOSITORY, PostRepository } from 'src/core/domain/repositories/post.repository.interface';
-import { TAG_REPOSITORY, TagRepository } from 'src/core/domain/repositories/tag.repository.interface';
-import { CATEGORY_REPOSITORY, CategoryRepository } from 'src/core/domain/repositories/category.repository.interface';
-import { Post } from 'src/core/domain/entities/post.entity';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+} from 'src/core/domain/repositories/post.repository.interface';
+import {
+  TAG_REPOSITORY,
+  TagRepository,
+} from 'src/core/domain/repositories/tag.repository.interface';
+import {
+  CATEGORY_REPOSITORY,
+  CategoryRepository,
+} from 'src/core/domain/repositories/category.repository.interface';
+import {
+  Post,
+  deriveModerationStatus,
+} from 'src/core/domain/entities/post.entity';
 import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface CreatePostInput {
@@ -20,7 +32,8 @@ export class CreatePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
     @Inject(TAG_REPOSITORY) private readonly tagRepo: TagRepository,
-    @Inject(CATEGORY_REPOSITORY) private readonly categoryRepo: CategoryRepository,
+    @Inject(CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepository,
     private readonly cache: CacheService,
   ) {}
 
@@ -39,6 +52,7 @@ export class CreatePostUseCase {
       }
     }
 
+    const visibility = input.visibility ?? 'PUBLIC';
     const post = new Post({
       authorId: input.authorId,
       title: input.title,
@@ -48,14 +62,19 @@ export class CreatePostUseCase {
       tagIds,
       reactCount: 0,
       isPublished: true,
-      visibility: input.visibility ?? 'PUBLIC',
+      visibility,
+      moderationStatus: deriveModerationStatus(visibility),
     });
 
     const created = await this.postRepo.create(post);
 
     await Promise.all([
-      input.categoryId ? this.categoryRepo.incrementPostCount(input.categoryId) : Promise.resolve(),
-      tagIds.length ? this.tagRepo.incrementPostCount(tagIds) : Promise.resolve(),
+      input.categoryId
+        ? this.categoryRepo.incrementPostCount(input.categoryId)
+        : Promise.resolve(),
+      tagIds.length
+        ? this.tagRepo.incrementPostCount(tagIds)
+        : Promise.resolve(),
       this.cache.delByPattern('posts:all:*'),
       this.cache.delByPattern(`posts:author:${input.authorId}:*`),
       this.cache.del(`user:postCount:${input.authorId}`),

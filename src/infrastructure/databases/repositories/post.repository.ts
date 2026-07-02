@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -26,7 +30,9 @@ const LOOKUP_AUTHOR = {
     localField: '_authorObjId',
     foreignField: '_id',
     as: '_author',
-    pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1, isPrivate: 1 } }],
+    pipeline: [
+      { $project: { fullName: 1, username: 1, profilePic: 1, isPrivate: 1 } },
+    ],
   },
 };
 
@@ -73,7 +79,11 @@ const LOOKUP_CATEGORY = {
 const LOOKUP_TAGS = {
   $lookup: {
     from: 'tags',
-    let: { tagIds: { $map: { input: '$tagIds', as: 't', in: { $toObjectId: '$$t' } } } },
+    let: {
+      tagIds: {
+        $map: { input: '$tagIds', as: 't', in: { $toObjectId: '$$t' } },
+      },
+    },
     pipeline: [
       { $match: { $expr: { $in: ['$_id', '$$tagIds'] } } },
       { $project: { name: 1, slug: 1 } },
@@ -124,7 +134,9 @@ const buildLookupBookmark = (userId: string) => ({
 
 const buildAddComputedFields = (currentUserId?: string) => ({
   $addFields: {
-    commentCount: { $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0] },
+    commentCount: {
+      $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0],
+    },
     reactCount: { $ifNull: [{ $arrayElemAt: ['$_reactCount.total', 0] }, 0] },
     category: {
       $cond: {
@@ -141,7 +153,11 @@ const buildAddComputedFields = (currentUserId?: string) => ({
       $map: {
         input: '$_tags',
         as: 't',
-        in: { id: { $toString: '$$t._id' }, name: '$$t.name', slug: '$$t.slug' },
+        in: {
+          id: { $toString: '$$t._id' },
+          name: '$$t.name',
+          slug: '$$t.slug',
+        },
       },
     },
     userReaction: currentUserId
@@ -156,9 +172,7 @@ const buildAddComputedFields = (currentUserId?: string) => ({
           },
         }
       : null,
-    isBookmarked: currentUserId
-      ? { $gt: [{ $size: '$_bookmark' }, 0] }
-      : false,
+    isBookmarked: currentUserId ? { $gt: [{ $size: '$_bookmark' }, 0] } : false,
   },
 });
 
@@ -182,16 +196,24 @@ export class MongoPostRepository implements PostRepository {
   constructor(
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
+    @InjectModel(Friendship.name)
+    private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
 
   private async getFriendIds(currentUserId: string): Promise<Set<string>> {
-    const friendships = await this.friendshipModel.find(
-      { status: 'accepted', $or: [{ userId: currentUserId }, { friendId: currentUserId }] },
-      { userId: 1, friendId: 1, _id: 0 },
-    ).lean();
+    const friendships = await this.friendshipModel
+      .find(
+        {
+          status: 'accepted',
+          $or: [{ userId: currentUserId }, { friendId: currentUserId }],
+        },
+        { userId: 1, friendId: 1, _id: 0 },
+      )
+      .lean();
     return new Set(
-      friendships.map((f: any) => f.userId === currentUserId ? f.friendId : f.userId),
+      friendships.map((f: any) =>
+        f.userId === currentUserId ? f.friendId : f.userId,
+      ),
     );
   }
 
@@ -203,8 +225,8 @@ export class MongoPostRepository implements PostRepository {
 
     // account-level: private account + not friend + not self → block entirely
     const privateAccountBlockedIds = (privateUsers as any[])
-      .map(u => u._id.toString())
-      .filter(id => !friendIds.has(id) && id !== currentUserId);
+      .map((u) => u._id.toString())
+      .filter((id) => !friendIds.has(id) && id !== currentUserId);
 
     const friendIdsArray = Array.from(friendIds);
 
@@ -213,24 +235,22 @@ export class MongoPostRepository implements PostRepository {
     // FRIENDS → show only if currentUser is friend or author
     // PRIVATE → never show in feed (only author sees via findByAuthor)
     const visibilityConditions: any[] = [
-      // PUBLIC posts from non-blocked accounts
+      // PUBLIC posts from non-blocked accounts — only once approved by a moderator
       {
         visibility: 'PUBLIC',
-        ...(privateAccountBlockedIds.length > 0 ? { authorId: { $nin: privateAccountBlockedIds } } : {}),
+        moderationStatus: 'APPROVED',
+        ...(privateAccountBlockedIds.length > 0
+          ? { authorId: { $nin: privateAccountBlockedIds } }
+          : {}),
       },
       // FRIENDS posts from friends
       {
         visibility: 'FRIENDS',
         authorId: { $in: friendIdsArray },
       },
-      // own PRIVATE posts
+      // all of the current user's own posts — any visibility, any moderation status
+      // (so authors see their own PENDING/REJECTED public posts)
       {
-        visibility: 'PRIVATE',
-        authorId: currentUserId,
-      },
-      // own FRIENDS posts
-      {
-        visibility: 'FRIENDS',
         authorId: currentUserId,
       },
     ];
@@ -256,6 +276,10 @@ export class MongoPostRepository implements PostRepository {
       shareCount: doc.shareCount ?? 0,
       visibility: (doc.visibility ?? 'PUBLIC') as any,
       isPublished: doc.isPublished,
+      moderationStatus: (doc.moderationStatus ?? 'APPROVED') as any,
+      moderatedBy: doc.moderatedBy ?? null,
+      moderatedAt: doc.moderatedAt ?? null,
+      rejectionReason: doc.rejectionReason ?? null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       originalPostId: doc.originalPostId ?? undefined,
@@ -276,30 +300,69 @@ export class MongoPostRepository implements PostRepository {
     });
   }
 
-  async findById(id: string, currentUserId?: string): Promise<PostEntity | null> {
+  async findById(
+    id: string,
+    currentUserId?: string,
+  ): Promise<PostEntity | null> {
     const [doc] = await this.postModel.aggregate([
-      { $match: { $expr: { $and: [{ $eq: [{ $toString: '$_id' }, id] }, { $eq: ['$isPublished', true] }] } } },
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: [{ $toString: '$_id' }, id] },
+              { $eq: ['$isPublished', true] },
+            ],
+          },
+        },
+      },
       ...buildReadPipeline(currentUserId),
     ]);
     if (!doc) return null;
 
     const visibility = doc.visibility ?? 'PUBLIC';
+    const moderationStatus = doc.moderationStatus ?? 'APPROVED';
     const authorId = doc.authorId;
 
+    // A PUBLIC post that is still PENDING/REJECTED is visible only to its author.
+    if (
+      visibility === 'PUBLIC' &&
+      moderationStatus !== 'APPROVED' &&
+      currentUserId !== authorId
+    ) {
+      throw new ForbiddenException('This post is awaiting moderation');
+    }
+
     if (visibility === 'PRIVATE') {
-      if (currentUserId !== authorId) throw new ForbiddenException('This post is private');
+      if (currentUserId !== authorId)
+        throw new ForbiddenException('This post is private');
     } else if (visibility === 'FRIENDS') {
       if (currentUserId !== authorId) {
-        if (!currentUserId) throw new ForbiddenException('This post is for friends only');
+        if (!currentUserId)
+          throw new ForbiddenException('This post is for friends only');
         const friendIds = await this.getFriendIds(currentUserId);
-        if (!friendIds.has(authorId)) throw new ForbiddenException('This post is for friends only');
+        if (!friendIds.has(authorId))
+          throw new ForbiddenException('This post is for friends only');
       }
     }
 
     return this.mapToDomain(doc);
   }
 
-  async findAll(page: number, limit: number, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts> {
+  async findByIdRaw(id: string): Promise<PostEntity | null> {
+    const [doc] = await this.postModel.aggregate([
+      { $match: { $expr: { $eq: [{ $toString: '$_id' }, id] } } },
+      ...buildReadPipeline(),
+    ]);
+    if (!doc) return null;
+    return this.mapToDomain(doc);
+  }
+
+  async findAll(
+    page: number,
+    limit: number,
+    currentUserId: string,
+    filter?: PostFeedFilter,
+  ): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
     const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
 
@@ -308,18 +371,30 @@ export class MongoPostRepository implements PostRepository {
     if (filter?.excludeId) extraFilter._id = { $ne: filter.excludeId };
     if (filter?.tags?.length) {
       const tagSlugs = filter.tags;
-      const tagDocs = await this.postModel.db.collection('tags').find({ slug: { $in: tagSlugs } }, { projection: { _id: 1 } }).toArray();
+      const tagDocs = await this.postModel.db
+        .collection('tags')
+        .find({ slug: { $in: tagSlugs } }, { projection: { _id: 1 } })
+        .toArray();
       const tagIds = tagDocs.map((t: any) => t._id.toString());
       if (tagIds.length) extraFilter.tagIds = { $in: tagIds };
     }
 
-    const matchFilter = { ...visibilityFilter, ...extraFilter, type: { $ne: 'REPOST' } };
+    const matchFilter = {
+      ...visibilityFilter,
+      ...extraFilter,
+      type: { $ne: 'REPOST' },
+    };
 
     const [total, items] = await Promise.all([
       this.postModel.countDocuments(matchFilter),
       this.postModel.aggregate([
         { $match: matchFilter },
-        { $sort: filter?.sortByUpdatedAt != null ? { updatedAt: filter.sortByUpdatedAt } : { createdAt: -1 } },
+        {
+          $sort:
+            filter?.sortByUpdatedAt != null
+              ? { updatedAt: filter.sortByUpdatedAt }
+              : { createdAt: -1 },
+        },
         { $skip: skip },
         { $limit: limit },
         ...buildReadPipeline(currentUserId),
@@ -332,7 +407,12 @@ export class MongoPostRepository implements PostRepository {
     };
   }
 
-  async findByAuthor(authorId: string, page: number, limit: number, currentUserId: string): Promise<PaginatedPosts> {
+  async findByAuthor(
+    authorId: string,
+    page: number,
+    limit: number,
+    currentUserId: string,
+  ): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
     const isSelf = currentUserId === authorId;
     let visibilityCondition: any;
@@ -343,15 +423,29 @@ export class MongoPostRepository implements PostRepository {
     } else if (currentUserId) {
       const friendIds = await this.getFriendIds(currentUserId);
       const isFriend = friendIds.has(authorId);
+      // non-self viewers never see un-approved PUBLIC posts (FRIENDS are always APPROVED)
       visibilityCondition = isFriend
-        ? { visibility: { $in: ['PUBLIC', 'FRIENDS'] } }
-        : { visibility: 'PUBLIC' };
+        ? {
+            $or: [
+              { visibility: 'FRIENDS' },
+              { visibility: 'PUBLIC', moderationStatus: 'APPROVED' },
+            ],
+          }
+        : { visibility: 'PUBLIC', moderationStatus: 'APPROVED' };
     } else {
-      // unauthenticated — only PUBLIC
-      visibilityCondition = { visibility: 'PUBLIC' };
+      // unauthenticated — only approved PUBLIC
+      visibilityCondition = {
+        visibility: 'PUBLIC',
+        moderationStatus: 'APPROVED',
+      };
     }
 
-    const filter = { isPublished: true, authorId, type: { $ne: 'REPOST' }, ...visibilityCondition };
+    const filter = {
+      isPublished: true,
+      authorId,
+      type: { $ne: 'REPOST' },
+      ...visibilityCondition,
+    };
 
     const [total, items] = await Promise.all([
       this.postModel.countDocuments(filter),
@@ -370,7 +464,10 @@ export class MongoPostRepository implements PostRepository {
     };
   }
 
-  async findTrending(limit: number, currentUserId: string): Promise<PostEntity[]> {
+  async findTrending(
+    limit: number,
+    currentUserId: string,
+  ): Promise<PostEntity[]> {
     const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
     const items = await this.postModel.aggregate([
       { $match: visibilityFilter },
@@ -379,6 +476,58 @@ export class MongoPostRepository implements PostRepository {
       { $limit: limit },
     ]);
     return items.map((doc) => this.mapToDomain(doc));
+  }
+
+  async findPendingPublic(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedPosts> {
+    const skip = (page - 1) * limit;
+    const matchFilter = {
+      isPublished: true,
+      visibility: 'PUBLIC',
+      moderationStatus: 'PENDING',
+      type: { $ne: 'REPOST' },
+    };
+
+    const [total, items] = await Promise.all([
+      this.postModel.countDocuments(matchFilter),
+      this.postModel.aggregate([
+        { $match: matchFilter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        ...buildReadPipeline(),
+      ]),
+    ]);
+
+    return {
+      items: items.map((doc) => this.mapToDomain(doc)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async setModerationStatus(
+    id: string,
+    status: 'APPROVED' | 'PENDING' | 'REJECTED',
+    moderatorId: string,
+    reason?: string | null,
+  ): Promise<PostEntity> {
+    const updated = await this.postModel
+      .findByIdAndUpdate(
+        id,
+        {
+          moderationStatus: status,
+          moderatedBy: moderatorId,
+          moderatedAt: new Date(),
+          rejectionReason: status === 'REJECTED' ? (reason ?? null) : null,
+        },
+        { new: true },
+      )
+      .exec();
+    if (!updated) throw new NotFoundException('Post not found');
+    const full = await this.findById(id, updated.authorId);
+    return full!;
   }
 
   async getStatsByAuthor(authorId: string): Promise<PostStats> {
@@ -432,14 +581,21 @@ export class MongoPostRepository implements PostRepository {
       originalPostId: post.originalPostId ?? null,
       caption: post.caption ?? null,
       visibility: post.visibility ?? 'PUBLIC',
+      moderationStatus: post.moderationStatus ?? 'APPROVED',
     });
     const saved = await created.save();
     const full = await this.findById(saved._id.toString(), post.authorId);
     return full!;
   }
 
-  async update(id: string, data: Partial<PostEntity>, currentUserId?: string): Promise<PostEntity> {
-    const updated = await this.postModel.findByIdAndUpdate(id, data, { new: true }).exec();
+  async update(
+    id: string,
+    data: Partial<PostEntity>,
+    currentUserId?: string,
+  ): Promise<PostEntity> {
+    const updated = await this.postModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
     if (!updated) throw new NotFoundException('Post not found');
     const full = await this.findById(id, currentUserId);
     return full!;
@@ -451,25 +607,36 @@ export class MongoPostRepository implements PostRepository {
   }
 
   async incrementViewCount(id: string): Promise<void> {
-    const result = await this.postModel.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+    const result = await this.postModel.findByIdAndUpdate(id, {
+      $inc: { viewCount: 1 },
+    });
     if (!result) throw new NotFoundException('Post not found');
   }
 
   async nullifyCategoryOnPosts(categoryId: string): Promise<void> {
-    await this.postModel.updateMany({ categoryId }, { $set: { categoryId: null } });
+    await this.postModel.updateMany(
+      { categoryId },
+      { $set: { categoryId: null } },
+    );
   }
 
   async countByAuthor(authorId: string): Promise<number> {
     return this.postModel.countDocuments({ authorId });
   }
 
-  async findRepostByUser(originalPostId: string, userId: string): Promise<PostEntity | null> {
-    const doc = await this.postModel.findOne({
-      type: 'REPOST',
-      originalPostId,
-      authorId: userId,
-      isPublished: true,
-    }).lean().exec();
+  async findRepostByUser(
+    originalPostId: string,
+    userId: string,
+  ): Promise<PostEntity | null> {
+    const doc = await this.postModel
+      .findOne({
+        type: 'REPOST',
+        originalPostId,
+        authorId: userId,
+        isPublished: true,
+      })
+      .lean()
+      .exec();
     if (!doc) return null;
     return new PostEntity({
       id: (doc as any)._id.toString(),
@@ -485,15 +652,22 @@ export class MongoPostRepository implements PostRepository {
   }
 
   async getShareCount(postId: string): Promise<number> {
-    const doc = await this.postModel.findById(postId, { shareCount: 1 }).lean().exec();
+    const doc = await this.postModel
+      .findById(postId, { shareCount: 1 })
+      .lean()
+      .exec();
     return (doc as any)?.shareCount ?? 0;
   }
 
   async incrementShareCount(postId: string): Promise<void> {
-    await this.postModel.findByIdAndUpdate(postId, { $inc: { shareCount: 1 } }).exec();
+    await this.postModel
+      .findByIdAndUpdate(postId, { $inc: { shareCount: 1 } })
+      .exec();
   }
 
   async decrementShareCount(postId: string): Promise<void> {
-    await this.postModel.findByIdAndUpdate(postId, { $inc: { shareCount: -1 } }).exec();
+    await this.postModel
+      .findByIdAndUpdate(postId, { $inc: { shareCount: -1 } })
+      .exec();
   }
 }

@@ -13,6 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/presentation/guards/roles.guard';
+import { Roles } from 'src/presentation/decorators/roles.decorator';
 import { CreatePostDto } from 'src/core/dtos/create-post.dto';
 import { UpdatePostDto } from 'src/core/dtos/update-post.dto';
 import { CreatePostUseCase } from 'src/use-case/post/create-post.use-case';
@@ -26,6 +28,9 @@ import { GetTrendingPostsUseCase } from 'src/use-case/post/get-trending-posts.us
 import { GetMyStatsUseCase } from 'src/use-case/post/get-my-stats.use-case';
 import { AddBookmarkUseCase } from 'src/use-case/bookmark/add-bookmark.use-case';
 import { RemoveBookmarkUseCase } from 'src/use-case/bookmark/remove-bookmark.use-case';
+import { GetPendingPostsUseCase } from 'src/use-case/post/get-pending-posts.use-case';
+import { ApprovePostUseCase } from 'src/use-case/post/approve-post.use-case';
+import { RejectPostUseCase } from 'src/use-case/post/reject-post.use-case';
 
 @Controller('api/posts')
 export class PostController {
@@ -41,6 +46,9 @@ export class PostController {
     private readonly getMyStats: GetMyStatsUseCase,
     private readonly addBookmark: AddBookmarkUseCase,
     private readonly removeBookmark: RemoveBookmarkUseCase,
+    private readonly getPendingPosts: GetPendingPostsUseCase,
+    private readonly approvePost: ApprovePostUseCase,
+    private readonly rejectPost: RejectPostUseCase,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -62,11 +70,26 @@ export class PostController {
   ) {
     const filter = {
       categoryId,
-      tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+      tags: tags
+        ? tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
       excludeId,
-      sortByUpdatedAt: sortByUpdatedAt === '1' ? 1 as const : sortByUpdatedAt === '-1' ? -1 as const : undefined,
+      sortByUpdatedAt:
+        sortByUpdatedAt === '1'
+          ? (1 as const)
+          : sortByUpdatedAt === '-1'
+            ? (-1 as const)
+            : undefined,
     };
-    return this.getPosts.execute(Number(page), Number(limit), req.user.userId, filter);
+    return this.getPosts.execute(
+      Number(page),
+      Number(limit),
+      req.user.userId,
+      filter,
+    );
   }
 
   // ── Static routes BEFORE :id ───────────────────────────────────────────────
@@ -83,6 +106,15 @@ export class PostController {
     return this.getMyStats.execute(req.user.userId);
   }
 
+  // ── Moderation (moderator/admin only) ───────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Get('moderation/pending')
+  pending(@Query('page') page = 1, @Query('limit') limit = 10) {
+    return this.getPendingPosts.execute(Number(page), Number(limit));
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('author/:authorId')
   findByAuthor(
@@ -91,7 +123,12 @@ export class PostController {
     @Query('limit') limit = 10,
     @Req() req,
   ) {
-    return this.getPostsByAuthor.execute(authorId, Number(page), Number(limit), req.user.userId);
+    return this.getPostsByAuthor.execute(
+      authorId,
+      Number(page),
+      Number(limit),
+      req.user.userId,
+    );
   }
 
   // ── :id routes ─────────────────────────────────────────────────────────────
@@ -113,6 +150,20 @@ export class PostController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @Req() req) {
     return this.deletePost.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Patch(':id/approve')
+  approve(@Param('id') id: string, @Req() req) {
+    return this.approvePost.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Patch(':id/reject')
+  reject(@Param('id') id: string, @Body('reason') reason: string, @Req() req) {
+    return this.rejectPost.execute(id, req.user.userId, reason);
   }
 
   @UseGuards(JwtAuthGuard)

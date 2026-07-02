@@ -5,11 +5,14 @@ import { TokenService } from 'src/infrastructure/auth/token/token.service';
 export class RefreshTokenUseCase {
   constructor(private readonly tokenService: TokenService) {}
 
-  async execute(refreshToken: string): Promise<{ access_token: string; refresh_token: string }> {
+  async execute(
+    refreshToken: string,
+  ): Promise<{ access_token: string; refresh_token: string }> {
     const result = await this.tokenService.verifyRefreshToken(refreshToken);
-    if (!result) throw new UnauthorizedException('Invalid or expired refresh token');
+    if (!result)
+      throw new UnauthorizedException('Invalid or expired refresh token');
 
-    const { payload, sessionId } = result;
+    const { payload, sessionId: _sessionId } = result;
 
     // Revoke current token (rotation)
     await this.tokenService.revokeRefreshToken(refreshToken, payload.sub);

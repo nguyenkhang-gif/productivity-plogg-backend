@@ -35,6 +35,8 @@ interface StoredSession {
   createdAt: number;
   userAgent: string;
   ip: string;
+  email: string;
+  role?: string;
 }
 
 function hashToken(raw: string): string {
@@ -42,21 +44,29 @@ function hashToken(raw: string): string {
 }
 
 function parseUserAgent(ua: string): { browser: string; os: string } {
-  const browser =
-    /Edg\//.test(ua) ? 'Edge' :
-    /Chrome\//.test(ua) ? 'Chrome' :
-    /Firefox\//.test(ua) ? 'Firefox' :
-    /Safari\//.test(ua) && !/Chrome/.test(ua) ? 'Safari' :
-    /okhttp/.test(ua) ? 'Android App' :
-    'Unknown';
+  const browser = /Edg\//.test(ua)
+    ? 'Edge'
+    : /Chrome\//.test(ua)
+      ? 'Chrome'
+      : /Firefox\//.test(ua)
+        ? 'Firefox'
+        : /Safari\//.test(ua) && !/Chrome/.test(ua)
+          ? 'Safari'
+          : /okhttp/.test(ua)
+            ? 'Android App'
+            : 'Unknown';
 
-  const os =
-    /iPhone|iPad/.test(ua) ? 'iOS' :
-    /Android/.test(ua) ? 'Android' :
-    /Windows/.test(ua) ? 'Windows' :
-    /Mac OS X/.test(ua) ? 'macOS' :
-    /Linux/.test(ua) ? 'Linux' :
-    'Unknown';
+  const os = /iPhone|iPad/.test(ua)
+    ? 'iOS'
+    : /Android/.test(ua)
+      ? 'Android'
+      : /Windows/.test(ua)
+        ? 'Windows'
+        : /Mac OS X/.test(ua)
+          ? 'macOS'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : 'Unknown';
 
   return { browser, os };
 }
@@ -76,12 +86,20 @@ export class TokenService {
 
   issueAccessToken(user: UserPayload): { token: string; jti: string } {
     const jti = uuidv4();
-    const token = this.jwtService.sign({ sub: user.sub, email: user.email, role: user.role, jti });
+    const token = this.jwtService.sign({
+      sub: user.sub,
+      email: user.email,
+      role: user.role,
+      jti,
+    });
     return { token, jti };
   }
 
   // Format: <userId>.<sessionId>.<rawSecret>
-  async issueRefreshToken(user: UserPayload, metadata: SessionMetadata = {}): Promise<string> {
+  async issueRefreshToken(
+    user: UserPayload,
+    metadata: SessionMetadata = {},
+  ): Promise<string> {
     const sessionId = uuidv4();
     const rawSecret = uuidv4();
     const tokenHash = hashToken(rawSecret);
@@ -91,6 +109,8 @@ export class TokenService {
       createdAt: Date.now(),
       userAgent: metadata.userAgent ?? '',
       ip: metadata.ip ?? '',
+      email: user.email,
+      role: user.role,
     };
 
     const tokenKey = `${REFRESH_TOKEN_PREFIX}${user.sub}:${sessionId}`;
@@ -101,17 +121,25 @@ export class TokenService {
     if (existingIds.length >= MAX_SESSIONS_PER_USER) {
       const sessions = await Promise.all(
         existingIds.map(async (sid) => {
-          const data = await this.cacheService.get<StoredSession>(`${REFRESH_TOKEN_PREFIX}${user.sub}:${sid}`);
+          const data = await this.cacheService.get<StoredSession>(
+            `${REFRESH_TOKEN_PREFIX}${user.sub}:${sid}`,
+          );
           return { sid, createdAt: data?.createdAt ?? 0 };
         }),
       );
       sessions.sort((a, b) => a.createdAt - b.createdAt);
       const oldest = sessions[0];
-      await this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${user.sub}:${oldest.sid}`);
+      await this.cacheService.del(
+        `${REFRESH_TOKEN_PREFIX}${user.sub}:${oldest.sid}`,
+      );
       await this.cacheService.srem(sessionKey, oldest.sid);
     }
 
-    const ok = await this.cacheService.set(tokenKey, stored, REFRESH_TTL_SECONDS);
+    const ok = await this.cacheService.set(
+      tokenKey,
+      stored,
+      REFRESH_TTL_SECONDS,
+    );
     if (!ok) throw new ServiceUnavailableException('Session store unavailable');
 
     await this.cacheService.sadd(sessionKey, sessionId);
@@ -120,7 +148,9 @@ export class TokenService {
     return `${user.sub}.${sessionId}.${rawSecret}`;
   }
 
-  async verifyRefreshToken(token: string): Promise<{ payload: UserPayload; sessionId: string } | null> {
+  async verifyRefreshToken(
+    token: string,
+  ): Promise<{ payload: UserPayload; sessionId: string } | null> {
     const parts = token.split('.');
     // UUID có dấu '-' nên split('.') cho đúng 3 phần
     if (parts.length !== 3) return null;
@@ -138,7 +168,7 @@ export class TokenService {
     }
 
     return {
-      payload: { sub: userId, email: '' },
+      payload: { sub: userId, email: stored.email ?? '', role: stored.role },
       sessionId,
     };
   }
@@ -147,11 +177,16 @@ export class TokenService {
     const parts = token.split('.');
     if (parts.length !== 3) return;
     const [, sessionId] = parts;
-    await this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${userId}:${sessionId}`);
+    await this.cacheService.del(
+      `${REFRESH_TOKEN_PREFIX}${userId}:${sessionId}`,
+    );
     await this.cacheService.srem(`${SESSION_PREFIX}${userId}`, sessionId);
   }
 
-  async revokeAllSessions(userId: string, exceptSessionId?: string): Promise<void> {
+  async revokeAllSessions(
+    userId: string,
+    exceptSessionId?: string,
+  ): Promise<void> {
     const sessionKey = `${SESSION_PREFIX}${userId}`;
     const sessionIds: string[] = await this.cacheService.smembers(sessionKey);
 
@@ -160,22 +195,33 @@ export class TokenService {
       : sessionIds;
 
     await Promise.all(
-      toRevoke.map((sid) => this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${userId}:${sid}`)),
+      toRevoke.map((sid) =>
+        this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${userId}:${sid}`),
+      ),
     );
 
     if (exceptSessionId) {
-      await Promise.all(toRevoke.map((sid) => this.cacheService.srem(sessionKey, sid)));
+      await Promise.all(
+        toRevoke.map((sid) => this.cacheService.srem(sessionKey, sid)),
+      );
     } else {
       await this.cacheService.del(sessionKey);
     }
   }
 
-  async listSessions(userId: string, currentSessionId?: string): Promise<SessionInfo[]> {
-    const sessionIds: string[] = await this.cacheService.smembers(`${SESSION_PREFIX}${userId}`);
+  async listSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<SessionInfo[]> {
+    const sessionIds: string[] = await this.cacheService.smembers(
+      `${SESSION_PREFIX}${userId}`,
+    );
 
     const sessions = await Promise.all(
       sessionIds.map(async (sid) => {
-        const data = await this.cacheService.get<StoredSession>(`${REFRESH_TOKEN_PREFIX}${userId}:${sid}`);
+        const data = await this.cacheService.get<StoredSession>(
+          `${REFRESH_TOKEN_PREFIX}${userId}:${sid}`,
+        );
         if (!data) return null;
         const { browser, os } = parseUserAgent(data.userAgent);
         return {
@@ -191,7 +237,10 @@ export class TokenService {
 
     return sessions
       .filter(Boolean)
-      .sort((a, b) => new Date(b!.createdAt).getTime() - new Date(a!.createdAt).getTime()) as SessionInfo[];
+      .sort(
+        (a, b) =>
+          new Date(b!.createdAt).getTime() - new Date(a!.createdAt).getTime(),
+      ) as SessionInfo[];
   }
 
   async blacklistAccessToken(jti: string, exp: number): Promise<void> {

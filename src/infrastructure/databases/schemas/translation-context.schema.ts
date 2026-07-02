@@ -45,10 +45,13 @@ export class TranslationContext {
   @Prop({ required: true }) targetTone: string;
   @Prop({ default: 'en' }) sourceLanguage: string;
   @Prop({ default: 'vi' }) targetLanguage: string;
-  @Prop({ type: [CharacterProfile], default: [] }) characters: CharacterProfile[];
+  @Prop({ type: [CharacterProfile], default: [] })
+  characters: CharacterProfile[];
   @Prop({ type: [GlossaryEntry], default: [] }) glossary: GlossaryEntry[];
   @Prop({ type: StyleGuide, required: true }) styleGuide: StyleGuide;
-  @Prop({ type: [ChapterSummary], default: [] }) chapterSummaries: ChapterSummary[];
+  @Prop({ type: [ChapterSummary], default: [] })
+  chapterSummaries: ChapterSummary[];
 }
 
-export const TranslationContextSchema = SchemaFactory.createForClass(TranslationContext);
+export const TranslationContextSchema =
+  SchemaFactory.createForClass(TranslationContext);

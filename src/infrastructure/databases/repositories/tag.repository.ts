@@ -7,7 +7,9 @@ import { Tag, TagDocument } from '../schemas/tag.schema';
 
 @Injectable()
 export class MongoTagRepository implements TagRepository {
-  constructor(@InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>) {}
+  constructor(
+    @InjectModel(Tag.name) private readonly tagModel: Model<TagDocument>,
+  ) {}
 
   private mapToDomain(doc: any): TagEntity {
     return new TagEntity({
@@ -47,15 +49,16 @@ export class MongoTagRepository implements TagRepository {
   }
 
   async findByIds(ids: string[]): Promise<TagEntity[]> {
-    const docs = await this.tagModel
-      .find({ _id: { $in: ids } })
-      .lean();
+    const docs = await this.tagModel.find({ _id: { $in: ids } }).lean();
     return docs.map((d) => this.mapToDomain(d));
   }
 
   async incrementPostCount(ids: string[]): Promise<void> {
     if (!ids.length) return;
-    await this.tagModel.updateMany({ _id: { $in: ids } }, { $inc: { postCount: 1 } });
+    await this.tagModel.updateMany(
+      { _id: { $in: ids } },
+      { $inc: { postCount: 1 } },
+    );
   }
 
   async decrementPostCount(ids: string[]): Promise<void> {

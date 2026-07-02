@@ -11,7 +11,11 @@ export class GetCommentsByPostUseCase {
     @Inject(COMMENT_REPOSITORY) private readonly commentRepo: CommentRepository,
   ) {}
 
-  async execute(postId: string, page = 1, limit = 20): Promise<PaginatedComments> {
+  async execute(
+    postId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedComments> {
     return this.commentRepo.findByPost(postId, page, limit);
   }
 }

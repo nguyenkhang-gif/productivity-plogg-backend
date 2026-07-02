@@ -23,7 +23,21 @@ export interface LocalPaginatedFiles {
 }
 
 export interface LocalStorageRepository {
-  upload(file: Express.Multer.File, userId: string, bucket: LocalBucket): Promise<string>;
-  listFiles(userId: string, bucket: LocalBucket, page: number, limit: number, subPath?: string): Promise<LocalPaginatedFiles>;
-  deleteFile(fileName: string, userId: string, bucket: LocalBucket): Promise<void>;
+  upload(
+    file: Express.Multer.File,
+    userId: string,
+    bucket: LocalBucket,
+  ): Promise<string>;
+  listFiles(
+    userId: string,
+    bucket: LocalBucket,
+    page: number,
+    limit: number,
+    subPath?: string,
+  ): Promise<LocalPaginatedFiles>;
+  deleteFile(
+    fileName: string,
+    userId: string,
+    bucket: LocalBucket,
+  ): Promise<void>;
 }

@@ -1,4 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CreateBudgetTransactionDto } from 'src/core/dtos/create-budget-transaction.dto';
 import { UpdateBudgetTransactionDto } from 'src/core/dtos/update-budget-transaction.dto';
@@ -30,7 +43,14 @@ export class BudgetTransactionController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.listUseCase.execute(req.user.userId, { startDate, endDate, type, categoryId, page, limit });
+    return this.listUseCase.execute(req.user.userId, {
+      startDate,
+      endDate,
+      type,
+      categoryId,
+      page,
+      limit,
+    });
   }
 
   @Get(':id')
@@ -44,7 +64,11 @@ export class BudgetTransactionController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateBudgetTransactionDto, @Req() req) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBudgetTransactionDto,
+    @Req() req,
+  ) {
     return this.updateUseCase.execute(id, req.user.userId, dto);
   }
 

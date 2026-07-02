@@ -3,7 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { Message, MessageSchema } from '../databases/schemas/message.schema';
-import { Conversation, ConversationSchema } from '../databases/schemas/conversation.schema';
+import {
+  Conversation,
+  ConversationSchema,
+} from '../databases/schemas/conversation.schema';
 import { MongoMessageRepository } from '../databases/repositories/message.repository';
 import { MongoConversationRepository } from '../databases/repositories/conversation.repository';
 import { MESSAGE_REPOSITORY } from 'src/core/domain/repositories/message.repository.interface';
@@ -23,7 +26,9 @@ import { ChatGateway } from 'src/presentation/gateways/chat.gateway';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET_KEY')?.trim() || 'defaultSecret',
+        secret:
+          configService.get<string>('JWT_SECRET_KEY')?.trim() ||
+          'defaultSecret',
       }),
     }),
   ],

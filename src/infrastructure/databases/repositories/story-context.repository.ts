@@ -6,7 +6,10 @@ import {
   StoryContextRepository,
 } from 'src/core/domain/repositories/story-context.repository.interface';
 import { StoryContext as StoryContextEntity } from 'src/core/domain/entities/story-context.entity';
-import { StoryContext, StoryContextDocument } from '../schemas/story-context.schema';
+import {
+  StoryContext,
+  StoryContextDocument,
+} from '../schemas/story-context.schema';
 
 @Injectable()
 export class MongoStoryContextRepository implements StoryContextRepository {
@@ -59,10 +62,19 @@ export class MongoStoryContextRepository implements StoryContextRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
-  async findByUserId(userId: string, page: number, limit: number): Promise<PaginatedStoryContexts> {
+  async findByUserId(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedStoryContexts> {
     const skip = (page - 1) * limit;
     const [docs, total] = await Promise.all([
-      this.model.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
+      this.model
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
       this.model.countDocuments({ userId }).exec(),
     ]);
     return {
@@ -71,8 +83,13 @@ export class MongoStoryContextRepository implements StoryContextRepository {
     };
   }
 
-  async update(id: string, data: Partial<StoryContextEntity>): Promise<StoryContextEntity> {
-    const updated = await this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+  async update(
+    id: string,
+    data: Partial<StoryContextEntity>,
+  ): Promise<StoryContextEntity> {
+    const updated = await this.model
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
     if (!updated) throw new NotFoundException('StoryContext not found');
     return this.mapToDomain(updated);
   }

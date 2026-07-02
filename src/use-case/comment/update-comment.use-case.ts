@@ -16,10 +16,15 @@ export class UpdateCommentUseCase {
     @Inject(COMMENT_REPOSITORY) private readonly commentRepo: CommentRepository,
   ) {}
 
-  async execute(id: string, requesterId: string, content: string): Promise<Comment> {
+  async execute(
+    id: string,
+    requesterId: string,
+    content: string,
+  ): Promise<Comment> {
     const comment = await this.commentRepo.findById(id);
     if (!comment) throw new NotFoundException('Comment not found');
-    if (comment.authorId !== requesterId) throw new ForbiddenException('Not your comment');
+    if (comment.authorId !== requesterId)
+      throw new ForbiddenException('Not your comment');
     return this.commentRepo.update(id, content);
   }
 }

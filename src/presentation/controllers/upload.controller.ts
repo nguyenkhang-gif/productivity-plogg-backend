@@ -1,4 +1,17 @@
-import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { UploadFileUseCase } from 'src/use-case/storage/upload-file.use-case';
@@ -12,7 +25,11 @@ export class UploadController {
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) return { message: 'No file provided' };
-    const publicUrl = await this.uploadFile.execute(file, req.user.userId, 'upload');
+    const publicUrl = await this.uploadFile.execute(
+      file,
+      req.user.userId,
+      'upload',
+    );
     return { publicUrl };
   }
 
@@ -20,7 +37,11 @@ export class UploadController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadIcon(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) return { message: 'No file provided' };
-    const publicUrl = await this.uploadFile.execute(file, req.user.userId, 'icons');
+    const publicUrl = await this.uploadFile.execute(
+      file,
+      req.user.userId,
+      'icons',
+    );
     return { publicUrl };
   }
 

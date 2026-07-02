@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { USER_REPOSITORY, UserRepository } from 'src/core/domain/repositories/user.repository.interface';
+import {
+  USER_REPOSITORY,
+  UserRepository,
+} from 'src/core/domain/repositories/user.repository.interface';
 import { User } from 'src/core/domain/entities/user.entity';
 
 interface GoogleProfile {
@@ -21,7 +24,9 @@ export class GoogleAuthUseCase {
 
     user = await this.userRepository.findByEmail(profile.email);
     if (user) {
-      return this.userRepository.update(user.id, { googleId: profile.googleId });
+      return this.userRepository.update(user.id, {
+        googleId: profile.googleId,
+      });
     }
 
     const username = await this.generateUsername(profile.fullName);
@@ -38,7 +43,10 @@ export class GoogleAuthUseCase {
   }
 
   private async generateUsername(fullName: string): Promise<string> {
-    const base = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const base = fullName
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
     const suffix = Math.floor(1000 + Math.random() * 9000);
     return `${base}_${suffix}`;
   }

@@ -22,11 +22,10 @@ export class DriveController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File,@Res() res) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Res() res) {
     try {
-      if(!file){
-
-        throw new Error("No file provided");
+      if (!file) {
+        throw new Error('No file provided');
       }
       return await this.driveService.uploadFromBuffer(
         file.buffer,
@@ -36,17 +35,13 @@ export class DriveController {
     } catch (err) {
       return res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .json({ error: err.message });//message
+        .json({ error: err.message }); //message
     }
   }
-
-
-
 
   @Get('download/:fileId')
   async downloadFile(@Param('fileId') fileId: string, @Res() res) {
     try {
-      
       const buffer = await this.driveService.convertExcelToJson(fileId);
       // res.set({
       //   'Content-Type':
@@ -61,13 +56,12 @@ export class DriveController {
     }
   }
 
-
   @Post('overwrite/:fileId')
   @UseInterceptors(FileInterceptor('file'))
   async overwriteFile(
     @Param('fileId') fileId: string,
     @UploadedFile() file: Express.Multer.File,
-    @Res() res
+    @Res() res,
   ) {
     try {
       if (!file) {
@@ -76,7 +70,7 @@ export class DriveController {
       const result = await this.driveService.overwriteFileFromBuffer(
         fileId,
         file.buffer,
-        file.mimetype
+        file.mimetype,
       );
       return res.status(HttpStatus.OK).json(result);
     } catch (err) {
@@ -85,8 +79,4 @@ export class DriveController {
         .json({ error: err.message });
     }
   }
-
-
-
-  
 }

@@ -13,7 +13,10 @@ export class CreateBudgetTransactionUseCase {
     private readonly repo: BudgetTransactionRepository,
   ) {}
 
-  execute(userId: string, dto: CreateBudgetTransactionDto): Promise<BudgetTransactionEntity> {
+  execute(
+    userId: string,
+    dto: CreateBudgetTransactionDto,
+  ): Promise<BudgetTransactionEntity> {
     return this.repo.create(userId, dto);
   }
 }

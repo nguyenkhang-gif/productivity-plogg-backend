@@ -13,20 +13,19 @@ export class ValidateUserUseCase {
   async execute(
     identifier: string,
     pass: string,
-  ): Promise<Omit<User, 'passwordHash'> | null> { 
+  ): Promise<Omit<User, 'passwordHash'> | null> {
     let user = await this.userRepository.findByEmail(identifier);
-    console.log(`Validating user with identifier: `,user);
-    
-    
+    console.log(`Validating user with identifier: `, user);
+
     if (!user) {
       user = await this.userRepository.findByUsername(identifier);
-      console.log(`Validating user with identifier layer2: `,user);
+      console.log(`Validating user with identifier layer2: `, user);
     }
 
     if (user && (await bcrypt.compare(pass, user.passwordHash))) {
       console.log(`Password for user ${user.username} is valid.`);
-      
-      const { passwordHash, ...result } = user;
+
+      const { passwordHash: _passwordHash, ...result } = user;
       return result;
     }
     return null;

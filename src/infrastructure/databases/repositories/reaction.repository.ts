@@ -8,7 +8,8 @@ import { Reaction, ReactionDocument } from '../schemas/reaction.schema';
 @Injectable()
 export class MongoReactionRepository implements ReactionRepository {
   constructor(
-    @InjectModel(Reaction.name) private readonly reactionModel: Model<ReactionDocument>,
+    @InjectModel(Reaction.name)
+    private readonly reactionModel: Model<ReactionDocument>,
   ) {}
 
   private mapToDomain(doc: any): ReactionEntity {
@@ -23,17 +24,22 @@ export class MongoReactionRepository implements ReactionRepository {
     });
   }
 
-  async findByPostAndUser(postId: string, userId: string): Promise<ReactionEntity | null> {
+  async findByPostAndUser(
+    postId: string,
+    userId: string,
+  ): Promise<ReactionEntity | null> {
     const doc = await this.reactionModel.findOne({ postId, userId }).exec();
     return doc ? this.mapToDomain(doc) : null;
   }
 
   async save(reaction: ReactionEntity): Promise<ReactionEntity> {
-    const doc = await this.reactionModel.findOneAndUpdate(
-      { postId: reaction.postId, userId: reaction.userId },
-      { type: reaction.type, icon: reaction.icon },
-      { upsert: true, new: true },
-    ).exec();
+    const doc = await this.reactionModel
+      .findOneAndUpdate(
+        { postId: reaction.postId, userId: reaction.userId },
+        { type: reaction.type, icon: reaction.icon },
+        { upsert: true, new: true },
+      )
+      .exec();
     return this.mapToDomain(doc);
   }
 

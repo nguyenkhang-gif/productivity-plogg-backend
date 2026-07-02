@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { UserRole } from '../../../core/domain/enums/user-role.enum';
 
 export type UserDocument = User & Document;
 
@@ -16,8 +17,12 @@ export class User {
 
   @Prop({ required: false, default: '' })
   passwordHash: string;
-  
-  @Prop({ enum: ['male', 'female', 'other'], required: false, default: 'other' })
+
+  @Prop({
+    enum: ['male', 'female', 'other'],
+    required: false,
+    default: 'other',
+  })
   gender: string;
 
   @Prop({ required: false })
@@ -26,7 +31,7 @@ export class User {
   @Prop({ enum: ['basic', 'advance', 'premium'], default: 'basic' })
   membership: string;
 
-  @Prop({ enum: ['user', 'admin', 'moderator'], default: 'user' })
+  @Prop({ enum: Object.values(UserRole), default: UserRole.User })
   role: string;
 
   @Prop({ default: false })

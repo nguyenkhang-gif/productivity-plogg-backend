@@ -12,7 +12,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(identifier: string, pass: string): Promise<any> {
-    
     const user = await this.validateUserUseCase.execute(identifier, pass);
     if (!user) {
       this.logger.error(`Xác thực thất bại cho: ${identifier}`);

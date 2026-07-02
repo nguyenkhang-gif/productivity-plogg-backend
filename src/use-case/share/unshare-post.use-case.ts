@@ -1,5 +1,13 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { POST_REPOSITORY, PostRepository } from 'src/core/domain/repositories/post.repository.interface';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+} from 'src/core/domain/repositories/post.repository.interface';
 import { Types } from 'mongoose';
 
 export interface UnsharePostResult {
@@ -13,8 +21,12 @@ export class UnsharePostUseCase {
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
   ) {}
 
-  async execute(originalPostId: string, userId: string): Promise<UnsharePostResult> {
-    if (!Types.ObjectId.isValid(originalPostId)) throw new NotFoundException('Post not found');
+  async execute(
+    originalPostId: string,
+    userId: string,
+  ): Promise<UnsharePostResult> {
+    if (!Types.ObjectId.isValid(originalPostId))
+      throw new NotFoundException('Post not found');
     const original = await this.postRepo.findById(originalPostId, userId);
     if (!original) throw new NotFoundException('Post not found');
 

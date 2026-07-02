@@ -15,7 +15,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const secret = configService.get<string>('JWT_SECRET_KEY')?.trim();
     const logger = new Logger(JwtStrategy.name);
     if (!secret) {
-      logger.warn('JWT_SECRET_KEY is not defined in environment variables, using defaultSecret');
+      logger.warn(
+        'JWT_SECRET_KEY is not defined in environment variables, using defaultSecret',
+      );
     } else {
       logger.log(`JWT_SECRET_KEY loaded (length: ${secret.length})`);
     }
@@ -28,9 +30,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    if (payload.jti && await this.tokenService.isBlacklisted(payload.jti)) {
+    if (payload.jti && (await this.tokenService.isBlacklisted(payload.jti))) {
       throw new UnauthorizedException('Token has been revoked');
     }
-    return { id: payload.sub, userId: payload.sub, email: payload.email, role: payload.role };
+    return {
+      id: payload.sub,
+      userId: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    };
   }
 }

@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import {
   STORY_CONTEXT_REPOSITORY,
   StoryContextRepository,
@@ -13,7 +18,11 @@ export class UpdateStoryContextUseCase {
     private readonly repo: StoryContextRepository,
   ) {}
 
-  async execute(id: string, userId: string, dto: UpdateStoryContextDto): Promise<StoryContext> {
+  async execute(
+    id: string,
+    userId: string,
+    dto: UpdateStoryContextDto,
+  ): Promise<StoryContext> {
     const existing = await this.repo.findById(id);
     if (!existing) throw new NotFoundException('StoryContext not found');
     if (existing.userId !== userId) throw new ForbiddenException();

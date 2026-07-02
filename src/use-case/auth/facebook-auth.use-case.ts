@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { USER_REPOSITORY, UserRepository } from 'src/core/domain/repositories/user.repository.interface';
+import {
+  USER_REPOSITORY,
+  UserRepository,
+} from 'src/core/domain/repositories/user.repository.interface';
 import { User } from 'src/core/domain/entities/user.entity';
 
 interface FacebookProfile {
@@ -22,7 +25,9 @@ export class FacebookAuthUseCase {
     if (profile.email) {
       user = await this.userRepository.findByEmail(profile.email);
       if (user) {
-        return this.userRepository.update(user.id, { facebookId: profile.facebookId });
+        return this.userRepository.update(user.id, {
+          facebookId: profile.facebookId,
+        });
       }
     }
 
@@ -40,7 +45,10 @@ export class FacebookAuthUseCase {
   }
 
   private async generateUsername(fullName: string): Promise<string> {
-    const base = fullName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const base = fullName
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
     const suffix = Math.floor(1000 + Math.random() * 9000);
     return `${base}_${suffix}`;
   }

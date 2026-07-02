@@ -17,7 +17,10 @@ export class AcceptFriendRequestUseCase {
     @Inject(FRIENDSHIP_REPOSITORY) private readonly repo: FriendshipRepository,
   ) {}
 
-  async execute(friendshipId: string, currentUserId: string): Promise<Friendship> {
+  async execute(
+    friendshipId: string,
+    currentUserId: string,
+  ): Promise<Friendship> {
     const friendship = await this.repo.findById(friendshipId);
     if (!friendship) throw new NotFoundException('Friend request not found');
     if (friendship.friendId !== currentUserId) {

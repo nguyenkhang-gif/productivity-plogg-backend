@@ -13,7 +13,10 @@ export class CreateStoryContextUseCase {
     private readonly repo: StoryContextRepository,
   ) {}
 
-  async execute(userId: string, dto: CreateStoryContextDto): Promise<StoryContext> {
+  async execute(
+    userId: string,
+    dto: CreateStoryContextDto,
+  ): Promise<StoryContext> {
     const context = new StoryContext({
       userId,
       title: dto.title,

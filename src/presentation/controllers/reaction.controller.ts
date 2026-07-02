@@ -28,7 +28,12 @@ export class ReactionController {
     @Body() body: ToggleReactionDto,
     @Req() req,
   ) {
-    return this.toggleReaction.execute(postId, req.user.userId, body.type, body.icon);
+    return this.toggleReaction.execute(
+      postId,
+      req.user.userId,
+      body.type,
+      body.icon,
+    );
   }
 
   @Delete()

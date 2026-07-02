@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MailLog, MailLogSchema } from 'src/infrastructure/databases/schemas/mail-log.schema';
+import {
+  MailLog,
+  MailLogSchema,
+} from 'src/infrastructure/databases/schemas/mail-log.schema';
 import { MongoMailLogRepository } from 'src/infrastructure/databases/repositories/mail-log.repository';
 import { MAIL_LOG_REPOSITORY } from 'src/core/domain/repositories/mail-log.repository.interface';
 import { MAIL_SENDER } from 'src/core/domain/interfaces/mail-sender.interface';

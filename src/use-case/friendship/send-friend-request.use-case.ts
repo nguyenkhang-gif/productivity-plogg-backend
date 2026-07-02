@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {
   FRIENDSHIP_REPOSITORY,
   FriendshipRepository,
@@ -19,11 +24,16 @@ export class SendFriendRequestUseCase {
     const existing = await this.repo.findByPair(userId, friendId);
 
     if (existing) {
-      if (existing.status === 'accepted') throw new ConflictException('Already friends');
-      if (existing.status === 'pending') throw new ConflictException('Friend request already sent');
-      if (existing.status === 'blocked') throw new BadRequestException('Cannot send request');
+      if (existing.status === 'accepted')
+        throw new ConflictException('Already friends');
+      if (existing.status === 'pending')
+        throw new ConflictException('Friend request already sent');
+      if (existing.status === 'blocked')
+        throw new BadRequestException('Cannot send request');
     }
 
-    return this.repo.create(new Friendship({ userId, friendId, status: 'pending' }));
+    return this.repo.create(
+      new Friendship({ userId, friendId, status: 'pending' }),
+    );
   }
 }

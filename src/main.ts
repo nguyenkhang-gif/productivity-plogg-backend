@@ -18,7 +18,9 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
+  );
 
   const allowedOrigins = new Set([
     'http://localhost:3000',
@@ -31,7 +33,11 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin) || origin?.endsWith('.trycloudflare.com')) {
+      if (
+        !origin ||
+        allowedOrigins.has(origin) ||
+        origin?.endsWith('.trycloudflare.com')
+      ) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));
@@ -43,7 +49,7 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
-  await app.listen(process.env.PORT ?? 3000,'0.0.0.0');
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 
   const memoryUsage = process.memoryUsage();
   console.log('Memory Usage at Start:', {
@@ -52,7 +58,7 @@ async function bootstrap() {
     heapTotal: (memoryUsage.heapTotal / 1024 / 1024).toFixed(2) + ' MB',
     heapUsed: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + ' MB',
     external: (memoryUsage.external / 1024 / 1024).toFixed(2) + ' MB',
-    arrayBuffers: (memoryUsage.arrayBuffers / 1024 / 1024).toFixed(2) + ' MB'
+    arrayBuffers: (memoryUsage.arrayBuffers / 1024 / 1024).toFixed(2) + ' MB',
   });
 }
 

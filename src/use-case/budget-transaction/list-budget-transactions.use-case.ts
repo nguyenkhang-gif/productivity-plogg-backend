@@ -23,7 +23,10 @@ export class ListBudgetTransactionsUseCase {
     private readonly repo: BudgetTransactionRepository,
   ) {}
 
-  execute(userId: string, query: ListTransactionQuery): Promise<PaginatedTransactions> {
+  execute(
+    userId: string,
+    query: ListTransactionQuery,
+  ): Promise<PaginatedTransactions> {
     const filter: ListTransactionFilter = {
       page: parseInt(query.page ?? '1'),
       limit: parseInt(query.limit ?? '20'),

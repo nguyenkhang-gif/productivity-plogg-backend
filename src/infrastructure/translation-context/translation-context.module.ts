@@ -21,7 +21,10 @@ import { DeleteTranslationContextUseCase } from 'src/use-case/translation-contex
   ],
   controllers: [TranslationContextController],
   providers: [
-    { provide: TRANSLATION_CONTEXT_REPOSITORY, useClass: MongoTranslationContextRepository },
+    {
+      provide: TRANSLATION_CONTEXT_REPOSITORY,
+      useClass: MongoTranslationContextRepository,
+    },
     CreateTranslationContextUseCase,
     GetTranslationContextUseCase,
     GetUserTranslationContextsUseCase,

@@ -176,14 +176,15 @@ async function seed() {
     { name: 'CI/CD', slug: 'ci-cd' },
     { name: 'Testing', slug: 'testing' },
   ]);
-  const tagMap = Object.fromEntries(tags.map(t => [t.slug, id(t)]));
+  const tagMap = Object.fromEntries(tags.map((t) => [t.slug, id(t)]));
   console.log(`Seeded ${tags.length} tags`);
 
   // ── Posts ─────────────────────────────────────────────────────────────────
   const postDefs = [
     {
       authorId: id(alice),
-      content: 'Just deployed my first NestJS app to AWS using clean architecture. The separation of concerns made the deploy painless — use-cases don\'t know about infrastructure at all.',
+      content:
+        "Just deployed my first NestJS app to AWS using clean architecture. The separation of concerns made the deploy painless — use-cases don't know about infrastructure at all.",
       categoryId: id(catAchievement),
       tagIds: [tagMap['nestjs'], tagMap['aws']],
       viewCount: 120,
@@ -191,7 +192,8 @@ async function seed() {
     },
     {
       authorId: id(alice),
-      content: 'How do you handle refresh token rotation in NestJS with JWT? I\'m storing the refresh token hash in MongoDB and invalidating on reuse. Looking for best practices or pitfalls.',
+      content:
+        "How do you handle refresh token rotation in NestJS with JWT? I'm storing the refresh token hash in MongoDB and invalidating on reuse. Looking for best practices or pitfalls.",
       categoryId: id(catQuestion),
       tagIds: [tagMap['nestjs'], tagMap['typescript']],
       viewCount: 85,
@@ -199,7 +201,8 @@ async function seed() {
     },
     {
       authorId: id(alice),
-      content: 'TIL: TypeScript\'s `satisfies` operator lets you validate a value against a type without widening — great for config objects where you want both type-safety and literal inference.',
+      content:
+        "TIL: TypeScript's `satisfies` operator lets you validate a value against a type without widening — great for config objects where you want both type-safety and literal inference.",
       categoryId: id(catNote),
       tagIds: [tagMap['typescript']],
       viewCount: 55,
@@ -207,7 +210,8 @@ async function seed() {
     },
     {
       authorId: id(bob),
-      content: 'Quick note: MongoDB $lookup with an array localField does an implicit $in — no $unwind needed. Saved me 2 pipeline stages today.',
+      content:
+        'Quick note: MongoDB $lookup with an array localField does an implicit $in — no $unwind needed. Saved me 2 pipeline stages today.',
       categoryId: id(catNote),
       tagIds: [tagMap['mongodb']],
       viewCount: 60,
@@ -229,7 +233,8 @@ Full Dockerfile in comments.`,
     },
     {
       authorId: id(bob),
-      content: 'Finally got our CI pipeline under 4 minutes. Key: cache node_modules between runs keyed on package-lock.json hash. GitHub Actions matrix for Node 18/20 in parallel.',
+      content:
+        'Finally got our CI pipeline under 4 minutes. Key: cache node_modules between runs keyed on package-lock.json hash. GitHub Actions matrix for Node 18/20 in parallel.',
       categoryId: id(catAchievement),
       tagIds: [tagMap['ci-cd'], tagMap['testing']],
       viewCount: 95,
@@ -237,7 +242,8 @@ Full Dockerfile in comments.`,
     },
     {
       authorId: id(carol),
-      content: 'GraphQL subscriptions with NestJS — anyone running this at scale? Wondering whether to use Redis PubSub or just Socket.IO events. The Apollo WS transport keeps dropping on Heroku.',
+      content:
+        'GraphQL subscriptions with NestJS — anyone running this at scale? Wondering whether to use Redis PubSub or just Socket.IO events. The Apollo WS transport keeps dropping on Heroku.',
       categoryId: id(catQuestion),
       tagIds: [tagMap['graphql'], tagMap['nestjs']],
       viewCount: 70,
@@ -245,7 +251,8 @@ Full Dockerfile in comments.`,
     },
     {
       authorId: id(carol),
-      content: 'PostgreSQL vs MongoDB for a social feed — my take after running both in prod: PG wins for complex queries and ACID, Mongo wins for schema flexibility and horizontal writes. For most apps at <10M records: pick the one your team knows.',
+      content:
+        'PostgreSQL vs MongoDB for a social feed — my take after running both in prod: PG wins for complex queries and ACID, Mongo wins for schema flexibility and horizontal writes. For most apps at <10M records: pick the one your team knows.',
       categoryId: id(catNote),
       tagIds: [tagMap['postgresql'], tagMap['mongodb']],
       viewCount: 140,
@@ -253,7 +260,8 @@ Full Dockerfile in comments.`,
     },
     {
       authorId: id(carol),
-      content: 'React Server Components changed how I think about data fetching. No more prop-drilling token through every layer — just fetch on the server and stream the result.',
+      content:
+        'React Server Components changed how I think about data fetching. No more prop-drilling token through every layer — just fetch on the server and stream the result.',
       categoryId: id(catNote),
       tagIds: [tagMap['react'], tagMap['typescript']],
       viewCount: 110,
@@ -261,7 +269,8 @@ Full Dockerfile in comments.`,
     },
     {
       authorId: id(alice),
-      content: 'Draft tutorial on AWS Lambda cold starts — still researching. Don\'t publish yet.',
+      content:
+        "Draft tutorial on AWS Lambda cold starts — still researching. Don't publish yet.",
       categoryId: id(catTutorial),
       tagIds: [tagMap['aws']],
       viewCount: 0,
@@ -273,10 +282,10 @@ Full Dockerfile in comments.`,
   console.log(`Seeded ${posts.length} posts`);
 
   // ── Bookmarks ─────────────────────────────────────────────────────────────
-  const dockerPost = posts.find(p => p.tagIds.includes(tagMap['docker']));
-  const graphqlPost = posts.find(p => p.tagIds.includes(tagMap['graphql']));
+  const dockerPost = posts.find((p) => p.tagIds.includes(tagMap['docker']));
+  const graphqlPost = posts.find((p) => p.tagIds.includes(tagMap['graphql']));
   const aliceAchievement = posts.find(
-    p => p.authorId === id(alice) && p.categoryId === id(catAchievement),
+    (p) => p.authorId === id(alice) && p.categoryId === id(catAchievement),
   );
 
   const bookmarks = await BookmarkModel.insertMany([
@@ -298,12 +307,18 @@ Full Dockerfile in comments.`,
 
   // ── Recalculate postCounts ────────────────────────────────────────────────
   for (const cat of categories) {
-    const count = await PostModel.countDocuments({ categoryId: id(cat), isPublished: true });
+    const count = await PostModel.countDocuments({
+      categoryId: id(cat),
+      isPublished: true,
+    });
     await CategoryModel.findByIdAndUpdate(cat._id, { postCount: count });
   }
 
   for (const tag of tags) {
-    const count = await PostModel.countDocuments({ tagIds: id(tag), isPublished: true });
+    const count = await PostModel.countDocuments({
+      tagIds: id(tag),
+      isPublished: true,
+    });
     await TagModel.findByIdAndUpdate(tag._id, { postCount: count });
   }
   console.log('Recalculated postCounts');
@@ -320,7 +335,7 @@ Full Dockerfile in comments.`,
   await mongoose.disconnect();
 }
 
-seed().catch(err => {
+seed().catch((err) => {
   console.error(err);
   process.exit(1);
 });

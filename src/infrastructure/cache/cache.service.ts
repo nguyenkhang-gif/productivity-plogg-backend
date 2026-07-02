@@ -83,7 +83,13 @@ export class CacheService {
     try {
       let cursor = '0';
       do {
-        const [next, keys] = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        const [next, keys] = await this.redis.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
         cursor = next;
         if (keys.length) await this.redis.del(...keys);
       } while (cursor !== '0');

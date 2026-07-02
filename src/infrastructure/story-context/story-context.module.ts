@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { StoryContext, StoryContextSchema } from 'src/infrastructure/databases/schemas/story-context.schema';
+import {
+  StoryContext,
+  StoryContextSchema,
+} from 'src/infrastructure/databases/schemas/story-context.schema';
 import { MongoStoryContextRepository } from 'src/infrastructure/databases/repositories/story-context.repository';
 import { STORY_CONTEXT_REPOSITORY } from 'src/core/domain/repositories/story-context.repository.interface';
 import { StoryContextController } from 'src/presentation/controllers/story-context.controller';
@@ -12,11 +15,16 @@ import { DeleteStoryContextUseCase } from 'src/use-case/story-context/delete-sto
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: StoryContext.name, schema: StoryContextSchema }]),
+    MongooseModule.forFeature([
+      { name: StoryContext.name, schema: StoryContextSchema },
+    ]),
   ],
   controllers: [StoryContextController],
   providers: [
-    { provide: STORY_CONTEXT_REPOSITORY, useClass: MongoStoryContextRepository },
+    {
+      provide: STORY_CONTEXT_REPOSITORY,
+      useClass: MongoStoryContextRepository,
+    },
     CreateStoryContextUseCase,
     GetStoryContextUseCase,
     GetUserStoryContextsUseCase,

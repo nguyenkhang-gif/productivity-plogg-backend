@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { FileItem, FileStorageRepository, PaginatedFiles, StorageBucket } from 'src/core/domain/repositories/file-storage.repository.interface';
+import {
+  FileItem,
+  FileStorageRepository,
+  PaginatedFiles,
+  StorageBucket,
+} from 'src/core/domain/repositories/file-storage.repository.interface';
 import * as ws from 'ws';
 @Injectable()
 export class SupabaseStorageRepository implements FileStorageRepository {
@@ -18,7 +23,11 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     );
   }
 
-  async upload(file: Express.Multer.File, userId: string, bucket: StorageBucket = 'upload'): Promise<string> {
+  async upload(
+    file: Express.Multer.File,
+    userId: string,
+    bucket: StorageBucket = 'upload',
+  ): Promise<string> {
     const ext = file.originalname.split('.').pop();
     const path = `${userId}/${Date.now()}.${ext}`;
 
@@ -31,7 +40,12 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     return this.client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
 
-  async listFiles(userId: string, bucket: StorageBucket, page: number, limit: number): Promise<PaginatedFiles> {
+  async listFiles(
+    userId: string,
+    bucket: StorageBucket,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedFiles> {
     const { data, error } = await this.client.storage
       .from(bucket)
       .list(userId, { sortBy: { column: 'created_at', order: 'desc' } });
@@ -45,7 +59,9 @@ export class SupabaseStorageRepository implements FileStorageRepository {
 
     const items: FileItem[] = paged.map((f) => ({
       name: f.name,
-      publicUrl: this.client.storage.from(bucket).getPublicUrl(`${userId}/${f.name}`).data.publicUrl,
+      publicUrl: this.client.storage
+        .from(bucket)
+        .getPublicUrl(`${userId}/${f.name}`).data.publicUrl,
       size: f.metadata?.size ?? 0,
       createdAt: f.created_at,
     }));
@@ -56,7 +72,11 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     };
   }
 
-  async deleteFile(fileName: string, userId: string, bucket: StorageBucket): Promise<void> {
+  async deleteFile(
+    fileName: string,
+    userId: string,
+    bucket: StorageBucket,
+  ): Promise<void> {
     const path = `${userId}/${fileName}`;
     const { error } = await this.client.storage.from(bucket).remove([path]);
     if (error) throw new Error(error.message);

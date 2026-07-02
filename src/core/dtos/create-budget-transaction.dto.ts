@@ -1,4 +1,11 @@
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { BudgetTransactionType } from '../domain/entities/budget-category.entity';
 
 export class CreateBudgetTransactionDto {

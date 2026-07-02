@@ -6,7 +6,10 @@ import { Bookmark, BookmarkDocument } from '../schemas/bookmark.schema';
 
 @Injectable()
 export class MongoBookmarkRepository implements BookmarkRepository {
-  constructor(@InjectModel(Bookmark.name) private readonly bookmarkModel: Model<BookmarkDocument>) {}
+  constructor(
+    @InjectModel(Bookmark.name)
+    private readonly bookmarkModel: Model<BookmarkDocument>,
+  ) {}
 
   async upsert(userId: string, postId: string): Promise<void> {
     await this.bookmarkModel.findOneAndUpdate(
@@ -24,7 +27,10 @@ export class MongoBookmarkRepository implements BookmarkRepository {
     return this.bookmarkModel.countDocuments({ userId });
   }
 
-  async getBookmarkedPostIds(userId: string, postIds: string[]): Promise<Set<string>> {
+  async getBookmarkedPostIds(
+    userId: string,
+    postIds: string[],
+  ): Promise<Set<string>> {
     const docs = await this.bookmarkModel
       .find({ userId, postId: { $in: postIds } }, { postId: 1, _id: 0 })
       .lean();

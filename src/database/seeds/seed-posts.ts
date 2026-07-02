@@ -61,7 +61,7 @@ const OPENERS = [
   'The thing nobody tells you about',
   'Day 3 of learning',
   'Our team finally agreed on',
-  'If you\'re not using',
+  "If you're not using",
   'Reminder that',
   'Real talk:',
   'Just published a write-up on',
@@ -106,7 +106,7 @@ const TOPICS = [
 
 const DETAILS = [
   'and it turned out to be a one-line fix.',
-  'Highly recommend giving it a shot if you haven\'t already.',
+  "Highly recommend giving it a shot if you haven't already.",
   'The docs are surprisingly good once you find the right page.',
   'Still not sure if this is the intended behavior or a bug.',
   'Would love to hear how others have handled this.',
@@ -115,10 +115,10 @@ const DETAILS = [
   'The community Discord was incredibly helpful here.',
   'Three PRs later and it finally works the way I expected.',
   'Went from 8 minutes to under 90 seconds.',
-  'If you\'re hitting the same issue, check the GitHub issues — there\'s a workaround.',
+  "If you're hitting the same issue, check the GitHub issues — there's a workaround.",
   'Lesson learned: always read the migration guide.',
   'The mental model shift takes a day, then it clicks.',
-  'We\'re now handling 3× the traffic with the same infra.',
+  "We're now handling 3× the traffic with the same infra.",
   'Opened a PR upstream — will report back.',
   'Would not use in production until the API stabilizes.',
   'The escape hatches are there if you need them.',
@@ -201,7 +201,10 @@ const PostSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const CategorySchema = new mongoose.Schema({ postCount: Number }, { strict: false });
+const CategorySchema = new mongoose.Schema(
+  { postCount: Number },
+  { strict: false },
+);
 const TagSchema = new mongoose.Schema({ postCount: Number }, { strict: false });
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -228,20 +231,22 @@ async function seedPosts() {
     const docs = Array.from({ length: size }, buildPost);
     await PostModel.insertMany(docs, { ordered: false });
     inserted += size;
-    console.log(`  Batch ${b + 1}/${batches} — ${inserted}/${TOTAL} posts inserted`);
+    console.log(
+      `  Batch ${b + 1}/${batches} — ${inserted}/${TOTAL} posts inserted`,
+    );
   }
 
   console.log('\nRecalculating postCounts...');
 
   await Promise.all([
-    ...CATEGORY_IDS.map(id =>
-      PostModel.countDocuments({ categoryId: id, isPublished: true }).then(count =>
-        CategoryModel.findByIdAndUpdate(id, { postCount: count }),
+    ...CATEGORY_IDS.map((id) =>
+      PostModel.countDocuments({ categoryId: id, isPublished: true }).then(
+        (count) => CategoryModel.findByIdAndUpdate(id, { postCount: count }),
       ),
     ),
-    ...TAG_IDS.map(id =>
-      PostModel.countDocuments({ tagIds: id, isPublished: true }).then(count =>
-        TagModel.findByIdAndUpdate(id, { postCount: count }),
+    ...TAG_IDS.map((id) =>
+      PostModel.countDocuments({ tagIds: id, isPublished: true }).then(
+        (count) => TagModel.findByIdAndUpdate(id, { postCount: count }),
       ),
     ),
   ]);
@@ -252,7 +257,7 @@ async function seedPosts() {
   await mongoose.disconnect();
 }
 
-seedPosts().catch(err => {
+seedPosts().catch((err) => {
   console.error(err);
   process.exit(1);
 });

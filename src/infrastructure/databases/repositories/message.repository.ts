@@ -8,7 +8,8 @@ import { Message, MessageDocument } from '../schemas/message.schema';
 @Injectable()
 export class MongoMessageRepository implements MessageRepository {
   constructor(
-    @InjectModel(Message.name) private readonly messageModel: Model<MessageDocument>,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<MessageDocument>,
   ) {}
 
   private mapToDomain(doc: any): MessageEntity {
@@ -35,7 +36,11 @@ export class MongoMessageRepository implements MessageRepository {
     return this.mapToDomain(saved);
   }
 
-  async findByConversationId(conversationId: string, limit: number, before?: Date): Promise<MessageEntity[]> {
+  async findByConversationId(
+    conversationId: string,
+    limit: number,
+    before?: Date,
+  ): Promise<MessageEntity[]> {
     const query: any = { conversationId };
     if (before) query.createdAt = { $lt: before };
 

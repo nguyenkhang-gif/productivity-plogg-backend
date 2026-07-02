@@ -14,7 +14,11 @@ export interface PaginatedComments {
 
 export interface CommentRepository {
   findById(id: string): Promise<Comment | null>;
-  findByPost(postId: string, page: number, limit: number): Promise<PaginatedComments>;
+  findByPost(
+    postId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedComments>;
   create(comment: Comment): Promise<Comment>;
   update(id: string, content: string): Promise<Comment>;
   delete(id: string): Promise<void>;

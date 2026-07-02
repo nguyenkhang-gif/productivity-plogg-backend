@@ -14,12 +14,22 @@ export class GetPostsByAuthorUseCase {
     private readonly cache: CacheService,
   ) {}
 
-  async execute(authorId: string, page = 1, limit = 10, currentUserId: string): Promise<PaginatedPosts> {
+  async execute(
+    authorId: string,
+    page = 1,
+    limit = 10,
+    currentUserId: string,
+  ): Promise<PaginatedPosts> {
     const key = `posts:author:${authorId}:${currentUserId}:${page}:${limit}`;
     const cached = await this.cache.get<PaginatedPosts>(key);
     if (cached) return cached;
 
-    const result = await this.postRepo.findByAuthor(authorId, page, limit, currentUserId);
+    const result = await this.postRepo.findByAuthor(
+      authorId,
+      page,
+      limit,
+      currentUserId,
+    );
     await this.cache.set(key, result, CACHE_TTL.POST_BY_AUTHOR);
     return result;
   }

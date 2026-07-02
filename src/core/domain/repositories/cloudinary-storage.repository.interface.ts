@@ -21,7 +21,16 @@ export interface CloudinaryPaginatedFiles {
 }
 
 export interface CloudinaryStorageRepository {
-  upload(file: Express.Multer.File, userId: string, folder?: CloudinaryFolder): Promise<string>;
-  listFiles(userId: string, folder: CloudinaryFolder, page: number, limit: number): Promise<CloudinaryPaginatedFiles>;
+  upload(
+    file: Express.Multer.File,
+    userId: string,
+    folder?: CloudinaryFolder,
+  ): Promise<string>;
+  listFiles(
+    userId: string,
+    folder: CloudinaryFolder,
+    page: number,
+    limit: number,
+  ): Promise<CloudinaryPaginatedFiles>;
   deleteFile(publicId: string): Promise<void>;
 }

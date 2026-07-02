@@ -12,7 +12,8 @@ import { Reaction } from 'src/core/domain/entities/reaction.entity';
 @Injectable()
 export class ToggleReactionUseCase {
   constructor(
-    @Inject(REACTION_REPOSITORY) private readonly reactionRepo: ReactionRepository,
+    @Inject(REACTION_REPOSITORY)
+    private readonly reactionRepo: ReactionRepository,
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
   ) {}
 
@@ -21,7 +22,10 @@ export class ToggleReactionUseCase {
     userId: string,
     type: string,
     icon?: string,
-  ): Promise<{ action: 'added' | 'removed' | 'changed'; reaction: Reaction | null }> {
+  ): Promise<{
+    action: 'added' | 'removed' | 'changed';
+    reaction: Reaction | null;
+  }> {
     const post = await this.postRepo.findById(postId, userId);
     if (!post) throw new NotFoundException('Post not found');
 

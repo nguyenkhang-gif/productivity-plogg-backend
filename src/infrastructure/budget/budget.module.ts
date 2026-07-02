@@ -20,8 +20,14 @@ import { BudgetTransactionController } from 'src/presentation/controllers/budget
   controllers: [BudgetCategoryController, BudgetTransactionController],
   providers: [
     PrismaService,
-    { provide: BUDGET_CATEGORY_REPOSITORY, useClass: PgBudgetCategoryRepository },
-    { provide: BUDGET_TRANSACTION_REPOSITORY, useClass: PgBudgetTransactionRepository },
+    {
+      provide: BUDGET_CATEGORY_REPOSITORY,
+      useClass: PgBudgetCategoryRepository,
+    },
+    {
+      provide: BUDGET_TRANSACTION_REPOSITORY,
+      useClass: PgBudgetTransactionRepository,
+    },
     ListBudgetCategoriesUseCase,
     CreateBudgetCategoryUseCase,
     UpdateBudgetCategoryUseCase,

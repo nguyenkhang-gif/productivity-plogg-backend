@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
   FRIENDSHIP_REPOSITORY,
   FriendshipRepository,
@@ -16,7 +12,8 @@ export class BlockUserUseCase {
   ) {}
 
   async execute(userId: string, targetId: string): Promise<Friendship> {
-    if (userId === targetId) throw new BadRequestException('Cannot block yourself');
+    if (userId === targetId)
+      throw new BadRequestException('Cannot block yourself');
 
     const existing = await this.repo.findByPair(userId, targetId);
 
@@ -28,11 +25,15 @@ export class BlockUserUseCase {
       if (existing.userId !== userId) {
         // The other person sent the request — delete and recreate with correct direction
         await this.repo.delete(existing.id);
-        return this.repo.create(new Friendship({ userId, friendId: targetId, status: 'blocked' }));
+        return this.repo.create(
+          new Friendship({ userId, friendId: targetId, status: 'blocked' }),
+        );
       }
       return this.repo.updateStatus(existing.id, 'blocked');
     }
 
-    return this.repo.create(new Friendship({ userId, friendId: targetId, status: 'blocked' }));
+    return this.repo.create(
+      new Friendship({ userId, friendId: targetId, status: 'blocked' }),
+    );
   }
 }

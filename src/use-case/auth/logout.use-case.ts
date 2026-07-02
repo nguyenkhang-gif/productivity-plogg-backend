@@ -9,9 +9,16 @@ export class LogoutUseCase {
     private readonly jwtService: JwtService,
   ) {}
 
-  async execute(accessToken: string, userId: string, refreshToken?: string): Promise<void> {
+  async execute(
+    accessToken: string,
+    userId: string,
+    refreshToken?: string,
+  ): Promise<void> {
     try {
-      const payload = this.jwtService.decode(accessToken) as { jti?: string; exp?: number } | null;
+      const payload = this.jwtService.decode(accessToken) as {
+        jti?: string;
+        exp?: number;
+      } | null;
       if (payload?.jti && payload?.exp) {
         await this.tokenService.blacklistAccessToken(payload.jti, payload.exp);
       }

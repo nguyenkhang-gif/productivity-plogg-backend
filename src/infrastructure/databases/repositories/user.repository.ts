@@ -10,7 +10,8 @@ import { User as UserEntity } from 'src/core/domain/entities/user.entity';
 export class MongoUserRepository implements UserRepository {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(Friendship.name) private readonly friendshipModel: Model<FriendshipDocument>,
+    @InjectModel(Friendship.name)
+    private readonly friendshipModel: Model<FriendshipDocument>,
   ) {}
 
   private mapToDomain(userDoc: UserDocument): UserEntity {
@@ -23,7 +24,7 @@ export class MongoUserRepository implements UserRepository {
       gender: userDoc.gender,
       profilePic: userDoc.profilePic,
       membership: userDoc.membership,
-      role: userDoc.role,
+      role: userDoc.role as UserEntity['role'],
       isPrivate: userDoc.isPrivate,
       resetPasswordToken: userDoc.resetPasswordToken,
       googleId: (userDoc as any).googleId,
@@ -87,7 +88,10 @@ export class MongoUserRepository implements UserRepository {
     return docs.map((doc) => this.mapToDomain(doc));
   }
 
-  async update(id: string, userUpdate: Partial<UserEntity>): Promise<UserEntity> {
+  async update(
+    id: string,
+    userUpdate: Partial<UserEntity>,
+  ): Promise<UserEntity> {
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, userUpdate, { new: true })
       .exec();
@@ -95,9 +99,15 @@ export class MongoUserRepository implements UserRepository {
     return this.mapToDomain(updatedUser);
   }
 
-  async findSuggestions(currentUserId: string, limit: number): Promise<UserEntity[]> {
+  async findSuggestions(
+    currentUserId: string,
+    limit: number,
+  ): Promise<UserEntity[]> {
     const friendships = await this.friendshipModel
-      .find({ $or: [{ userId: currentUserId }, { friendId: currentUserId }] }, { userId: 1, friendId: 1, _id: 0 })
+      .find(
+        { $or: [{ userId: currentUserId }, { friendId: currentUserId }] },
+        { userId: 1, friendId: 1, _id: 0 },
+      )
       .lean();
 
     const excludeIds = new Set<string>([currentUserId]);

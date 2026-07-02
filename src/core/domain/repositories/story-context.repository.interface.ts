@@ -15,7 +15,11 @@ export interface PaginatedStoryContexts {
 export interface StoryContextRepository {
   create(context: StoryContext): Promise<StoryContext>;
   findById(id: string): Promise<StoryContext | null>;
-  findByUserId(userId: string, page: number, limit: number): Promise<PaginatedStoryContexts>;
+  findByUserId(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedStoryContexts>;
   update(id: string, data: Partial<StoryContext>): Promise<StoryContext>;
   delete(id: string): Promise<void>;
 }

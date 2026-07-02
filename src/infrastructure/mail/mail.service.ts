@@ -17,7 +17,11 @@ export class MailService implements IMailSender {
     });
   }
 
-  async sendMail(to: string, subject: string, htmlContent: string): Promise<void> {
+  async sendMail(
+    to: string,
+    subject: string,
+    htmlContent: string,
+  ): Promise<void> {
     try {
       await this.transporter.sendMail({
         from: this.configService.get<string>('EMAIL_USER'),

@@ -13,7 +13,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
-import { CreateStoryContextDto, UpdateStoryContextDto } from 'src/core/dtos/story-context.dto';
+import {
+  CreateStoryContextDto,
+  UpdateStoryContextDto,
+} from 'src/core/dtos/story-context.dto';
 import { CreateStoryContextUseCase } from 'src/use-case/story-context/create-story-context.use-case';
 import { GetStoryContextUseCase } from 'src/use-case/story-context/get-story-context.use-case';
 import { GetUserStoryContextsUseCase } from 'src/use-case/story-context/get-user-story-contexts.use-case';
@@ -51,7 +54,11 @@ export class StoryContextController {
   }
 
   @Patch(':id')
-  async updateContext(@Req() req, @Param('id') id: string, @Body() dto: UpdateStoryContextDto) {
+  async updateContext(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() dto: UpdateStoryContextDto,
+  ) {
     return this.updateOne.execute(id, req.user.userId, dto);
   }
 

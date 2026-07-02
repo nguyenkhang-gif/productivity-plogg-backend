@@ -9,13 +9,17 @@ import {
 } from '../schemas/translation-context.schema';
 
 @Injectable()
-export class MongoTranslationContextRepository implements TranslationContextRepository {
+export class MongoTranslationContextRepository
+  implements TranslationContextRepository
+{
   constructor(
     @InjectModel(TranslationContext.name)
     private readonly model: Model<TranslationContextDocument>,
   ) {}
 
-  private mapToDomain(doc: TranslationContextDocument): TranslationContextEntity {
+  private mapToDomain(
+    doc: TranslationContextDocument,
+  ): TranslationContextEntity {
     return new TranslationContextEntity({
       id: doc._id.toString(),
       userId: doc.userId,
@@ -34,7 +38,9 @@ export class MongoTranslationContextRepository implements TranslationContextRepo
     });
   }
 
-  async create(context: TranslationContextEntity): Promise<TranslationContextEntity> {
+  async create(
+    context: TranslationContextEntity,
+  ): Promise<TranslationContextEntity> {
     const created = new this.model({
       userId: context.userId,
       title: context.title,
@@ -58,12 +64,20 @@ export class MongoTranslationContextRepository implements TranslationContextRepo
   }
 
   async findByUserId(userId: string): Promise<TranslationContextEntity[]> {
-    const docs = await this.model.find({ userId }).sort({ createdAt: -1 }).exec();
+    const docs = await this.model
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .exec();
     return docs.map((doc) => this.mapToDomain(doc));
   }
 
-  async update(id: string, data: Partial<TranslationContextEntity>): Promise<TranslationContextEntity> {
-    const updated = await this.model.findByIdAndUpdate(id, data, { new: true }).exec();
+  async update(
+    id: string,
+    data: Partial<TranslationContextEntity>,
+  ): Promise<TranslationContextEntity> {
+    const updated = await this.model
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
     if (!updated) throw new NotFoundException('TranslationContext not found');
     return this.mapToDomain(updated);
   }

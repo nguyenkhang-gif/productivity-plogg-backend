@@ -13,7 +13,10 @@ export class CreateTranslationContextUseCase {
     private readonly repo: TranslationContextRepository,
   ) {}
 
-  async execute(userId: string, dto: CreateTranslationContextDto): Promise<TranslationContext> {
+  async execute(
+    userId: string,
+    dto: CreateTranslationContextDto,
+  ): Promise<TranslationContext> {
     const context = new TranslationContext({
       userId,
       title: dto.title,

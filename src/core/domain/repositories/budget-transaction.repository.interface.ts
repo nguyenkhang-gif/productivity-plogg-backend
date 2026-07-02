@@ -25,9 +25,19 @@ export interface PaginatedTransactions {
 }
 
 export interface BudgetTransactionRepository {
-  findAll(userId: string, filter: ListTransactionFilter): Promise<PaginatedTransactions>;
+  findAll(
+    userId: string,
+    filter: ListTransactionFilter,
+  ): Promise<PaginatedTransactions>;
   findById(id: string, userId: string): Promise<BudgetTransactionEntity>;
-  create(userId: string, data: CreateBudgetTransactionDto): Promise<BudgetTransactionEntity>;
-  update(id: string, userId: string, data: UpdateBudgetTransactionDto): Promise<BudgetTransactionEntity>;
+  create(
+    userId: string,
+    data: CreateBudgetTransactionDto,
+  ): Promise<BudgetTransactionEntity>;
+  update(
+    id: string,
+    userId: string,
+    data: UpdateBudgetTransactionDto,
+  ): Promise<BudgetTransactionEntity>;
   softDelete(id: string, userId: string): Promise<void>;
 }

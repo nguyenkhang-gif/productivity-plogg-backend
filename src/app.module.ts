@@ -1,11 +1,16 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LastSeenMiddleware } from './presentation/middleware/last-seen.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './google/drive.module';
@@ -25,7 +30,10 @@ import { CacheModule } from './infrastructure/cache/cache.module';
 import { TagModule } from './infrastructure/tag/tag.module';
 import { CategoryModule } from './infrastructure/category/category.module';
 import { BookmarkModule } from './infrastructure/bookmark/bookmark.module';
-import { User, UserSchema } from './infrastructure/databases/schemas/user.schema';
+import {
+  User,
+  UserSchema,
+} from './infrastructure/databases/schemas/user.schema';
 
 @Module({
   imports: [
@@ -66,6 +74,8 @@ import { User, UserSchema } from './infrastructure/databases/schemas/user.schema
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LastSeenMiddleware).forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
+    consumer
+      .apply(LastSeenMiddleware)
+      .forRoutes({ path: 'api/*path', method: RequestMethod.ALL });
   }
 }

@@ -9,14 +9,24 @@ import {
 @Injectable()
 export class UploadCloudinaryUseCase {
   constructor(
-    @Inject(CLOUDINARY_STORAGE) private readonly cloudinaryRepo: CloudinaryStorageRepository,
+    @Inject(CLOUDINARY_STORAGE)
+    private readonly cloudinaryRepo: CloudinaryStorageRepository,
   ) {}
 
-  async upload(file: Express.Multer.File, userId: string, folder: CloudinaryFolder = 'uploads'): Promise<string> {
+  async upload(
+    file: Express.Multer.File,
+    userId: string,
+    folder: CloudinaryFolder = 'uploads',
+  ): Promise<string> {
     return this.cloudinaryRepo.upload(file, userId, folder);
   }
 
-  async listFiles(userId: string, folder: CloudinaryFolder, page = 1, limit = 20): Promise<CloudinaryPaginatedFiles> {
+  async listFiles(
+    userId: string,
+    folder: CloudinaryFolder,
+    page = 1,
+    limit = 20,
+  ): Promise<CloudinaryPaginatedFiles> {
     return this.cloudinaryRepo.listFiles(userId, folder, page, limit);
   }
 

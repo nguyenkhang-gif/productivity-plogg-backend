@@ -2,7 +2,10 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
-import { User, UserDocument } from 'src/infrastructure/databases/schemas/user.schema';
+import {
+  User,
+  UserDocument,
+} from 'src/infrastructure/databases/schemas/user.schema';
 
 const THROTTLE_MS = 60_000;
 
@@ -29,11 +32,15 @@ export class LastSeenMiddleware implements NestMiddleware {
         const payload = decodeJwtPayload(token);
         const userId = payload?.userId || payload?.sub;
         if (userId) {
-          const doc = await this.userModel.findById(userId, { lastSeen: 1 }).lean();
+          const doc = await this.userModel
+            .findById(userId, { lastSeen: 1 })
+            .lean();
           const lastSeen = (doc as any)?.lastSeen;
           const now = Date.now();
           if (!lastSeen || now - new Date(lastSeen).getTime() > THROTTLE_MS) {
-            await this.userModel.findByIdAndUpdate(userId, { lastSeen: new Date(now) });
+            await this.userModel.findByIdAndUpdate(userId, {
+              lastSeen: new Date(now),
+            });
           }
         }
       }

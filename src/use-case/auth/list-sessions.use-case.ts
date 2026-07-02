@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { TokenService, SessionInfo } from 'src/infrastructure/auth/token/token.service';
+import {
+  TokenService,
+  SessionInfo,
+} from 'src/infrastructure/auth/token/token.service';
 
 @Injectable()
 export class ListSessionsUseCase {

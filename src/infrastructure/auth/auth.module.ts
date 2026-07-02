@@ -4,7 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../databases/schemas/user.schema';
-import { Friendship, FriendshipSchema } from '../databases/schemas/friendship.schema';
+import {
+  Friendship,
+  FriendshipSchema,
+} from '../databases/schemas/friendship.schema';
 import { Post, PostSchema } from '../databases/schemas/post.schema';
 import { POST_REPOSITORY } from 'src/core/domain/repositories/post.repository.interface';
 import { MongoPostRepository } from '../databases/repositories/post.repository';
@@ -28,6 +31,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { GoogleAuthUseCase } from 'src/use-case/auth/google-auth.use-case';
 import { GetSuggestionsUseCase } from 'src/use-case/user/get-suggestions.use-case';
+import { ChangeUserRoleUseCase } from 'src/use-case/user/change-user-role.use-case';
 import { TokenService } from './token/token.service';
 
 @Module({
@@ -41,8 +45,11 @@ import { TokenService } from './token/token.service';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET_KEY')?.trim() || 'defaultSecret';
-        let expiresIn = configService.get<string>('JWT_EXPIRATION_TIME') || '900s';
+        const secret =
+          configService.get<string>('JWT_SECRET_KEY')?.trim() ||
+          'defaultSecret';
+        let expiresIn =
+          configService.get<string>('JWT_EXPIRATION_TIME') || '900s';
 
         if (/^\d+$/.test(expiresIn)) {
           expiresIn = `${expiresIn}s`;
@@ -82,6 +89,7 @@ import { TokenService } from './token/token.service';
     GoogleStrategy,
     GoogleAuthUseCase,
     GetSuggestionsUseCase,
+    ChangeUserRoleUseCase,
   ],
 })
 export class AuthModule {}

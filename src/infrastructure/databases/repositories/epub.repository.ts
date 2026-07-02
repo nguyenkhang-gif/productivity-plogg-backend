@@ -37,7 +37,10 @@ export class MongoEpubRepository implements EpubRepository {
     return this.mapToDomain(savedEpub);
   }
 
-  async update(id: string, epubUpdate: Partial<EpubEntity>): Promise<EpubEntity> {
+  async update(
+    id: string,
+    epubUpdate: Partial<EpubEntity>,
+  ): Promise<EpubEntity> {
     const updatedEpub = await this.epubModel
       .findByIdAndUpdate(id, epubUpdate, { new: true })
       .exec();

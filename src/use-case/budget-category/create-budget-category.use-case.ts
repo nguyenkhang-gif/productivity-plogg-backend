@@ -13,7 +13,10 @@ export class CreateBudgetCategoryUseCase {
     private readonly repo: BudgetCategoryRepository,
   ) {}
 
-  execute(userId: string, dto: CreateBudgetCategoryDto): Promise<BudgetCategoryEntity> {
+  execute(
+    userId: string,
+    dto: CreateBudgetCategoryDto,
+  ): Promise<BudgetCategoryEntity> {
     return this.repo.create(userId, dto);
   }
 }

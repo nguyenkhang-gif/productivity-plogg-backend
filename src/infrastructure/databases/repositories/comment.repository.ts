@@ -25,7 +25,8 @@ const AUTHOR_LOOKUP = [
 @Injectable()
 export class MongoCommentRepository implements CommentRepository {
   constructor(
-    @InjectModel(Comment.name) private readonly commentModel: Model<CommentDocument>,
+    @InjectModel(Comment.name)
+    private readonly commentModel: Model<CommentDocument>,
   ) {}
 
   private mapToDomain(doc: any): CommentEntity {
@@ -56,7 +57,11 @@ export class MongoCommentRepository implements CommentRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
-  async findByPost(postId: string, page: number, limit: number): Promise<PaginatedComments> {
+  async findByPost(
+    postId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedComments> {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       this.commentModel.aggregate([

@@ -14,4 +14,3 @@ export class Comment {
     Object.assign(this, partial);
   }
 }
-

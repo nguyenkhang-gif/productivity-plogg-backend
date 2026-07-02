@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CreateBudgetCategoryDto } from 'src/core/dtos/create-budget-category.dto';
 import { UpdateBudgetCategoryDto } from 'src/core/dtos/update-budget-category.dto';
@@ -29,7 +40,11 @@ export class BudgetCategoryController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateBudgetCategoryDto, @Req() req) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBudgetCategoryDto,
+    @Req() req,
+  ) {
     return this.updateUseCase.execute(id, req.user.userId, dto);
   }
 

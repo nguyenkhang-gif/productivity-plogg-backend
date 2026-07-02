@@ -48,7 +48,11 @@ export class EpubController {
   }
 
   @Patch(':id')
-  async update(@Req() req, @Param('id') id: string, @Body() body: UpdateEpubDto) {
+  async update(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: UpdateEpubDto,
+  ) {
     return this.epubService.update(id, body, req.user.userId);
   }
 

@@ -1,9 +1,21 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Comment, CommentSchema } from 'src/infrastructure/databases/schemas/comment.schema';
-import { Post, PostSchema } from 'src/infrastructure/databases/schemas/post.schema';
-import { User, UserSchema } from 'src/infrastructure/databases/schemas/user.schema';
-import { Friendship, FriendshipSchema } from 'src/infrastructure/databases/schemas/friendship.schema';
+import {
+  Comment,
+  CommentSchema,
+} from 'src/infrastructure/databases/schemas/comment.schema';
+import {
+  Post,
+  PostSchema,
+} from 'src/infrastructure/databases/schemas/post.schema';
+import {
+  User,
+  UserSchema,
+} from 'src/infrastructure/databases/schemas/user.schema';
+import {
+  Friendship,
+  FriendshipSchema,
+} from 'src/infrastructure/databases/schemas/friendship.schema';
 import { MongoCommentRepository } from 'src/infrastructure/databases/repositories/comment.repository';
 import { MongoPostRepository } from 'src/infrastructure/databases/repositories/post.repository';
 import { COMMENT_REPOSITORY } from 'src/core/domain/repositories/comment.repository.interface';

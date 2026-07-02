@@ -1,4 +1,16 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Patch, Res, Delete, Param, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+  Patch,
+  Res,
+  Delete,
+  Param,
+  Headers,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { RegisterDto } from '../../core/dtos/register.dto';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
@@ -52,7 +64,11 @@ export class AuthController {
   ) {
     const authHeader: string = req.headers['authorization'] ?? '';
     const accessToken = authHeader.replace('Bearer ', '');
-    await this.logoutUseCase.execute(accessToken, req.user.userId, refreshToken);
+    await this.logoutUseCase.execute(
+      accessToken,
+      req.user.userId,
+      refreshToken,
+    );
     return { message: 'Logged out successfully' };
   }
 
@@ -86,7 +102,10 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:sessionId')
-  async revokeSession(@Request() req: any, @Param('sessionId') sessionId: string) {
+  async revokeSession(
+    @Request() req: any,
+    @Param('sessionId') sessionId: string,
+  ) {
     await this.revokeSessionUseCase.revokeOne(req.user.userId, sessionId);
     return { message: 'Session revoked' };
   }
@@ -97,7 +116,10 @@ export class AuthController {
     @Request() req: any,
     @Headers('x-session-id') currentSessionId?: string,
   ) {
-    await this.revokeSessionUseCase.revokeAll(req.user.userId, currentSessionId);
+    await this.revokeSessionUseCase.revokeAll(
+      req.user.userId,
+      currentSessionId,
+    );
     return { message: 'All other sessions revoked' };
   }
 
@@ -114,10 +136,18 @@ export class AuthController {
       userAgent: req.headers['user-agent'] ?? '',
       ip: req.ip ?? req.headers['x-forwarded-for'] ?? '',
     };
-    const { access_token, refresh_token } = await this.loginUseCase.execute(req.user, metadata);
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://knn-productivity.vercel.app';
+    const { access_token, refresh_token } = await this.loginUseCase.execute(
+      req.user,
+      metadata,
+    );
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      'https://knn-productivity.vercel.app';
     const redirectUrl = `${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`;
-    console.log('[GoogleCallback] FRONTEND_URL env:', this.configService.get<string>('FRONTEND_URL'));
+    console.log(
+      '[GoogleCallback] FRONTEND_URL env:',
+      this.configService.get<string>('FRONTEND_URL'),
+    );
     console.log('[GoogleCallback] Redirecting to:', redirectUrl.split('?')[0]);
     return res.redirect(redirectUrl);
   }

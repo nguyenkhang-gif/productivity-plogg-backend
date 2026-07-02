@@ -11,7 +11,9 @@ import { CreateBudgetTransactionDto } from 'src/core/dtos/create-budget-transact
 import { UpdateBudgetTransactionDto } from 'src/core/dtos/update-budget-transaction.dto';
 
 @Injectable()
-export class PgBudgetTransactionRepository implements BudgetTransactionRepository {
+export class PgBudgetTransactionRepository
+  implements BudgetTransactionRepository
+{
   constructor(private readonly prisma: PrismaService) {}
 
   private map(row: any): BudgetTransactionEntity {
@@ -34,7 +36,10 @@ export class PgBudgetTransactionRepository implements BudgetTransactionRepositor
     };
   }
 
-  async findAll(userId: string, filter: ListTransactionFilter): Promise<PaginatedTransactions> {
+  async findAll(
+    userId: string,
+    filter: ListTransactionFilter,
+  ): Promise<PaginatedTransactions> {
     const skip = (filter.page - 1) * filter.limit;
     const where = {
       userId,
@@ -81,7 +86,10 @@ export class PgBudgetTransactionRepository implements BudgetTransactionRepositor
     return this.map(row);
   }
 
-  async create(userId: string, data: CreateBudgetTransactionDto): Promise<BudgetTransactionEntity> {
+  async create(
+    userId: string,
+    data: CreateBudgetTransactionDto,
+  ): Promise<BudgetTransactionEntity> {
     const currency = data.currency ?? 'VND';
     const exchangeRateUsed = 1;
     const amountInBaseCurrency = data.amount * exchangeRateUsed;
@@ -103,7 +111,11 @@ export class PgBudgetTransactionRepository implements BudgetTransactionRepositor
     return this.map(row);
   }
 
-  async update(id: string, userId: string, data: UpdateBudgetTransactionDto): Promise<BudgetTransactionEntity> {
+  async update(
+    id: string,
+    userId: string,
+    data: UpdateBudgetTransactionDto,
+  ): Promise<BudgetTransactionEntity> {
     const existing = await this.prisma.budgetTransaction.findFirstOrThrow({
       where: { id, userId },
     });
@@ -130,7 +142,9 @@ export class PgBudgetTransactionRepository implements BudgetTransactionRepositor
   }
 
   async softDelete(id: string, userId: string): Promise<void> {
-    await this.prisma.budgetTransaction.findFirstOrThrow({ where: { id, userId } });
+    await this.prisma.budgetTransaction.findFirstOrThrow({
+      where: { id, userId },
+    });
     await this.prisma.budgetTransaction.update({
       where: { id },
       data: { isDeleted: true },

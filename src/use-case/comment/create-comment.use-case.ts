@@ -28,7 +28,12 @@ export class CreateCommentUseCase {
     if (!post) throw new NotFoundException('Post not found');
 
     return this.commentRepo.create(
-      new Comment({ postId: input.postId, authorId: input.authorId, content: input.content, iconUrl: input.iconUrl }),
+      new Comment({
+        postId: input.postId,
+        authorId: input.authorId,
+        content: input.content,
+        iconUrl: input.iconUrl,
+      }),
     );
   }
 }

@@ -1,4 +1,12 @@
-import { Controller, Get, NotFoundException, Param, Query, Res, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -23,7 +31,12 @@ export class LocalFilePublicController {
     const expNum = parseInt(exp, 10);
     const safeName = path.basename(fileName);
 
-    if (!sig || !exp || isNaN(expNum) || !verifyFileToken(bucket, userId, safeName, sig, expNum)) {
+    if (
+      !sig ||
+      !exp ||
+      isNaN(expNum) ||
+      !verifyFileToken(bucket, userId, safeName, sig, expNum)
+    ) {
       throw new UnauthorizedException('Invalid or expired token');
     }
 

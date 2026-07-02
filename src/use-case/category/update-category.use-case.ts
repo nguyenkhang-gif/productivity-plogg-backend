@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { CATEGORY_REPOSITORY, CategoryRepository } from 'src/core/domain/repositories/category.repository.interface';
+import {
+  CATEGORY_REPOSITORY,
+  CategoryRepository,
+} from 'src/core/domain/repositories/category.repository.interface';
 import { Category } from 'src/core/domain/entities/category.entity';
 
 export interface UpdateCategoryInput {
@@ -9,7 +12,10 @@ export interface UpdateCategoryInput {
 
 @Injectable()
 export class UpdateCategoryUseCase {
-  constructor(@Inject(CATEGORY_REPOSITORY) private readonly categoryRepo: CategoryRepository) {}
+  constructor(
+    @Inject(CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepository,
+  ) {}
 
   async execute(id: string, input: UpdateCategoryInput): Promise<Category> {
     return this.categoryRepo.update(id, input);

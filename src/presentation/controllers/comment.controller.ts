@@ -31,8 +31,17 @@ export class CommentController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Param('postId') postId: string, @Body() body: CreateCommentDto, @Req() req) {
-    return this.createComment.execute({ postId, authorId: req.user.userId, content: body.content, iconUrl: body.iconUrl });
+  create(
+    @Param('postId') postId: string,
+    @Body() body: CreateCommentDto,
+    @Req() req,
+  ) {
+    return this.createComment.execute({
+      postId,
+      authorId: req.user.userId,
+      content: body.content,
+      iconUrl: body.iconUrl,
+    });
   }
 
   @Get()

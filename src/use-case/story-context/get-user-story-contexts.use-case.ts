@@ -12,7 +12,11 @@ export class GetUserStoryContextsUseCase {
     private readonly repo: StoryContextRepository,
   ) {}
 
-  async execute(userId: string, page: number, limit: number): Promise<PaginatedStoryContexts> {
+  async execute(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedStoryContexts> {
     return this.repo.findByUserId(userId, page, limit);
   }
 }

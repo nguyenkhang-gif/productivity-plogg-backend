@@ -7,7 +7,8 @@ import {
 @Injectable()
 export class RemoveReactionUseCase {
   constructor(
-    @Inject(REACTION_REPOSITORY) private readonly reactionRepo: ReactionRepository,
+    @Inject(REACTION_REPOSITORY)
+    private readonly reactionRepo: ReactionRepository,
   ) {}
 
   async execute(postId: string, userId: string): Promise<void> {

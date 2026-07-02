@@ -15,13 +15,25 @@ export class GetPostsUseCase {
     private readonly cache: CacheService,
   ) {}
 
-  async execute(page = 1, limit = 10, currentUserId: string, filter?: PostFeedFilter): Promise<PaginatedPosts> {
-    const filterKey = filter ? `:cat=${filter.categoryId ?? ''}:tags=${(filter.tags ?? []).join(',')}:excl=${filter.excludeId ?? ''}:sort=${filter.sortByUpdatedAt ?? 'def'}` : '';
+  async execute(
+    page = 1,
+    limit = 10,
+    currentUserId: string,
+    filter?: PostFeedFilter,
+  ): Promise<PaginatedPosts> {
+    const filterKey = filter
+      ? `:cat=${filter.categoryId ?? ''}:tags=${(filter.tags ?? []).join(',')}:excl=${filter.excludeId ?? ''}:sort=${filter.sortByUpdatedAt ?? 'def'}`
+      : '';
     const key = `posts:all:${currentUserId}:${page}:${limit}${filterKey}`;
     const cached = await this.cache.get<PaginatedPosts>(key);
     if (cached) return cached;
 
-    const result = await this.postRepo.findAll(page, limit, currentUserId, filter);
+    const result = await this.postRepo.findAll(
+      page,
+      limit,
+      currentUserId,
+      filter,
+    );
     await this.cache.set(key, result, CACHE_TTL.POST_LIST);
     return result;
   }

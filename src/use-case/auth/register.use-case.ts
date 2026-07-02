@@ -18,7 +18,9 @@ export class RegisterUseCase {
       throw new ConflictException('Email already in use');
     }
 
-    const existingUsername = await this.userRepository.findByUsername(dto.username);
+    const existingUsername = await this.userRepository.findByUsername(
+      dto.username,
+    );
     if (existingUsername) {
       throw new ConflictException('Username already in use');
     }
@@ -36,7 +38,7 @@ export class RegisterUseCase {
     });
 
     const user = await this.userRepository.create(newUser);
-    const { passwordHash: _, ...result } = user;
+    const { passwordHash: _passwordHash, ...result } = user;
     return result;
   }
 }

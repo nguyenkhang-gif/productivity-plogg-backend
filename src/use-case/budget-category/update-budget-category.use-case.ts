@@ -12,7 +12,11 @@ export class UpdateBudgetCategoryUseCase {
     private readonly repo: BudgetCategoryRepository,
   ) {}
 
-  execute(id: string, userId: string, dto: UpdateBudgetCategoryDto): Promise<void> {
+  execute(
+    id: string,
+    userId: string,
+    dto: UpdateBudgetCategoryDto,
+  ): Promise<void> {
     return this.repo.update(id, userId, dto);
   }
 }

@@ -21,6 +21,10 @@ import { UploadLocalController } from 'src/presentation/controllers/upload-local
     UploadCloudinaryUseCase,
     UploadLocalUseCase,
   ],
-  controllers: [UploadController, UploadCloudinaryController, UploadLocalController],
+  controllers: [
+    UploadController,
+    UploadCloudinaryController,
+    UploadLocalController,
+  ],
 })
 export class StorageModule {}

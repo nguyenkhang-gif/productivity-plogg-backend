@@ -12,12 +12,20 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const CategorySchema = new mongoose.Schema(
-  { name: String, slug: { type: String, unique: true }, postCount: { type: Number, default: 0 } },
+  {
+    name: String,
+    slug: { type: String, unique: true },
+    postCount: { type: Number, default: 0 },
+  },
   { timestamps: true },
 );
 
 const TagSchema = new mongoose.Schema(
-  { name: String, slug: { type: String, unique: true }, postCount: { type: Number, default: 0 } },
+  {
+    name: String,
+    slug: { type: String, unique: true },
+    postCount: { type: Number, default: 0 },
+  },
   { timestamps: true },
 );
 
@@ -32,23 +40,23 @@ async function seedFeed() {
   const TagModel = mongoose.model('Tag', TagSchema);
 
   const categories = [
-    { name: 'Note',        slug: 'note' },
+    { name: 'Note', slug: 'note' },
     { name: 'Achievement', slug: 'achievement' },
-    { name: 'Question',    slug: 'question' },
-    { name: 'Tutorial',    slug: 'tutorial' },
+    { name: 'Question', slug: 'question' },
+    { name: 'Tutorial', slug: 'tutorial' },
   ];
 
   const tags = [
-    { name: 'NestJS',      slug: 'nestjs' },
-    { name: 'TypeScript',  slug: 'typescript' },
-    { name: 'MongoDB',     slug: 'mongodb' },
-    { name: 'Docker',      slug: 'docker' },
-    { name: 'React',       slug: 'react' },
-    { name: 'GraphQL',     slug: 'graphql' },
-    { name: 'PostgreSQL',  slug: 'postgresql' },
-    { name: 'AWS',         slug: 'aws' },
-    { name: 'CI/CD',       slug: 'ci-cd' },
-    { name: 'Testing',     slug: 'testing' },
+    { name: 'NestJS', slug: 'nestjs' },
+    { name: 'TypeScript', slug: 'typescript' },
+    { name: 'MongoDB', slug: 'mongodb' },
+    { name: 'Docker', slug: 'docker' },
+    { name: 'React', slug: 'react' },
+    { name: 'GraphQL', slug: 'graphql' },
+    { name: 'PostgreSQL', slug: 'postgresql' },
+    { name: 'AWS', slug: 'aws' },
+    { name: 'CI/CD', slug: 'ci-cd' },
+    { name: 'Testing', slug: 'testing' },
   ];
 
   for (const cat of categories) {
@@ -73,7 +81,7 @@ async function seedFeed() {
   await mongoose.disconnect();
 }
 
-seedFeed().catch(err => {
+seedFeed().catch((err) => {
   console.error(err);
   process.exit(1);
 });

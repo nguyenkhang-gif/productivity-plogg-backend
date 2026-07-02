@@ -19,7 +19,9 @@ export class UnfriendUseCase {
     const friendship = await this.repo.findByPair(userId, friendId);
     if (!friendship) throw new NotFoundException('Friendship not found');
     if (friendship.status === 'blocked' && friendship.userId !== userId) {
-      throw new ForbiddenException('Cannot remove a block placed by another user');
+      throw new ForbiddenException(
+        'Cannot remove a block placed by another user',
+      );
     }
     await this.repo.delete(friendship.id);
   }

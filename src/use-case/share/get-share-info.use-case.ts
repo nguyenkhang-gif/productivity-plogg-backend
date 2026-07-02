@@ -1,5 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { POST_REPOSITORY, PostRepository } from 'src/core/domain/repositories/post.repository.interface';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+} from 'src/core/domain/repositories/post.repository.interface';
 import { Types } from 'mongoose';
 
 export interface ShareInfo {
@@ -14,7 +17,8 @@ export class GetShareInfoUseCase {
   ) {}
 
   async execute(postId: string, userId?: string): Promise<ShareInfo> {
-    if (!Types.ObjectId.isValid(postId)) throw new NotFoundException('Post not found');
+    if (!Types.ObjectId.isValid(postId))
+      throw new NotFoundException('Post not found');
     const shareCount = await this.postRepo.getShareCount(postId);
 
     let hasShared = false;

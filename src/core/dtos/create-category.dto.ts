@@ -9,6 +9,8 @@ export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'slug must be lowercase kebab-case' })
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'slug must be lowercase kebab-case',
+  })
   slug: string;
 }

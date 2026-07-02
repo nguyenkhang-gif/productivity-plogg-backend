@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CategoryRepository } from 'src/core/domain/repositories/category.repository.interface';
@@ -7,7 +11,10 @@ import { Category, CategoryDocument } from '../schemas/category.schema';
 
 @Injectable()
 export class MongoCategoryRepository implements CategoryRepository {
-  constructor(@InjectModel(Category.name) private readonly categoryModel: Model<CategoryDocument>) {}
+  constructor(
+    @InjectModel(Category.name)
+    private readonly categoryModel: Model<CategoryDocument>,
+  ) {}
 
   private mapToDomain(doc: any): CategoryEntity {
     return new CategoryEntity({
@@ -39,18 +46,25 @@ export class MongoCategoryRepository implements CategoryRepository {
       const doc = await this.categoryModel.create({ ...data, postCount: 0 });
       return this.mapToDomain(doc);
     } catch (err: any) {
-      if (err.code === 11000) throw new ConflictException('Category slug already exists');
+      if (err.code === 11000)
+        throw new ConflictException('Category slug already exists');
       throw err;
     }
   }
 
-  async update(id: string, data: Partial<CategoryEntity>): Promise<CategoryEntity> {
+  async update(
+    id: string,
+    data: Partial<CategoryEntity>,
+  ): Promise<CategoryEntity> {
     try {
-      const doc = await this.categoryModel.findByIdAndUpdate(id, data, { new: true }).lean();
+      const doc = await this.categoryModel
+        .findByIdAndUpdate(id, data, { new: true })
+        .lean();
       if (!doc) throw new NotFoundException('Category not found');
       return this.mapToDomain(doc);
     } catch (err: any) {
-      if (err.code === 11000) throw new ConflictException('Category slug already exists');
+      if (err.code === 11000)
+        throw new ConflictException('Category slug already exists');
       throw err;
     }
   }

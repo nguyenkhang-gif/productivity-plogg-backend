@@ -1,4 +1,7 @@
-import { BudgetCategoryEntity, BudgetTransactionType } from './budget-category.entity';
+import {
+  BudgetCategoryEntity,
+  BudgetTransactionType,
+} from './budget-category.entity';
 
 export class BudgetTransactionEntity {
   id: string;

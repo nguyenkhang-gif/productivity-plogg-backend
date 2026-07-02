@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from 'src/presentation/guards/optional-jwt-auth.guard';
 import { CreateShareDto } from 'src/core/dtos/create-share.dto';
@@ -16,7 +27,11 @@ export class ShareController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  share(@Param('postId') postId: string, @Body() body: CreateShareDto, @Req() req) {
+  share(
+    @Param('postId') postId: string,
+    @Body() body: CreateShareDto,
+    @Req() req,
+  ) {
     return this.sharePost.execute(postId, req.user.userId, body.caption);
   }
 

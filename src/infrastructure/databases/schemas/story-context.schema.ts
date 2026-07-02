@@ -47,9 +47,11 @@ export class StoryContext {
   @Prop({ default: 'en' }) sourceLanguage: string;
   @Prop({ default: 'vi' }) targetLanguage: string;
   @Prop({ type: [StoryCharacter], default: [] }) characters: StoryCharacter[];
-  @Prop({ type: [StoryGlossaryEntry], default: [] }) glossary: StoryGlossaryEntry[];
+  @Prop({ type: [StoryGlossaryEntry], default: [] })
+  glossary: StoryGlossaryEntry[];
   @Prop({ type: StoryStyleGuide, required: true }) styleGuide: StoryStyleGuide;
-  @Prop({ type: [StoryChapterSummary], default: [] }) chapterSummaries: StoryChapterSummary[];
+  @Prop({ type: [StoryChapterSummary], default: [] })
+  chapterSummaries: StoryChapterSummary[];
 }
 
 export const StoryContextSchema = SchemaFactory.createForClass(StoryContext);

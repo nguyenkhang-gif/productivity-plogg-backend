@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
-import { CreateTranslationContextDto, UpdateTranslationContextDto } from 'src/core/dtos/translation-context.dto';
+import {
+  CreateTranslationContextDto,
+  UpdateTranslationContextDto,
+} from 'src/core/dtos/translation-context.dto';
 import { CreateTranslationContextUseCase } from 'src/use-case/translation-context/create-translation-context.use-case';
 import { GetTranslationContextUseCase } from 'src/use-case/translation-context/get-translation-context.use-case';
 import { GetUserTranslationContextsUseCase } from 'src/use-case/translation-context/get-user-translation-contexts.use-case';
@@ -46,7 +49,11 @@ export class TranslationContextController {
   }
 
   @Patch(':id')
-  async updateContext(@Req() req, @Param('id') id: string, @Body() dto: UpdateTranslationContextDto) {
+  async updateContext(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() dto: UpdateTranslationContextDto,
+  ) {
     return this.updateOne.execute(id, req.user.userId, dto);
   }
 

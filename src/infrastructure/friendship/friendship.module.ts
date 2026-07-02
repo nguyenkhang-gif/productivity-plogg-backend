@@ -17,7 +17,9 @@ import { GetPendingRequestsUseCase } from 'src/use-case/friendship/get-pending-r
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Friendship.name, schema: FriendshipSchema }]),
+    MongooseModule.forFeature([
+      { name: Friendship.name, schema: FriendshipSchema },
+    ]),
   ],
   controllers: [FriendshipController],
   providers: [

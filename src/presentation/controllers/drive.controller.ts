@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { DriveService } from './drive.service';
+import { DriveService } from 'src/infrastructure/google/drive.service';
 
 @Controller('api/drive')
 export class DriveController {

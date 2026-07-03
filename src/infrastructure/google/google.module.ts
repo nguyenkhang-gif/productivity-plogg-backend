@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 // import { ConfigModule } from '@nestjs/config';
 import { DriveService } from './drive.service';
-import { DriveController } from './drive.controller';
+import { DriveController } from 'src/presentation/controllers/drive.controller';
 
 @Module({
   // imports: [ConfigModule.forRoot({ isGlobal: true, load: [googleConfig] })],

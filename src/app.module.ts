@@ -13,7 +13,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
-import { DriveModule } from './google/drive.module';
+import { DriveModule } from './infrastructure/google/google.module';
 import { BudgetModule } from './infrastructure/budget/budget.module';
 import { AppConfigModule } from './infrastructure/config/config.module';
 import { AuthModule } from './infrastructure/auth/auth.module';

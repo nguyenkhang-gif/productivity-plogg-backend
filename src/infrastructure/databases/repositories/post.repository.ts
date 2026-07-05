@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+  AdminPostFilter,
   PaginatedPosts,
   PostFeedFilter,
   PostRepository,
@@ -489,6 +490,38 @@ export class MongoPostRepository implements PostRepository {
       moderationStatus: 'PENDING',
       type: { $ne: 'REPOST' },
     };
+
+    const [total, items] = await Promise.all([
+      this.postModel.countDocuments(matchFilter),
+      this.postModel.aggregate([
+        { $match: matchFilter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        ...buildReadPipeline(),
+      ]),
+    ]);
+
+    return {
+      items: items.map((doc) => this.mapToDomain(doc)),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async findAllAdmin(filter: AdminPostFilter): Promise<PaginatedPosts> {
+    const { search, authorId, moderationStatus, visibility, page, limit } =
+      filter;
+    const skip = (page - 1) * limit;
+
+    const matchFilter: Record<string, any> = {
+      type: { $ne: 'REPOST' },
+    };
+    if (search) {
+      matchFilter.title = new RegExp(search, 'i');
+    }
+    if (authorId) matchFilter.authorId = authorId;
+    if (moderationStatus) matchFilter.moderationStatus = moderationStatus;
+    if (visibility) matchFilter.visibility = visibility;
 
     const [total, items] = await Promise.all([
       this.postModel.countDocuments(matchFilter),

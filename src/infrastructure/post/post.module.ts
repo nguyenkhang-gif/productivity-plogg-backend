@@ -33,6 +33,10 @@ import { TAG_REPOSITORY } from 'src/core/domain/repositories/tag.repository.inte
 import { CATEGORY_REPOSITORY } from 'src/core/domain/repositories/category.repository.interface';
 import { BOOKMARK_REPOSITORY } from 'src/core/domain/repositories/bookmark.repository.interface';
 import { PostController } from 'src/presentation/controllers/post.controller';
+import { AdminPostController } from 'src/presentation/controllers/admin-post.controller';
+import { AdminGetAllPostsUseCase } from 'src/use-case/post/admin-get-all-posts.use-case';
+import { AdminGetPostUseCase } from 'src/use-case/post/admin-get-post.use-case';
+import { AdminForceDeletePostUseCase } from 'src/use-case/post/admin-force-delete-post.use-case';
 import { TagController } from 'src/presentation/controllers/tag.controller';
 import { CategoryController } from 'src/presentation/controllers/category.controller';
 import { ShareController } from 'src/presentation/controllers/share.controller';
@@ -74,6 +78,7 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
   controllers: [
     ShareController,
     PostController,
+    AdminPostController,
     TagController,
     CategoryController,
   ],
@@ -105,6 +110,9 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
     SharePostUseCase,
     UnsharePostUseCase,
     GetShareInfoUseCase,
+    AdminGetAllPostsUseCase,
+    AdminGetPostUseCase,
+    AdminForceDeletePostUseCase,
   ],
 })
 export class PostModule {}

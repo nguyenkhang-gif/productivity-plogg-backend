@@ -19,6 +19,15 @@ export interface PostFeedFilter {
   sortByUpdatedAt?: 1 | -1;
 }
 
+export interface AdminPostFilter {
+  search?: string;
+  authorId?: string;
+  moderationStatus?: string;
+  visibility?: string;
+  page: number;
+  limit: number;
+}
+
 export interface PostStats {
   postCount: number;
   totalReactionsReceived: number;
@@ -61,6 +70,7 @@ export interface PostRepository {
   incrementViewCount(id: string): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;
   countByAuthor(authorId: string): Promise<number>;
+  findAllAdmin(filter: AdminPostFilter): Promise<PaginatedPosts>;
   // share
   findRepostByUser(
     originalPostId: string,

@@ -48,11 +48,7 @@ export class AdminPostController {
   }
 
   @Patch(':id/reject')
-  reject(
-    @Param('id') id: string,
-    @Body('reason') reason: string,
-    @Req() req,
-  ) {
+  reject(@Param('id') id: string, @Body('reason') reason: string, @Req() req) {
     return this.rejectPost.execute(id, req.user.userId, reason);
   }
 

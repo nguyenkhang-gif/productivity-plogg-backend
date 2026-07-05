@@ -2,6 +2,21 @@ import { User } from '../entities/user.entity';
 
 export const USER_REPOSITORY = 'USER_REPOSITORY';
 
+export interface FindAllUsersFilter {
+  search?: string;
+  role?: string;
+  membership?: string;
+  page: number;
+  limit: number;
+}
+
+export interface FindAllUsersResult {
+  data: Omit<User, 'passwordHash' | 'resetPasswordToken'>[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface UserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
@@ -12,4 +27,5 @@ export interface UserRepository {
   findByGoogleId(googleId: string): Promise<User | null>;
   findByFacebookId(facebookId: string): Promise<User | null>;
   findSuggestions(currentUserId: string, limit: number): Promise<User[]>;
+  findAll(filter: FindAllUsersFilter): Promise<FindAllUsersResult>;
 }

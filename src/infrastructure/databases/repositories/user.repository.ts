@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { UserRepository } from 'src/core/domain/repositories/user.repository.interface';
+import {
+  FindAllUsersFilter,
+  FindAllUsersResult,
+  UserRepository,
+} from 'src/core/domain/repositories/user.repository.interface';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
 import { Model } from 'mongoose';
@@ -123,5 +127,38 @@ export class MongoUserRepository implements UserRepository {
       .lean();
 
     return docs.map((doc: any) => this.mapToDomain(doc));
+  }
+
+  async findAll(filter: FindAllUsersFilter): Promise<FindAllUsersResult> {
+    const { search, role, membership, page, limit } = filter;
+    const query: Record<string, any> = {};
+
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      query.$or = [{ fullName: regex }, { username: regex }, { email: regex }];
+    }
+    if (role) query.role = role;
+    if (membership) query.membership = membership;
+
+    const skip = (page - 1) * limit;
+    const [docs, total] = await Promise.all([
+      this.userModel
+        .find(query)
+        .select(
+          '-passwordHash -resetPasswordToken -googleId -facebookId',
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.userModel.countDocuments(query),
+    ]);
+
+    return {
+      data: docs.map((doc: any) => this.mapToDomain(doc)),
+      total,
+      page,
+      limit,
+    };
   }
 }

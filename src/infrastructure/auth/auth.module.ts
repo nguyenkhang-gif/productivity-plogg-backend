@@ -26,6 +26,8 @@ import { RevokeSessionUseCase } from 'src/use-case/auth/revoke-session.use-case'
 import { SearchUsersUseCase } from 'src/use-case/auth/search-users.use-case';
 import { GetUserProfileUseCase } from 'src/use-case/auth/get-user-profile.use-case';
 import { UserController } from 'src/presentation/controllers/user.controller';
+import { AdminUserController } from 'src/presentation/controllers/admin-user.controller';
+import { GetAllUsersUseCase } from 'src/use-case/user/get-all-users.use-case';
 import { LocalStrategy } from './strategies/local.stradegy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -62,7 +64,7 @@ import { TokenService } from './token/token.service';
       },
     }),
   ],
-  controllers: [AuthController, UserController],
+  controllers: [AuthController, UserController, AdminUserController],
   providers: [
     {
       provide: USER_REPOSITORY,
@@ -90,6 +92,7 @@ import { TokenService } from './token/token.service';
     GoogleAuthUseCase,
     GetSuggestionsUseCase,
     ChangeUserRoleUseCase,
+    GetAllUsersUseCase,
   ],
 })
 export class AuthModule {}

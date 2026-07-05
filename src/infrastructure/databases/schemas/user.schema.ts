@@ -4,7 +4,7 @@ import { UserRole } from '../../../core/domain/enums/user-role.enum';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true }) // Tự động thêm createdAt và updatedAt
+@Schema({ timestamps: true })
 export class User {
   @Prop({ required: true })
   fullName: string;
@@ -51,3 +51,7 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index({ role: 1 });
+UserSchema.index({ membership: 1 });
+UserSchema.index({ createdAt: -1 });

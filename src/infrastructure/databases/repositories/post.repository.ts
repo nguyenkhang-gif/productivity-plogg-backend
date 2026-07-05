@@ -530,6 +530,7 @@ export class MongoPostRepository implements PostRepository {
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
+        { $project: { content: 0 } },
         ...buildReadPipeline(),
       ]),
     ]);

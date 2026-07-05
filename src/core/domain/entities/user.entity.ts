@@ -16,6 +16,8 @@ export class User {
   facebookId?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  /** Attached by admin list queries only. */
+  postCount?: number;
 
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);

@@ -7,6 +7,7 @@ import {
 } from 'src/core/domain/repositories/user.repository.interface';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
+import { Post, PostDocument } from '../schemas/post.schema';
 import { Model } from 'mongoose';
 import { User as UserEntity } from 'src/core/domain/entities/user.entity';
 
@@ -16,6 +17,7 @@ export class MongoUserRepository implements UserRepository {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Friendship.name)
     private readonly friendshipModel: Model<FriendshipDocument>,
+    @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
   ) {}
 
   private mapToDomain(userDoc: UserDocument): UserEntity {
@@ -144,9 +146,7 @@ export class MongoUserRepository implements UserRepository {
     const [docs, total] = await Promise.all([
       this.userModel
         .find(query)
-        .select(
-          '-passwordHash -resetPasswordToken -googleId -facebookId',
-        )
+        .select('-passwordHash -resetPasswordToken -googleId -facebookId')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -154,8 +154,23 @@ export class MongoUserRepository implements UserRepository {
       this.userModel.countDocuments(query),
     ]);
 
+    // Post counts only for the users on this page — cheaper than a $lookup
+    // over the whole users collection
+    const userIds = docs.map((doc: any) => doc._id.toString());
+    const postCounts = await this.postModel.aggregate([
+      { $match: { authorId: { $in: userIds } } },
+      { $group: { _id: '$authorId', count: { $sum: 1 } } },
+    ]);
+    const countByUserId = new Map<string, number>(
+      postCounts.map((c: any) => [c._id, c.count]),
+    );
+
     return {
-      data: docs.map((doc: any) => this.mapToDomain(doc)),
+      data: docs.map((doc: any) => {
+        const user = this.mapToDomain(doc);
+        user.postCount = countByUserId.get(user.id) ?? 0;
+        return user;
+      }),
       total,
       page,
       limit,

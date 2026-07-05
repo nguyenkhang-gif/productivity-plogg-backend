@@ -31,6 +31,7 @@ import { UpdateFocusConfigUseCase } from 'src/use-case/focus/update-focus-config
 import { RollupDailyUseCase } from 'src/use-case/focus/rollup-daily.use-case';
 import { RollupWeeklyUseCase } from 'src/use-case/focus/rollup-weekly.use-case';
 import { RollupMonthlyUseCase } from 'src/use-case/focus/rollup-monthly.use-case';
+import { GetFocusReportUseCase } from 'src/use-case/focus/get-focus-report.use-case';
 
 // Rollup use-cases are provided for manual invocation; the cron scheduler
 // (FocusRollupScheduler) is deferred — see plan Step 5
@@ -60,6 +61,7 @@ import { RollupMonthlyUseCase } from 'src/use-case/focus/rollup-monthly.use-case
     RollupDailyUseCase,
     RollupWeeklyUseCase,
     RollupMonthlyUseCase,
+    GetFocusReportUseCase,
   ],
 })
 export class FocusModule {}

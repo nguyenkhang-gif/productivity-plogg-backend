@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -25,6 +26,12 @@ export class CreateFocusSessionDto {
   @Min(-720)
   @Max(840)
   tzOffset?: number;
+}
+
+export class FocusReportQueryDto {
+  /** Calendar month to report, e.g. "2026-07". */
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, { message: 'month must be YYYY-MM' })
+  month: string;
 }
 
 export class UpdateFocusConfigDto {

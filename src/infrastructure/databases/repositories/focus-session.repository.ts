@@ -6,6 +6,7 @@ import {
   FocusSessionRepository,
 } from 'src/core/domain/repositories/focus-session.repository.interface';
 import { FocusSession as FocusSessionEntity } from 'src/core/domain/entities/focus-session.entity';
+import { FocusRollup } from 'src/core/domain/entities/focus-rollup.entity';
 import {
   FocusSessionRaw,
   FocusSessionRawDocument,
@@ -46,6 +47,35 @@ export class MongoFocusSessionRepository implements FocusSessionRepository {
       }
       throw err;
     }
+  }
+
+  async aggregateDailyFromRaw(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<FocusRollup[]> {
+    const rows = await this.rawModel.aggregate([
+      { $match: { userId, localDate: { $gte: from, $lte: to } } },
+      {
+        $group: {
+          _id: '$localDate',
+          sessionsCount: { $sum: 1 },
+          totalFocusMin: { $sum: '$durationMin' },
+          totalXp: { $sum: '$xpEarned' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    return rows.map(
+      (r: any) =>
+        new FocusRollup({
+          userId,
+          periodKey: r._id,
+          sessionsCount: r.sessionsCount,
+          totalFocusMin: r.totalFocusMin,
+          totalXp: r.totalXp,
+        }),
+    );
   }
 
   // All rollups write via $merge: idempotent (whenMatched: replace) and

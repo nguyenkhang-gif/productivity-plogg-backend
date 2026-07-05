@@ -19,6 +19,7 @@ import { AppConfigModule } from './infrastructure/config/config.module';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
 import { FriendshipModule } from './infrastructure/friendship/friendship.module';
+import { FocusModule } from './infrastructure/focus/focus.module';
 import { CommentModule } from './infrastructure/comment/comment.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
@@ -61,6 +62,7 @@ import {
     AuthModule,
     PostModule,
     FriendshipModule,
+    FocusModule,
     CommentModule,
     ChatModule,
     StorageModule,

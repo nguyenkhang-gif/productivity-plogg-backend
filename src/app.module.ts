@@ -20,6 +20,7 @@ import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
 import { FriendshipModule } from './infrastructure/friendship/friendship.module';
 import { FocusModule } from './infrastructure/focus/focus.module';
+import { VaultModule } from './infrastructure/vault/vault.module';
 import { CommentModule } from './infrastructure/comment/comment.module';
 import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
@@ -63,6 +64,7 @@ import {
     PostModule,
     FriendshipModule,
     FocusModule,
+    VaultModule,
     CommentModule,
     ChatModule,
     StorageModule,

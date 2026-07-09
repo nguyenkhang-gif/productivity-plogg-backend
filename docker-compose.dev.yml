@@ -1,0 +1,28 @@
+version: '3.8'
+
+# Chỉ dùng cho LOCAL DEV
+# Chạy: docker compose -f docker-compose.dev.yml up -d
+# Stop: docker compose -f docker-compose.dev.yml down
+#
+# NestJS vẫn chạy riêng bằng: npm run start:dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"        # NestJS local kết nối qua localhost:5432
+    environment:
+      POSTGRES_USER: plog
+      POSTGRES_PASSWORD: plog
+      POSTGRES_DB: plog_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data   # giữ data khi restart
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plog -d plog_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_dev_data:

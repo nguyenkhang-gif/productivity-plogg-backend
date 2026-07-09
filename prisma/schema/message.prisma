@@ -1,0 +1,58 @@
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+model Message {
+  id           String      @id @default(uuid())
+  channelId    String
+  senderId     String
+  senderName   String
+  senderAvatar String?
+  replyToId    String?
+  type         MessageType @default(TEXT)
+  content      String
+  isDeleted    Boolean     @default(false)
+  editedAt     DateTime?
+  createdAt    DateTime    @default(now())
+
+  channel     Channel             @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  replyTo     Message?            @relation("Replies", fields: [replyToId], references: [id])
+  replies     Message[]           @relation("Replies")
+  attachments MessageAttachment[]
+  reactions   MessageReaction[]
+
+  @@index([channelId, createdAt(sort: Desc)])
+  @@index([channelId, id(sort: Desc)])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String @id @default(uuid())
+  messageId String
+  url       String
+  type      String
+  filename  String
+  size      Int
+  mimeType  String
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model MessageReaction {
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emoji])
+  @@map("message_reactions")
+}

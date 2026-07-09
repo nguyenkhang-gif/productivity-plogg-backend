@@ -1,0 +1,89 @@
+enum ChannelType {
+  TEXT
+  CATEGORY
+}
+
+enum GuildRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Guild {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  channels Channel[]
+  members  GuildMember[]
+  roles    Role[]
+
+  @@index([ownerId])
+  @@map("guilds")
+}
+
+model Channel {
+  id        String      @id @default(uuid())
+  guildId   String
+  parentId  String?
+  type      ChannelType @default(TEXT)
+  name      String
+  topic     String?
+  position  Float       @default(0)
+  createdAt DateTime    @default(now())
+
+  guild    Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  parent   Channel?  @relation("ChannelCategory", fields: [parentId], references: [id])
+  children Channel[] @relation("ChannelCategory")
+  messages Message[]
+
+  @@index([guildId, position])
+  @@map("channels")
+}
+
+model GuildMember {
+  guildId   String
+  userId    String
+  username  String
+  avatar    String?
+  nickname  String?
+  joinedAt  DateTime @default(now())
+
+  guild Guild             @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  roles GuildMemberRole[]
+
+  @@id([guildId, userId])
+  @@index([guildId])
+  @@index([userId])
+  @@map("guild_members")
+}
+
+model Role {
+  id          String @id @default(uuid())
+  guildId     String
+  name        String
+  color       String @default("#99aab5")
+  position    Int    @default(0)
+  permissions BigInt @default(0)
+
+  guild   Guild             @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  members GuildMemberRole[]
+
+  @@index([guildId, position])
+  @@map("roles")
+}
+
+model GuildMemberRole {
+  guildId String
+  userId  String
+  roleId  String
+
+  member GuildMember @relation(fields: [guildId, userId], references: [guildId, userId], onDelete: Cascade)
+  role   Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([guildId, userId, roleId])
+  @@map("guild_member_roles")
+}

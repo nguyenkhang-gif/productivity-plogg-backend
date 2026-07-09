@@ -22,7 +22,6 @@ import { FriendshipModule } from './infrastructure/friendship/friendship.module'
 import { FocusModule } from './infrastructure/focus/focus.module';
 import { VaultModule } from './infrastructure/vault/vault.module';
 import { CommentModule } from './infrastructure/comment/comment.module';
-import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 import { ReactionModule } from './infrastructure/reaction/reaction.module';
 import { AiModule } from './infrastructure/ai/ai.module';
@@ -66,7 +65,6 @@ import {
     FocusModule,
     VaultModule,
     CommentModule,
-    ChatModule,
     StorageModule,
     ReactionModule,
     AiModule,

@@ -7,10 +7,123 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Chat enums ───────────────────────────────────────────────────────────────
+
+enum ConversationType {
+  DM
+  GROUP
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+// ─── Budget enums ─────────────────────────────────────────────────────────────
+
 enum BudgetTransactionType {
   INCOME
   EXPENSE
 }
+
+// ─── Chat models ──────────────────────────────────────────────────────────────
+
+model Conversation {
+  id            String           @id @default(uuid())
+  type          ConversationType @default(DM)
+  name          String?          // null cho DM
+  icon          String?          // null cho DM
+  createdById   String           // MongoDB User._id
+  lastMessageAt DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  members       ConversationMember[]
+  messages      Message[]
+
+  @@index([createdById])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  conversationId    String
+  userId            String           // MongoDB User._id
+  role              MemberRole       @default(MEMBER)
+  lastReadMessageId String?          // dùng để tính unread count
+  lastReadAt        DateTime?
+  isMuted           Boolean          @default(false)
+  isArchived        Boolean          @default(false)
+  joinedAt          DateTime         @default(now())
+
+  conversation      Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lastReadMessage   Message?         @relation("LastRead", fields: [lastReadMessageId], references: [id])
+
+  @@id([conversationId, userId])
+  @@index([userId])                  // "get all my conversations"
+  @@index([conversationId])          // "get all members of a conversation"
+  @@map("conversation_members")
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  senderId       String      // MongoDB User._id
+  replyToId      String?
+  type           MessageType @default(TEXT)
+  content        String
+  isDeleted      Boolean     @default(false)
+  editedAt       DateTime?
+  createdAt      DateTime    @default(now())
+
+  conversation        Conversation         @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyTo             Message?             @relation("Replies", fields: [replyToId], references: [id])
+  replies             Message[]            @relation("Replies")
+  attachments         MessageAttachment[]
+  reactions           MessageReaction[]
+  readByMembers       ConversationMember[] @relation("LastRead")
+
+  @@index([conversationId, createdAt(sort: Desc)]) // timeline scroll
+  @@index([conversationId, id(sort: Desc)])         // cursor pagination
+  @@index([senderId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String  @id @default(uuid())
+  messageId String
+  url       String
+  type      String  // image | video | file
+  filename  String
+  size      Int     // bytes
+  mimeType  String
+
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model MessageReaction {
+  messageId String
+  userId    String   // MongoDB User._id
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emoji])  // 1 user chỉ react 1 emoji mỗi loại
+  @@map("message_reactions")
+}
+
+// ─── Budget models ────────────────────────────────────────────────────────────
 
 model BudgetCategory {
   id           String                @id @default(uuid())

@@ -15,6 +15,7 @@ import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './infrastructure/google/google.module';
 import { AppConfigModule } from './infrastructure/config/config.module';
+import { PrismaService } from './infrastructure/databases/prisma/prisma.service';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
 import { FriendshipModule } from './infrastructure/friendship/friendship.module';
@@ -70,7 +71,7 @@ import {
     StoryContextModule,
   ],
   controllers: [AppController],
-  providers: [AppService, LastSeenMiddleware],
+  providers: [AppService, LastSeenMiddleware, PrismaService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

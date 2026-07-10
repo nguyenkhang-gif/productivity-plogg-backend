@@ -1,0 +1,24 @@
+import { Message, MessageType } from '../entities/message.entity';
+
+export const MESSAGE_REPOSITORY = 'MESSAGE_REPOSITORY';
+
+export interface CreateMessageData {
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  replyToId?: string | null;
+  type?: MessageType;
+  content: string;
+}
+
+export interface MessageRepository {
+  findByChannel(
+    channelId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<Message[]>;
+  create(data: CreateMessageData): Promise<Message>;
+  softDelete(messageId: string, userId: string): Promise<void>;
+  edit(messageId: string, userId: string, content: string): Promise<Message>;
+}

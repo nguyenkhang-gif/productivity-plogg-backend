@@ -45,12 +45,12 @@ model Channel {
 }
 
 model GuildMember {
-  guildId   String
-  userId    String
-  username  String
-  avatar    String?
-  nickname  String?
-  joinedAt  DateTime @default(now())
+  guildId  String
+  userId   String
+  username String
+  avatar   String?
+  nickname String?
+  joinedAt DateTime @default(now())
 
   guild Guild             @relation(fields: [guildId], references: [id], onDelete: Cascade)
   roles GuildMemberRole[]

@@ -16,13 +16,6 @@ function createPrismaClient() {
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly prisma = createPrismaClient();
 
-  get budgetCategory() {
-    return this.prisma.budgetCategory;
-  }
-  get budgetTransaction() {
-    return this.prisma.budgetTransaction;
-  }
-
   async onModuleInit() {
     await (this.prisma as any).$connect();
   }

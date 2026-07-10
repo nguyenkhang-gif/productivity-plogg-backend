@@ -21,9 +21,7 @@
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seeds/seed.ts",
     "seed:feed": "ts-node -r tsconfig-paths/register src/scripts/seeds/seed-feed.ts",
     "seed:posts": "ts-node -r tsconfig-paths/register src/scripts/seeds/seed-posts.ts",
-    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seeds/promote-admin.ts",
-    "seed:budget": "ts-node -r tsconfig-paths/register prisma/seed.ts",
-    "seed:transactions": "ts-node -r tsconfig-paths/register prisma/seed-transactions.ts"
+    "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seeds/promote-admin.ts"
   },
   "dependencies": {
     "@google/genai": "^1.21.0",
@@ -114,8 +112,5 @@
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1"
     }
-  },
-  "prisma": {
-    "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
   }
 }

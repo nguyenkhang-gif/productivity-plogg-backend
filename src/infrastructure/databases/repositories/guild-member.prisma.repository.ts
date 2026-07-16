@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { GuildMember } from 'src/core/domain/entities/guild-member.entity';
 import {
   AddGuildMemberData,
   GuildMemberRepository,
 } from 'src/core/domain/repositories/guild-member.repository.interface';
-import { GuildMember } from 'src/core/domain/entities/guild-member.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class GuildMemberPrismaRepository implements GuildMemberRepository {
@@ -81,5 +81,17 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     });
 
     return memberRoles.reduce((acc, mr) => acc | mr.role.permissions, 0n);
+  }
+
+  async getHighestRolePosition(
+    guildId: string,
+    userId: string,
+  ): Promise<number> {
+    const memberRoles = await this.prisma.guildMemberRole.findMany({
+      where: { guildId, userId },
+      include: { role: true },
+    });
+    if (memberRoles.length === 0) return -1;
+    return Math.max(...memberRoles.map((mr) => mr.role.position));
   }
 }

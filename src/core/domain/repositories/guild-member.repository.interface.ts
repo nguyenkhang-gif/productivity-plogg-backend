@@ -18,4 +18,5 @@ export interface GuildMemberRepository {
   remove(guildId: string, userId: string): Promise<void>;
   assignRole(guildId: string, userId: string, roleId: string): Promise<void>;
   getResolvedPermissions(guildId: string, userId: string): Promise<bigint>;
+  getHighestRolePosition(guildId: string, userId: string): Promise<number>;
 }

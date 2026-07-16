@@ -45,9 +45,9 @@ export class MessagePrismaRepository implements MessageRepository {
     return this.map(row);
   }
 
-  async softDelete(messageId: string, userId: string): Promise<void> {
+  async softDelete(messageId: string, userId?: string): Promise<void> {
     await this.prisma.message.updateMany({
-      where: { id: messageId, senderId: userId },
+      where: userId ? { id: messageId, senderId: userId } : { id: messageId },
       data: { isDeleted: true, content: '' },
     });
   }
@@ -56,11 +56,37 @@ export class MessagePrismaRepository implements MessageRepository {
     messageId: string,
     userId: string,
     content: string,
-  ): Promise<Message> {
-    const row = await this.prisma.message.update({
-      where: { id: messageId },
+  ): Promise<Message | null> {
+    const result = await this.prisma.message.updateMany({
+      where: { id: messageId, senderId: userId },
       data: { content, editedAt: new Date() },
     });
-    return this.map(row);
+    if (result.count === 0) return null;
+    const row = await this.prisma.message.findUnique({
+      where: { id: messageId },
+    });
+    return row ? this.map(row) : null;
+  }
+
+  async addReaction(
+    messageId: string,
+    userId: string,
+    emoji: string,
+  ): Promise<void> {
+    await this.prisma.messageReaction.upsert({
+      where: { messageId_userId_emoji: { messageId, userId, emoji } },
+      create: { messageId, userId, emoji },
+      update: {},
+    });
+  }
+
+  async removeReaction(
+    messageId: string,
+    userId: string,
+    emoji: string,
+  ): Promise<void> {
+    await this.prisma.messageReaction.delete({
+      where: { messageId_userId_emoji: { messageId, userId, emoji } },
+    });
   }
 }

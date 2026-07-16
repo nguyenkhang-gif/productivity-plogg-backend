@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateGuildData,
   GuildRepository,
+  UpdateGuildData,
 } from 'src/core/domain/repositories/guild.repository.interface';
 import { Guild } from 'src/core/domain/entities/guild.entity';
 
@@ -34,6 +35,11 @@ export class GuildPrismaRepository implements GuildRepository {
 
   async create(data: CreateGuildData): Promise<Guild> {
     const row = await this.prisma.guild.create({ data });
+    return this.map(row);
+  }
+
+  async update(id: string, data: UpdateGuildData): Promise<Guild> {
+    const row = await this.prisma.guild.update({ where: { id }, data });
     return this.map(row);
   }
 

@@ -15,7 +15,6 @@ import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './infrastructure/google/google.module';
 import { AppConfigModule } from './infrastructure/config/config.module';
-import { PrismaService } from './infrastructure/databases/prisma/prisma.service';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
 import { FriendshipModule } from './infrastructure/friendship/friendship.module';
@@ -35,6 +34,8 @@ import {
   User,
   UserSchema,
 } from './infrastructure/databases/schemas/user.schema';
+import { GuildModule } from './infrastructure/guild/guild.module';
+import { PrismaModule } from './infrastructure/databases/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -69,9 +70,11 @@ import {
     AiModule,
     TranslationContextModule,
     StoryContextModule,
+    GuildModule,
+    PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService, LastSeenMiddleware, PrismaService],
+  providers: [AppService, LastSeenMiddleware],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

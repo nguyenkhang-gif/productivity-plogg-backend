@@ -7,6 +7,7 @@ export class Role {
   color: string;
   position: number;
   permissions: bigint; // bitmask, vd: 1n<<1n | 1n<<2n = quyền SEND_MESSAGES + MANAGE_MESSAGES
+  isDefault: boolean;
 
   constructor(partial: Partial<Role>) {
     Object.assign(this, partial);

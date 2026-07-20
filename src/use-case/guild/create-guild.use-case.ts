@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
 import { Guild } from 'src/core/domain/entities/guild.entity';
 import {
   GUILD_MEMBER_REPOSITORY,
@@ -8,6 +9,10 @@ import {
   GUILD_REPOSITORY,
   GuildRepository,
 } from 'src/core/domain/repositories/guild.repository.interface';
+import {
+  ROLE_REPOSITORY,
+  RoleRepository,
+} from 'src/core/domain/repositories/role.repository.interface';
 
 export interface CreateGuildInput {
   ownerId: string;
@@ -23,6 +28,8 @@ export class CreateGuildUseCase {
     @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(ROLE_REPOSITORY)
+    private readonly roleRepo: RoleRepository,
   ) {}
 
   async execute(input: CreateGuildInput): Promise<Guild> {
@@ -37,6 +44,15 @@ export class CreateGuildUseCase {
       userId: input.ownerId,
       username: input.ownerUsername,
       avatar: input.ownerAvatar,
+    });
+
+    await this.roleRepo.create({
+      guildId: guild.id,
+      name: '@everyone',
+      permissions:
+        GuildPermissions.VIEW_CHANNELS | GuildPermissions.SEND_MESSAGES,
+      isDefault: true,
+      position: 0,
     });
 
     return guild;

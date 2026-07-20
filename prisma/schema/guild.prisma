@@ -62,12 +62,13 @@ model GuildMember {
 }
 
 model Role {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   guildId     String
   name        String
-  color       String @default("#99aab5")
-  position    Int    @default(0)
-  permissions BigInt @default(0)
+  color       String  @default("#99aab5")
+  position    Int     @default(0)
+  permissions BigInt  @default(0)
+  isDefault   Boolean @default(false)
 
   guild   Guild             @relation(fields: [guildId], references: [id], onDelete: Cascade)
   members GuildMemberRole[]

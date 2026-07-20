@@ -35,6 +35,7 @@ async function bootstrap() {
     origin: (origin, callback) => {
       if (
         !origin ||
+        origin === 'null' ||
         allowedOrigins.has(origin) ||
         origin?.endsWith('.trycloudflare.com')
       ) {

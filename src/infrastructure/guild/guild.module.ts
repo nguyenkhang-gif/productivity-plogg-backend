@@ -16,6 +16,7 @@ import { CreateGuildUseCase } from 'src/use-case/guild/create-guild.use-case';
 import { GetGuildUseCase } from 'src/use-case/guild/get-guild.use-case';
 import { UpdateGuildUseCase } from 'src/use-case/guild/update-guild.use-case';
 import { DeleteGuildUseCase } from 'src/use-case/guild/delete-guild.use-case';
+import { GetMyGuildsUseCase } from 'src/use-case/guild/get-my-guilds.use-case';
 import { CreateChannelUseCase } from 'src/use-case/channel/create-channel.use-case';
 import { GetChannelsUseCase } from 'src/use-case/channel/get-channels.use-case';
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
@@ -31,10 +32,13 @@ import { AddReactionUseCase } from 'src/use-case/message/add-reaction.use-case';
 import { PrismaModule } from '../databases/prisma/prisma.module';
 import { ROLE_REPOSITORY } from 'src/core/domain/repositories/role.repository.interface';
 import { RolePrismaRepository } from '../databases/repositories/role.prisma.repository';
+import { GuildController } from 'src/presentation/controllers/guild.controller';
+import { ChannelController } from 'src/presentation/controllers/channel.controller';
+import { GuildMemberController } from 'src/presentation/controllers/guild-member.controller';
 
 @Module({
   imports: [AuthModule, PrismaModule],
-  controllers: [],
+  controllers: [GuildController, ChannelController, GuildMemberController],
   providers: [
     { provide: GUILD_REPOSITORY, useClass: GuildPrismaRepository },
     { provide: CHANNEL_REPOSITORY, useClass: ChannelPrismaRepository },
@@ -43,6 +47,7 @@ import { RolePrismaRepository } from '../databases/repositories/role.prisma.repo
     { provide: ROLE_REPOSITORY, useClass: RolePrismaRepository },
     GuildGateway,
     CreateGuildUseCase,
+    GetMyGuildsUseCase,
     GetGuildUseCase,
     UpdateGuildUseCase,
     DeleteGuildUseCase,

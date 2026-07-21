@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   Param,
   Post,
@@ -13,6 +14,7 @@ import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case'
 import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-case';
 import { KickMemberUseCase } from 'src/use-case/guild-member/kick-member.use-case';
 import { AssignRoleUseCase } from 'src/use-case/guild-member/assign-role.use-case';
+import { GetMembersUseCase } from 'src/use-case/guild-member/get-members.use-case';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/guilds/:guildId')
@@ -22,6 +24,7 @@ export class GuildMemberController {
     private readonly leaveGuild: LeaveGuildUseCase,
     private readonly kickMember: KickMemberUseCase,
     private readonly assignRole: AssignRoleUseCase,
+    private readonly getMembers: GetMembersUseCase,
   ) {}
 
   @Post('join')
@@ -58,5 +61,10 @@ export class GuildMemberController {
     @Req() req,
   ) {
     return this.assignRole.execute(guildId, req.user.userId, targetId, roleId);
+  }
+
+  @Get('members')
+  list(@Param('guildId') guildId: string, @Req() req) {
+    return this.getMembers.execute(guildId, req.user.userId);
   }
 }

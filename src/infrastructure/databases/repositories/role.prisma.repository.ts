@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   CreateRoleData,
   RoleRepository,
+  UpdateRoleData,
 } from 'src/core/domain/repositories/role.repository.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from 'src/core/domain/entities/role.entity';
@@ -33,5 +34,27 @@ export class RolePrismaRepository implements RoleRepository {
     });
 
     return row ? this.map(row) : null;
+  }
+
+  async findById(id: string): Promise<Role | null> {
+    const row = await this.prisma.role.findUnique({ where: { id } });
+    return row ? this.map(row) : null;
+  }
+
+  async findByGuild(guildId: string): Promise<Role[]> {
+    const rows = await this.prisma.role.findMany({
+      where: { guildId },
+      orderBy: { position: 'desc' },
+    });
+    return rows.map((r) => this.map(r));
+  }
+
+  async update(id: string, data: UpdateRoleData): Promise<Role> {
+    const row = await this.prisma.role.update({ where: { id }, data });
+    return this.map(row);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.role.delete({ where: { id } });
   }
 }

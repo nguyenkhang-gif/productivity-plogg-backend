@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import {
   CHANNEL_REPOSITORY,
   ChannelRepository,
@@ -30,7 +33,7 @@ export class DeleteChannelUseCase {
       channel.guildId,
       userId,
     );
-    if (!(perms & GuildPermissions.MANAGE_CHANNELS))
+    if (!hasPermission(perms, GuildPermissions.MANAGE_CHANNELS))
       throw new ForbiddenException();
 
     await this.channelRepo.delete(channelId);

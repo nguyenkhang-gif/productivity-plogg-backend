@@ -9,3 +9,7 @@ export const GuildPermissions = {
   MANAGE_ROLES: 1n << 7n,
   ADMINISTRATOR: 1n << 8n, // bypass tất cả checks
 } as const;
+
+export function hasPermission(perms: bigint, required: bigint): boolean {
+  return !!(perms & GuildPermissions.ADMINISTRATOR) || !!(perms & required);
+}

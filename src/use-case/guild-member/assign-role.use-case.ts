@@ -1,5 +1,8 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
@@ -22,7 +25,7 @@ export class AssignRoleUseCase {
       guildId,
       actorId,
     );
-    if (!(perms & GuildPermissions.MANAGE_ROLES))
+    if (!hasPermission(perms, GuildPermissions.MANAGE_ROLES))
       throw new ForbiddenException();
     await this.memberRepo.assignRole(guildId, targetId, roleId);
   }

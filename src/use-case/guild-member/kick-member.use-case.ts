@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
@@ -36,7 +39,7 @@ export class KickMemberUseCase {
       guildId,
       actorId,
     );
-    if (!(perms & GuildPermissions.KICK_MEMBERS))
+    if (!hasPermission(perms, GuildPermissions.KICK_MEMBERS))
       throw new ForbiddenException();
 
     if (guild.ownerId !== actorId) {

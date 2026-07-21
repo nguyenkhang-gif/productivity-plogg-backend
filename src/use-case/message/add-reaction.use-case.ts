@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import {
   CHANNEL_REPOSITORY,
   ChannelRepository,
@@ -40,7 +43,7 @@ export class AddReactionUseCase {
       channel.guildId,
       userId,
     );
-    if (!(perms & GuildPermissions.VIEW_CHANNELS))
+    if (!hasPermission(perms, GuildPermissions.VIEW_CHANNELS))
       throw new ForbiddenException();
 
     await this.messageRepo.addReaction(messageId, userId, emoji);

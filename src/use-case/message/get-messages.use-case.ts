@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import { Message } from 'src/core/domain/entities/message.entity';
 import {
   CHANNEL_REPOSITORY,
@@ -41,7 +44,7 @@ export class GetMessagesUseCase {
       channel.guildId,
       userId,
     );
-    if (!(perms & GuildPermissions.VIEW_CHANNELS))
+    if (!hasPermission(perms, GuildPermissions.VIEW_CHANNELS))
       throw new ForbiddenException();
 
     return this.messageRepo.findByChannel(channelId, cursor, limit);

@@ -1,5 +1,8 @@
 import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import { Channel } from 'src/core/domain/entities/channel.entity';
 import {
   CHANNEL_REPOSITORY,
@@ -33,7 +36,7 @@ export class CreateChannelUseCase {
       input.actorId,
     );
 
-    if (!(perms & GuildPermissions.MANAGE_CHANNELS))
+    if (!hasPermission(perms, GuildPermissions.MANAGE_CHANNELS))
       throw new ForbiddenException();
 
     return this.channelRepo.create({

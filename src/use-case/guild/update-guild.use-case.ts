@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import { Guild } from 'src/core/domain/entities/guild.entity';
 import {
   GUILD_MEMBER_REPOSITORY,
@@ -39,7 +42,7 @@ export class UpdateGuildUseCase {
 
     // check perms
     const perms = await this.memberRepo.getResolvedPermissions(guildId, userId);
-    if (!(perms & GuildPermissions.MANAGE_GUILD))
+    if (!hasPermission(perms, GuildPermissions.MANAGE_GUILD))
       throw new ForbiddenException();
 
     return this.guildRepo.update(guildId, data);

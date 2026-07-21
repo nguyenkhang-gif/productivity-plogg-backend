@@ -19,7 +19,7 @@ export interface MessageRepository {
     limit?: number,
   ): Promise<Message[]>;
   create(data: CreateMessageData): Promise<Message>;
-  softDelete(messageId: string, userId?: string): Promise<void>;
+  softDelete(messageId: string, userId?: string): Promise<boolean>;
   edit(
     messageId: string,
     userId: string,

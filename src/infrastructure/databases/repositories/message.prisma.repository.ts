@@ -25,7 +25,6 @@ export class MessagePrismaRepository implements MessageRepository {
       createdAt: row.createdAt,
     });
   }
-
   async findByChannel(
     channelId: string,
     cursor?: string,
@@ -45,11 +44,17 @@ export class MessagePrismaRepository implements MessageRepository {
     return this.map(row);
   }
 
-  async softDelete(messageId: string, userId?: string): Promise<void> {
-    await this.prisma.message.updateMany({
-      where: userId ? { id: messageId, senderId: userId } : { id: messageId },
+  async softDelete(messageId: string, userId?: string): Promise<boolean> {
+    const result = await this.prisma.message.updateMany({
+      where: {
+        id: messageId,
+        isDeleted: false,
+        ...(userId ? { senderId: userId } : {}),
+      },
       data: { isDeleted: true, content: '' },
     });
+
+    return result.count > 0;
   }
 
   async edit(

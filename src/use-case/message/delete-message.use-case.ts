@@ -1,5 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
 import {
   CHANNEL_REPOSITORY,
   ChannelRepository,
@@ -35,11 +38,15 @@ export class DeleteMessageUseCase {
       userId,
     );
 
-    const hasManagePermission = !!(perms & GuildPermissions.MANAGE_MESSAGES);
+    const hasManagePermission = hasPermission(
+      perms,
+      GuildPermissions.MANAGE_MESSAGES,
+    );
 
-    await this.messageRepo.softDelete(
+    const deleted = await this.messageRepo.softDelete(
       messageId,
       hasManagePermission ? undefined : userId,
     );
+    if (!deleted) throw new NotFoundException('Not found or already deleted');
   }
 }

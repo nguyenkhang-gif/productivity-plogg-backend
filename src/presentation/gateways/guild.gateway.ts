@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, UseFilters } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
@@ -26,7 +26,9 @@ import { DeleteMessageUseCase } from 'src/use-case/message/delete-message.use-ca
 import { EditMessageUseCase } from 'src/use-case/message/edit-message.use-case';
 import { GetMessagesUseCase } from 'src/use-case/message/get-messages.use-case';
 import { SendMessageUseCase } from 'src/use-case/message/send-message.use-case';
+import { WsHttpExceptionFilter } from './ws-exception.filter';
 
+@UseFilters(new WsHttpExceptionFilter())
 @WebSocketGateway({ namespace: '/guild', cors: { origin: '*' } })
 export class GuildGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;

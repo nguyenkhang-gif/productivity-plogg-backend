@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   ChannelRepository,
   CreateChannelData,
+  UpdateChannelData,
 } from 'src/core/domain/repositories/channel.repository.interface';
 import { Channel } from 'src/core/domain/entities/channel.entity';
 
@@ -38,6 +39,11 @@ export class ChannelPrismaRepository implements ChannelRepository {
 
   async create(data: CreateChannelData): Promise<Channel> {
     const row = await this.prisma.channel.create({ data });
+    return this.map(row);
+  }
+
+  async update(id: string, data: UpdateChannelData): Promise<Channel> {
+    const row = await this.prisma.channel.update({ where: { id }, data });
     return this.map(row);
   }
 

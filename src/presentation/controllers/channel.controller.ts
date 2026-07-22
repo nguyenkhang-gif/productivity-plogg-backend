@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -12,8 +13,10 @@ import {
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CreateChannelUseCase } from 'src/use-case/channel/create-channel.use-case';
 import { GetChannelsUseCase } from 'src/use-case/channel/get-channels.use-case';
+import { UpdateChannelUseCase } from 'src/use-case/channel/update-channel.use-case';
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
 import { CreateChannelDto } from 'src/core/dtos/create-channel.dto';
+import { UpdateChannelDto } from 'src/core/dtos/update-channel.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/guilds/:guildId/channels')
@@ -21,6 +24,7 @@ export class ChannelController {
   constructor(
     private readonly createChannel: CreateChannelUseCase,
     private readonly getChannels: GetChannelsUseCase,
+    private readonly updateChannel: UpdateChannelUseCase,
     private readonly deleteChannel: DeleteChannelUseCase,
   ) {}
 
@@ -43,6 +47,15 @@ export class ChannelController {
   @Get()
   list(@Param('guildId') guildId: string, @Req() req) {
     return this.getChannels.execute(guildId, req.user.userId);
+  }
+
+  @Patch(':channelId')
+  update(
+    @Param('channelId') channelId: string,
+    @Body() body: UpdateChannelDto,
+    @Req() req,
+  ) {
+    return this.updateChannel.execute(channelId, req.user.userId, body);
   }
 
   @Delete(':channelId')

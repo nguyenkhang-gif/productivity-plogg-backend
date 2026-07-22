@@ -19,6 +19,7 @@ import { DeleteGuildUseCase } from 'src/use-case/guild/delete-guild.use-case';
 import { GetMyGuildsUseCase } from 'src/use-case/guild/get-my-guilds.use-case';
 import { CreateChannelUseCase } from 'src/use-case/channel/create-channel.use-case';
 import { GetChannelsUseCase } from 'src/use-case/channel/get-channels.use-case';
+import { UpdateChannelUseCase } from 'src/use-case/channel/update-channel.use-case';
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
 import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-case';
 import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case';
@@ -36,6 +37,7 @@ import { GuildController } from 'src/presentation/controllers/guild.controller';
 import { ChannelController } from 'src/presentation/controllers/channel.controller';
 import { GuildMemberController } from 'src/presentation/controllers/guild-member.controller';
 import { RoleController } from 'src/presentation/controllers/role.controller';
+import { MessageController } from 'src/presentation/controllers/message.controller';
 import { GetMembersUseCase } from 'src/use-case/guild-member/get-members.use-case';
 import { CreateRoleUseCase } from 'src/use-case/role/create-role.use-case';
 import { GetRolesUseCase } from 'src/use-case/role/get-roles.use-case';
@@ -49,6 +51,7 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     ChannelController,
     GuildMemberController,
     RoleController,
+    MessageController,
   ],
   providers: [
     { provide: GUILD_REPOSITORY, useClass: GuildPrismaRepository },
@@ -64,6 +67,7 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     DeleteGuildUseCase,
     CreateChannelUseCase,
     GetChannelsUseCase,
+    UpdateChannelUseCase,
     DeleteChannelUseCase,
     JoinGuildUseCase,
     LeaveGuildUseCase,

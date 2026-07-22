@@ -58,6 +58,7 @@ model GuildMember {
   @@id([guildId, userId])
   @@index([guildId])
   @@index([userId])
+  @@index([guildId, joinedAt, userId])
   @@map("guild_members")
 }
 

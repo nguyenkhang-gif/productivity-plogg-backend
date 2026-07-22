@@ -12,10 +12,15 @@ export class GetMembersUseCase {
     private readonly memberRepo: GuildMemberRepository,
   ) {}
 
-  async execute(guildId: string, userId: string): Promise<GuildMember[]> {
+  async execute(
+    guildId: string,
+    userId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<GuildMember[]> {
     const isMember = await this.memberRepo.isMember(guildId, userId);
     if (!isMember) throw new ForbiddenException('Not a member of this guild');
 
-    return this.memberRepo.findByGuild(guildId);
+    return this.memberRepo.findByGuild(guildId, cursor, limit);
   }
 }

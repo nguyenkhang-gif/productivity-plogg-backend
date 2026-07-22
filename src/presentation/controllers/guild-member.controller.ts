@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -64,7 +65,17 @@ export class GuildMemberController {
   }
 
   @Get('members')
-  list(@Param('guildId') guildId: string, @Req() req) {
-    return this.getMembers.execute(guildId, req.user.userId);
+  list(
+    @Param('guildId') guildId: string,
+    @Query('cursor') cursor: string | undefined,
+    @Query('limit') limit: string | undefined,
+    @Req() req,
+  ) {
+    return this.getMembers.execute(
+      guildId,
+      req.user.userId,
+      cursor,
+      limit ? Number(limit) : undefined,
+    );
   }
 }

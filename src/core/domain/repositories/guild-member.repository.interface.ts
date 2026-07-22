@@ -11,7 +11,11 @@ export interface AddGuildMemberData {
 }
 
 export interface GuildMemberRepository {
-  findByGuild(guildId: string): Promise<GuildMember[]>;
+  findByGuild(
+    guildId: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<GuildMember[]>;
   findMember(guildId: string, userId: string): Promise<GuildMember | null>;
   isMember(guildId: string, userId: string): Promise<boolean>;
   add(data: AddGuildMemberData): Promise<GuildMember>;

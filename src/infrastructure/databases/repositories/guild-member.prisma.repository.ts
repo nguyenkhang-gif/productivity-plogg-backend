@@ -21,8 +21,20 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     });
   }
 
-  async findByGuild(guildId: string): Promise<GuildMember[]> {
-    const rows = await this.prisma.guildMember.findMany({ where: { guildId } });
+  async findByGuild(
+    guildId: string,
+    cursor?: string,
+    limit: number = 50,
+  ): Promise<GuildMember[]> {
+    const rows = await this.prisma.guildMember.findMany({
+      where: { guildId },
+      orderBy: [{ joinedAt: 'asc' }, { userId: 'asc' }],
+      take: limit,
+      ...(cursor && {
+        skip: 1,
+        cursor: { guildId_userId: { guildId, userId: cursor } },
+      }),
+    });
     return rows.map((r) => this.map(r));
   }
 

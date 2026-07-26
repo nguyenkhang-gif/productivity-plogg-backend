@@ -2,10 +2,10 @@ import './polyfills';
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
+import { RedisIoAdapter } from './infrastructure/websocket/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,7 +16,9 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  app.useWebSocketAdapter(new IoAdapter(app));
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
@@ -50,7 +52,17 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+
+  // Backlog mặc định của Node là 511 — tăng lên để chịu được burst connect
+  // (HTTP request lẫn WebSocket upgrade) khi nhiều client connect gần như
+  // cùng lúc, tránh bị reset ở tầng TCP trước khi tới được Nest.
+  await app.init();
+  const httpServer = app.getHttpServer();
+  httpServer.listen({
+    port: process.env.PORT ?? 3000,
+    host: '0.0.0.0',
+    backlog: 2048,
+  });
 
   const memoryUsage = process.memoryUsage();
   console.log('Memory Usage at Start:', {

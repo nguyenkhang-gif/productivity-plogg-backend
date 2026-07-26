@@ -49,6 +49,11 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
   }
 
   async isMember(guildId: string, userId: string): Promise<boolean> {
+    // Prisma bỏ qua field có giá trị `undefined` trong `where` thay vì lọc
+    // theo nó — nếu không chặn ở đây, userId undefined/rỗng sẽ khiến query
+    // đếm TOÀN BỘ member của guild thay vì không khớp ai, trả về sai `true`.
+    if (!guildId || !userId) return false;
+
     const count = await this.prisma.guildMember.count({
       where: { guildId, userId },
     });

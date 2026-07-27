@@ -57,14 +57,16 @@ export class GuildGateway
         const token =
           socket.handshake.auth?.token ||
           socket.handshake.headers?.authorization?.replace('Bearer ', '');
-        if (!token) return next(new Error('Unauthorizez'));
+        if (!token) return next(new Error('Unauthorized'));
         const payload = await this.jwtService.verifyAsync(token);
 
         if (
           payload.jti &&
           (await this.tokenService.isBlacklisted(payload.jti))
         ) {
-          throw new Error('Token revoked');
+          // return (không throw) để message "Token revoked" tới được FE;
+          // nếu throw sẽ bị catch nuốt và biến thành "Unauthorized".
+          return next(new Error('Token revoked'));
         }
 
         socket.data.userId = payload.sub;

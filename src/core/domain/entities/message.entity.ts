@@ -1,13 +1,35 @@
-export type MessageType = 'text' | 'image';
+export type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
+
+export interface MessageAttachment {
+  id: string;
+  url: string;
+  type: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+}
+
+export interface MessageReaction {
+  emoji: string;
+  userId: string;
+}
 
 export class Message {
   id: string;
-  conversationId: string;
+  channelId: string;
   senderId: string;
-  content: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  replyToId?: string | null;
   type: MessageType;
-  readBy: string[];
-  createdAt: Date;
+  content: string;
+  isDeleted: boolean;
+  editedAt?: Date | null;
+  createdAt?: Date;
+
+  replyTo?: Message | null;
+  attachments?: MessageAttachment[];
+  reactions?: MessageReaction[];
 
   constructor(partial: Partial<Message>) {
     Object.assign(this, partial);

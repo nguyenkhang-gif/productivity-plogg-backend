@@ -1,12 +1,34 @@
-import { Message } from '../entities/message.entity';
+import { Message, MessageType } from '../entities/message.entity';
 
 export const MESSAGE_REPOSITORY = 'MESSAGE_REPOSITORY';
 
+export interface CreateMessageData {
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  replyToId?: string | null;
+  type?: MessageType;
+  content: string;
+}
+
 export interface MessageRepository {
-  save(message: Message): Promise<Message>;
-  findByConversationId(
-    conversationId: string,
-    limit: number,
-    before?: Date,
+  findByChannel(
+    channelId: string,
+    cursor?: string,
+    limit?: number,
   ): Promise<Message[]>;
+  create(data: CreateMessageData): Promise<Message>;
+  softDelete(messageId: string, userId?: string): Promise<boolean>;
+  edit(
+    messageId: string,
+    userId: string,
+    content: string,
+  ): Promise<Message | null>;
+  addReaction(messageId: string, userId: string, emoji: string): Promise<void>;
+  removeReaction(
+    messageId: string,
+    userId: string,
+    emoji: string,
+  ): Promise<void>;
 }

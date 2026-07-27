@@ -15,6 +15,11 @@ export class AppController {
     return this.appService.checkMongooseStatus();
   }
 
+  @Get('/postgres-status')
+  getPostgresStatus(): Promise<object> {
+    return this.appService.checkPostgresStatus();
+  }
+
   @Get('/health')
   health(): object {
     return { status: 'ok' };

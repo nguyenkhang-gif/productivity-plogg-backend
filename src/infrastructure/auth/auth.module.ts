@@ -94,5 +94,6 @@ import { TokenService } from './token/token.service';
     ChangeUserRoleUseCase,
     GetAllUsersUseCase,
   ],
+  exports: [JwtModule, TokenService],
 })
 export class AuthModule {}

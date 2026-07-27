@@ -14,7 +14,6 @@ import { ConfigService } from '@nestjs/config';
 import { MailModule } from './infrastructure/mail/mail.module';
 import { EpubModule } from './infrastructure/epub/epub.module';
 import { DriveModule } from './infrastructure/google/google.module';
-import { BudgetModule } from './infrastructure/budget/budget.module';
 import { AppConfigModule } from './infrastructure/config/config.module';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { PostModule } from './infrastructure/post/post.module';
@@ -22,7 +21,6 @@ import { FriendshipModule } from './infrastructure/friendship/friendship.module'
 import { FocusModule } from './infrastructure/focus/focus.module';
 import { VaultModule } from './infrastructure/vault/vault.module';
 import { CommentModule } from './infrastructure/comment/comment.module';
-import { ChatModule } from './infrastructure/chat/chat.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 import { ReactionModule } from './infrastructure/reaction/reaction.module';
 import { AiModule } from './infrastructure/ai/ai.module';
@@ -36,6 +34,8 @@ import {
   User,
   UserSchema,
 } from './infrastructure/databases/schemas/user.schema';
+import { GuildModule } from './infrastructure/guild/guild.module';
+import { PrismaModule } from './infrastructure/databases/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -59,19 +59,19 @@ import {
     MailModule,
     EpubModule,
     DriveModule,
-    BudgetModule,
     AuthModule,
     PostModule,
     FriendshipModule,
     FocusModule,
     VaultModule,
     CommentModule,
-    ChatModule,
     StorageModule,
     ReactionModule,
     AiModule,
     TranslationContextModule,
     StoryContextModule,
+    GuildModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService, LastSeenMiddleware],

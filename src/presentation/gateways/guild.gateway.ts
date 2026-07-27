@@ -5,6 +5,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -30,7 +31,9 @@ import { WsHttpExceptionFilter } from './ws-exception.filter';
 
 @UseFilters(new WsHttpExceptionFilter())
 @WebSocketGateway({ namespace: '/guild', cors: { origin: '*' } })
-export class GuildGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GuildGateway
+  implements OnGatewayConnection, OnGatewayInit, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
 
   constructor(
@@ -48,22 +51,34 @@ export class GuildGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly channelRepo: ChannelRepository,
   ) {}
 
-  async handleConnection(client: Socket) {
-    try {
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.replace('Bearer ', '');
-      const payload = await this.jwtService.verifyAsync(token);
+  afterInit(server: Server) {
+    server.use(async (socket, next) => {
+      try {
+        const token =
+          socket.handshake.auth?.token ||
+          socket.handshake.headers?.authorization?.replace('Bearer ', '');
+        if (!token) return next(new Error('Unauthorizez'));
+        const payload = await this.jwtService.verifyAsync(token);
 
-      if (payload.jti && (await this.tokenService.isBlacklisted(payload.jti))) {
-        throw new Error('Token revoked');
+        if (
+          payload.jti &&
+          (await this.tokenService.isBlacklisted(payload.jti))
+        ) {
+          throw new Error('Token revoked');
+        }
+
+        socket.data.userId = payload.sub;
+        socket.data.username = payload.email;
+
+        next();
+      } catch {
+        next(new Error('Unauthorized'));
       }
+    });
+  }
 
-      client.data.userId = payload.sub;
-      client.data.username = payload.email;
-    } catch {
-      client.disconnect();
-    }
+  handleConnection(_client: Socket) {
+    // Auth đã xử lý ở afterInit middleware — client.data đã có sẵn khi tới đây.
   }
 
   handleDisconnect(client: Socket) {}

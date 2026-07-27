@@ -85,9 +85,12 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     guildId: string,
     userId: string,
   ): Promise<bigint> {
+    if (!guildId || !userId) return 0n;
+
     const guild = await this.prisma.guild.findUniqueOrThrow({
       where: { id: guildId },
     });
+
     if (guild.ownerId === userId) {
       return 1n << 8n; // ADMINISTRATOR
     }
@@ -104,6 +107,8 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     guildId: string,
     userId: string,
   ): Promise<number> {
+    if (!guildId || !userId) return -1;
+
     const memberRoles = await this.prisma.guildMemberRole.findMany({
       where: { guildId, userId },
       include: { role: true },

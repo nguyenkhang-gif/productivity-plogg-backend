@@ -6,6 +6,9 @@ services:
       context: .
     ports:
       - "8080:3000"
+    sysctls:
+      # Nâng TCP accept queue để chịu burst connect (khớp với backlog trong main.ts)
+      - net.core.somaxconn=2048
     env_file:
       - .env
     environment:

@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { GuildPermissions } from 'src/core/domain/constants/guild-permissions';
 import { Guild } from 'src/core/domain/entities/guild.entity';
 import {
   GUILD_MEMBER_REPOSITORY,
@@ -24,14 +25,19 @@ export class GetGuildUseCase {
 
   async execute(guildId: string, userId: string): Promise<Guild> {
     // validate find guild
-    const guild = this.guildRepo.findById(guildId);
+    const guild = await this.guildRepo.findById(guildId);
     if (!guild) throw new NotFoundException('Guild not found');
 
-    // validate  is member
+    // resolve quyền của user hiện tại, tái dùng guild đã fetch (không query guild lần nữa)
+    let perms: bigint;
+    if (guild.ownerId === userId) {
+      perms = GuildPermissions.ADMINISTRATOR; // owner → full quyền, 0 query thêm
+    } else {
+      const isMember = await this.memberRepo.isMember(guildId, userId);
+      if (!isMember) throw new ForbiddenException('Not a member of this guild');
+      perms = await this.memberRepo.getRolePermissions(guildId, userId);
+    }
 
-    const isMember = this.memberRepo.isMember(guildId, userId);
-    if (!isMember) throw new ForbiddenException('Not a member of this guild');
-    // return
-    return guild;
+    return { ...guild, myPermissions: perms.toString() };
   }
 }

@@ -103,6 +103,17 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     return memberRoles.reduce((acc, mr) => acc | mr.role.permissions, 0n);
   }
 
+  async getRolePermissions(guildId: string, userId: string): Promise<bigint> {
+    if (!guildId || !userId) return 0n;
+
+    const memberRoles = await this.prisma.guildMemberRole.findMany({
+      where: { guildId, userId },
+      include: { role: true },
+    });
+
+    return memberRoles.reduce((acc, mr) => acc | mr.role.permissions, 0n);
+  }
+
   async getHighestRolePosition(
     guildId: string,
     userId: string,

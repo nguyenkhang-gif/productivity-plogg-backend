@@ -6,7 +6,10 @@ import Redis from 'ioredis';
 
 export class RedisIoAdapter extends IoAdapter {
   private readonly logger = new Logger(RedisIoAdapter.name);
+
   private adapterConstructor?: ReturnType<typeof createAdapter>;
+  private pubClient?: Redis;
+  private subClient?: Redis;
 
   async connectToRedis(): Promise<void> {
     const url = process.env.REDIS_URL;
@@ -15,30 +18,34 @@ export class RedisIoAdapter extends IoAdapter {
       return;
     }
 
-    const pubClient = new Redis(url);
-    const subClient = pubClient.duplicate();
+    this.pubClient = new Redis(url);
+    this.subClient = this.pubClient.duplicate();
 
-    pubClient.on('error', (err) => {
+    this.pubClient.on('error', (err) => {
       this.logger.error(`Redis pubClient error: ${err.message}`);
     });
 
-    subClient.on('error', (err) =>
+    this.subClient.on('error', (err) =>
       this.logger.error(`Redis subClient error: ${err.message}`),
     );
 
     await Promise.all([
       new Promise<void>((resolve, reject) => {
-        pubClient.once('ready', resolve);
-        pubClient.once('error', reject);
+        this.pubClient.once('ready', resolve);
+        this.pubClient.once('error', reject);
       }),
       new Promise<void>((resolve, reject) => {
-        subClient.once('ready', resolve);
-        subClient.once('error', reject);
+        this.subClient.once('ready', resolve);
+        this.subClient.once('error', reject);
       }),
     ]);
 
-    this.adapterConstructor = createAdapter(pubClient, subClient);
+    this.adapterConstructor = createAdapter(this.pubClient, this.subClient);
     this.logger.log('Redis Adapter kết nối thành công.');
+  }
+
+  async closeRedis(): Promise<void> {
+    await Promise.allSettled([this.pubClient?.quit(), this.subClient?.quit()]);
   }
 
   createIOServer(port: number, options?: ServerOptions) {

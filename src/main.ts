@@ -1,5 +1,5 @@
 import './polyfills';
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -16,9 +16,26 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+  app.enableShutdownHooks();
+
   const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
+
+  try {
+    await redisIoAdapter.connectToRedis();
+  } catch (err) {
+    console.error('Redis adapter fail — chạy single-instance:', err.message);
+  }
   app.useWebSocketAdapter(redisIoAdapter);
+
+  const shutdown = async (signal: string) => {
+    console.log(`Nhận ${signal} - đóng redis + app...`);
+    await redisIoAdapter.closeRedis();
+    await app.close();
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),

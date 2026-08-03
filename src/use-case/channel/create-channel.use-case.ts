@@ -39,12 +39,16 @@ export class CreateChannelUseCase {
     if (!hasPermission(perms, GuildPermissions.MANAGE_CHANNELS))
       throw new ForbiddenException();
 
+    // Channel mới xuống cuối: position = max hiện có + 1 (guild rỗng → 0).
+    const maxPosition = await this.channelRepo.getMaxPosition(input.guildId);
+
     return this.channelRepo.create({
       guildId: input.guildId,
       name: input.name,
       type: input.type,
       parentId: input.parentId,
       topic: input.topic,
+      position: maxPosition + 1,
     });
   }
 }

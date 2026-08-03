@@ -21,6 +21,7 @@ import { CreateChannelUseCase } from 'src/use-case/channel/create-channel.use-ca
 import { GetChannelsUseCase } from 'src/use-case/channel/get-channels.use-case';
 import { UpdateChannelUseCase } from 'src/use-case/channel/update-channel.use-case';
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
+import { ReorderChannelsUseCase } from 'src/use-case/channel/reorder-channels.use-case';
 import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-case';
 import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case';
 import { KickMemberUseCase } from 'src/use-case/guild-member/kick-member.use-case';
@@ -69,6 +70,7 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     GetChannelsUseCase,
     UpdateChannelUseCase,
     DeleteChannelUseCase,
+    ReorderChannelsUseCase,
     JoinGuildUseCase,
     LeaveGuildUseCase,
     KickMemberUseCase,

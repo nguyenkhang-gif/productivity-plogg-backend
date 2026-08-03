@@ -45,7 +45,31 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   async closeRedis(): Promise<void> {
-    await Promise.allSettled([this.pubClient?.quit(), this.subClient?.quit()]);
+    await Promise.allSettled([
+      this.closeClient(this.pubClient),
+      this.closeClient(this.subClient),
+    ]);
+  }
+
+  /**
+   * Đóng an toàn: chỉ `quit()` khi client đang 'ready'. Nếu connection đã
+   * đóng/timeout (vd Upstash ETIMEDOUT), `quit()` sẽ ném 'Connection is closed'
+   * qua event async → dùng `disconnect()` (đồng bộ, không ném) thay thế.
+   */
+  private async closeClient(client?: Redis): Promise<void> {
+    if (!client) return;
+    try {
+      if (client.status === 'ready') {
+        await client.quit();
+      } else {
+        client.disconnect();
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Bỏ qua lỗi khi đóng Redis: ${(err as Error).message}`,
+      );
+      client.disconnect();
+    }
   }
 
   createIOServer(port: number, options?: ServerOptions) {

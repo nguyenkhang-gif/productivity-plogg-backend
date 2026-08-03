@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { CacheService } from './cache.service';
@@ -13,7 +13,12 @@ import { REDIS_CLIENT } from './cache.constants';
       useFactory: (config: ConfigService) => {
         const url = config.get<string>('REDIS_URL');
         if (!url) return null;
-        return new Redis(url);
+        const client = new Redis(url);
+        // Bắt buộc có listener 'error': nếu không, ETIMEDOUT/reset từ Upstash
+        // → 'Unhandled error event' và có thể crash process.
+        const logger = new Logger('CacheRedis');
+        client.on('error', (err) => logger.error(`Redis error: ${err.message}`));
+        return client;
       },
     },
     CacheService,

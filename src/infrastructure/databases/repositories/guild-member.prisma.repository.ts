@@ -18,6 +18,8 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
       avatar: row.avatar,
       nickname: row.nickname,
       joinedAt: row.joinedAt,
+      // roleIds chỉ có khi query dùng include (vd findByGuild); else undefined.
+      roleIds: row.roles?.map((mr: any) => mr.roleId),
     });
   }
 
@@ -30,6 +32,7 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
       where: { guildId },
       orderBy: [{ joinedAt: 'asc' }, { userId: 'asc' }],
       take: limit,
+      include: { roles: { select: { roleId: true } } },
       ...(cursor && {
         skip: 1,
         cursor: { guildId_userId: { guildId, userId: cursor } },

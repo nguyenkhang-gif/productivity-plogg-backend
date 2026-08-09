@@ -26,6 +26,7 @@ import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-cas
 import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case';
 import { KickMemberUseCase } from 'src/use-case/guild-member/kick-member.use-case';
 import { AssignRoleUseCase } from 'src/use-case/guild-member/assign-role.use-case';
+import { RemoveRoleUseCase } from 'src/use-case/guild-member/remove-role.use-case';
 import { GetMessagesUseCase } from 'src/use-case/message/get-messages.use-case';
 import { SendMessageUseCase } from 'src/use-case/message/send-message.use-case';
 import { EditMessageUseCase } from 'src/use-case/message/edit-message.use-case';
@@ -40,6 +41,13 @@ import { GuildMemberController } from 'src/presentation/controllers/guild-member
 import { RoleController } from 'src/presentation/controllers/role.controller';
 import { MessageController } from 'src/presentation/controllers/message.controller';
 import { GetMembersUseCase } from 'src/use-case/guild-member/get-members.use-case';
+import { GUILD_INVITE_REPOSITORY } from 'src/core/domain/repositories/guild-invite.repository.interface';
+import { GuildInvitePrismaRepository } from '../databases/repositories/guild-invite.prisma.repository';
+import { InviteController } from 'src/presentation/controllers/invite.controller';
+import { PublicInviteController } from 'src/presentation/controllers/public-invite.controller';
+import { CreateInviteUseCase } from 'src/use-case/invite/create-invite.use-case';
+import { GetInvitePreviewUseCase } from 'src/use-case/invite/get-invite-preview.use-case';
+import { JoinViaInviteUseCase } from 'src/use-case/invite/join-via-invite.use-case';
 import { CreateRoleUseCase } from 'src/use-case/role/create-role.use-case';
 import { GetRolesUseCase } from 'src/use-case/role/get-roles.use-case';
 import { UpdateRoleUseCase } from 'src/use-case/role/update-role.use-case';
@@ -53,6 +61,8 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     GuildMemberController,
     RoleController,
     MessageController,
+    InviteController,
+    PublicInviteController,
   ],
   providers: [
     { provide: GUILD_REPOSITORY, useClass: GuildPrismaRepository },
@@ -60,6 +70,7 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     { provide: GUILD_MEMBER_REPOSITORY, useClass: GuildMemberPrismaRepository },
     { provide: MESSAGE_REPOSITORY, useClass: MessagePrismaRepository },
     { provide: ROLE_REPOSITORY, useClass: RolePrismaRepository },
+    { provide: GUILD_INVITE_REPOSITORY, useClass: GuildInvitePrismaRepository },
     GuildGateway,
     CreateGuildUseCase,
     GetMyGuildsUseCase,
@@ -75,7 +86,11 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     LeaveGuildUseCase,
     KickMemberUseCase,
     AssignRoleUseCase,
+    RemoveRoleUseCase,
     GetMembersUseCase,
+    CreateInviteUseCase,
+    GetInvitePreviewUseCase,
+    JoinViaInviteUseCase,
     GetMessagesUseCase,
     SendMessageUseCase,
     EditMessageUseCase,

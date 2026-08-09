@@ -20,9 +20,25 @@ model Guild {
   channels Channel[]
   members  GuildMember[]
   roles    Role[]
+  invites  GuildInvite[]
 
   @@index([ownerId])
   @@map("guilds")
+}
+
+model GuildInvite {
+  code      String    @id
+  guildId   String
+  createdBy String
+  maxUses   Int? // null = vô hạn (Full mới dùng)
+  uses      Int       @default(0)
+  expiresAt DateTime? // null = không hết hạn (Full mới dùng)
+  createdAt DateTime  @default(now())
+
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@map("guild_invites")
 }
 
 model Channel {

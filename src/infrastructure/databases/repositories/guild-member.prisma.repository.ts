@@ -63,6 +63,10 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     return count > 0;
   }
 
+  async countByGuild(guildId: string): Promise<number> {
+    return this.prisma.guildMember.count({ where: { guildId } });
+  }
+
   async add(data: AddGuildMemberData): Promise<GuildMember> {
     const row = await this.prisma.guildMember.create({ data });
     return this.map(row);
@@ -81,6 +85,17 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
   ): Promise<void> {
     await this.prisma.guildMemberRole.create({
       data: { guildId, userId, roleId },
+    });
+  }
+
+  async removeRole(
+    guildId: string,
+    userId: string,
+    roleId: string,
+  ): Promise<void> {
+    // deleteMany → idempotent: gỡ role member chưa có cũng không ném lỗi.
+    await this.prisma.guildMemberRole.deleteMany({
+      where: { guildId, userId, roleId },
     });
   }
 

@@ -9,7 +9,10 @@ export class PrismaService
 {
   constructor() {
     super({
-      adapter: new PrismaPg({ connectionString: process.env.POSTGRES_URL }),
+      adapter: new PrismaPg({
+        connectionString: process.env.POSTGRES_URL,
+        max: Number(process.env.PG_POOL_MAX ?? 5),
+      }),
     });
   }
 

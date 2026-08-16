@@ -1,3 +1,5 @@
+import { MessageEmbed } from './message-embed.entity';
+
 export type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
 
 export interface MessageAttachment {
@@ -30,6 +32,7 @@ export class Message {
   replyTo?: Message | null;
   attachments?: MessageAttachment[];
   reactions?: MessageReaction[];
+  embeds?: MessageEmbed[];
 
   constructor(partial: Partial<Message>) {
     Object.assign(this, partial);

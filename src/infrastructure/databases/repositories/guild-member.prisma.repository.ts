@@ -18,6 +18,8 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
       avatar: row.avatar,
       nickname: row.nickname,
       joinedAt: row.joinedAt,
+      // roleIds chỉ có khi query dùng include (vd findByGuild); else undefined.
+      roleIds: row.roles?.map((mr: any) => mr.roleId),
     });
   }
 
@@ -30,6 +32,7 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
       where: { guildId },
       orderBy: [{ joinedAt: 'asc' }, { userId: 'asc' }],
       take: limit,
+      include: { roles: { select: { roleId: true } } },
       ...(cursor && {
         skip: 1,
         cursor: { guildId_userId: { guildId, userId: cursor } },
@@ -60,6 +63,10 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     return count > 0;
   }
 
+  async countByGuild(guildId: string): Promise<number> {
+    return this.prisma.guildMember.count({ where: { guildId } });
+  }
+
   async add(data: AddGuildMemberData): Promise<GuildMember> {
     const row = await this.prisma.guildMember.create({ data });
     return this.map(row);
@@ -81,16 +88,41 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     });
   }
 
+  async removeRole(
+    guildId: string,
+    userId: string,
+    roleId: string,
+  ): Promise<void> {
+    // deleteMany → idempotent: gỡ role member chưa có cũng không ném lỗi.
+    await this.prisma.guildMemberRole.deleteMany({
+      where: { guildId, userId, roleId },
+    });
+  }
+
   async getResolvedPermissions(
     guildId: string,
     userId: string,
   ): Promise<bigint> {
+    if (!guildId || !userId) return 0n;
+
     const guild = await this.prisma.guild.findUniqueOrThrow({
       where: { id: guildId },
     });
+
     if (guild.ownerId === userId) {
       return 1n << 8n; // ADMINISTRATOR
     }
+
+    const memberRoles = await this.prisma.guildMemberRole.findMany({
+      where: { guildId, userId },
+      include: { role: true },
+    });
+
+    return memberRoles.reduce((acc, mr) => acc | mr.role.permissions, 0n);
+  }
+
+  async getRolePermissions(guildId: string, userId: string): Promise<bigint> {
+    if (!guildId || !userId) return 0n;
 
     const memberRoles = await this.prisma.guildMemberRole.findMany({
       where: { guildId, userId },
@@ -104,6 +136,8 @@ export class GuildMemberPrismaRepository implements GuildMemberRepository {
     guildId: string,
     userId: string,
   ): Promise<number> {
+    if (!guildId || !userId) return -1;
+
     const memberRoles = await this.prisma.guildMemberRole.findMany({
       where: { guildId, userId },
       include: { role: true },

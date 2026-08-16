@@ -1,3 +1,4 @@
+import { EmbedProvider } from '../entities/message-embed.entity';
 import { Message, MessageType } from '../entities/message.entity';
 
 export const MESSAGE_REPOSITORY = 'MESSAGE_REPOSITORY';
@@ -10,6 +11,13 @@ export interface CreateMessageData {
   replyToId?: string | null;
   type?: MessageType;
   content: string;
+  embeds?: CreateMessageEmbedData[];
+}
+
+export interface CreateMessageEmbedData {
+  url: string;
+  provider: EmbedProvider;
+  refId?: string | null;
 }
 
 export interface MessageRepository {

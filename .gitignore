@@ -66,5 +66,9 @@ UPLOAD_API.md
 
 # Docs (internal planning, not for repo)
 docs/
+
+# Dev scratch: throwaway scripts, load-test data, DB dumps (chứa cả secrets/token)
+dev-scratch/
+backups/
 /generated/prisma
 .cloudflared/

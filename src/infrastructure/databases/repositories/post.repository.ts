@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   AdminPostFilter,
   PaginatedPosts,
@@ -16,6 +16,7 @@ import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
+import { PostEmbedCard } from 'src/core/domain/entities/message-embed.entity';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -703,5 +704,64 @@ export class MongoPostRepository implements PostRepository {
     await this.postModel
       .findByIdAndUpdate(postId, { $inc: { shareCount: -1 } })
       .exec();
+  }
+
+  async findManyForEmbed(
+    ids: string[],
+    viewerId: string,
+  ): Promise<PostEmbedCard[]> {
+    const objIds = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (objIds.length === 0) return [];
+
+    const visibility = await this.buildVisibilityFilter(viewerId);
+
+    const docs = await this.postModel.aggregate([
+      { $match: { _id: { $in: objIds }, ...visibility } },
+      {
+        $addFields: {
+          _authorObjId: {
+            $convert: {
+              input: '$authorId',
+              to: 'objectId',
+              onError: null,
+              onNull: null,
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_authorObjId',
+          foreignField: '_id',
+          as: '_author',
+          pipeline: [{ $project: { fullName: 1, username: 1, profilePic: 1 } }],
+        },
+      },
+      { $unwind: { path: '$_author', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          title: 1,
+          createdAt: 1,
+          excerpt: { $substrCP: [{ $ifNull: ['$content', ''] }, 0, 160] },
+          imageUrl: { $arrayElemAt: [{ $ifNull: ['$imageUrls', []] }, 0] },
+          authorName: { $ifNull: ['$_author.fullName', '$_author.username'] },
+          authorAvatar: '$_author.profilePic',
+        },
+      },
+    ]);
+
+    return docs.map((d: any) => ({
+      id: d._id.toString(),
+      title: d.title ?? null,
+      excerpt: d.excerpt || null,
+      imageUrl: d.imageUrl ?? null,
+      authorName: d.authorName ?? null,
+      authorAvatar: d.authorAvatar ?? null,
+      createdAt: d.createdAt ?? null,
+    }));
   }
 }

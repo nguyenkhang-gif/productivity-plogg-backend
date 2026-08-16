@@ -14,6 +14,9 @@ export class Guild {
   members?: GuildMember[];
   roles?: Role[];
 
+  /** Bitmask quyền của user hiện tại (string vì bigint không JSON hoá được). Chỉ set ở GET /guilds/:id. */
+  myPermissions?: string;
+
   constructor(partial: Partial<Guild>) {
     Object.assign(this, partial);
   }

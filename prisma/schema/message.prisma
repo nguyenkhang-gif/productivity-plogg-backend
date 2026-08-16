@@ -5,6 +5,31 @@ enum MessageType {
   SYSTEM
 }
 
+model MessageEmbed {
+  id        String @id @default(uuid())
+  messageId String
+  url       String
+
+  provider String
+  refId    String?
+
+  title       String?
+  description String?
+  imageUrl    String?
+  siteName    String?
+  authorName  String?
+  embedUrl    String?
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([provider, refId])
+  @@map("message_embeds")
+}
+
 model Message {
   id           String      @id @default(uuid())
   channelId    String
@@ -18,11 +43,12 @@ model Message {
   editedAt     DateTime?
   createdAt    DateTime    @default(now())
 
-  channel     Channel             @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  replyTo     Message?            @relation("Replies", fields: [replyToId], references: [id])
-  replies     Message[]           @relation("Replies")
-  attachments MessageAttachment[]
-  reactions   MessageReaction[]
+  channel       Channel             @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  replyTo       Message?            @relation("Replies", fields: [replyToId], references: [id])
+  replies       Message[]           @relation("Replies")
+  attachments   MessageAttachment[]
+  reactions     MessageReaction[]
+  embeds        MessageEmbed[]
 
   @@index([channelId, createdAt(sort: Desc)])
   @@index([channelId, id(sort: Desc)])

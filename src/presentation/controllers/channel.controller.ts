@@ -17,6 +17,8 @@ import { UpdateChannelUseCase } from 'src/use-case/channel/update-channel.use-ca
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
 import { CreateChannelDto } from 'src/core/dtos/create-channel.dto';
 import { UpdateChannelDto } from 'src/core/dtos/update-channel.dto';
+import { ReorderChannelsDto } from 'src/core/dtos/reorder-channels.dto';
+import { ReorderChannelsUseCase } from 'src/use-case/channel/reorder-channels.use-case';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/guilds/:guildId/channels')
@@ -26,6 +28,7 @@ export class ChannelController {
     private readonly getChannels: GetChannelsUseCase,
     private readonly updateChannel: UpdateChannelUseCase,
     private readonly deleteChannel: DeleteChannelUseCase,
+    private readonly reorderChannels: ReorderChannelsUseCase,
   ) {}
 
   @Post()
@@ -47,6 +50,21 @@ export class ChannelController {
   @Get()
   list(@Param('guildId') guildId: string, @Req() req) {
     return this.getChannels.execute(guildId, req.user.userId);
+  }
+
+  // Đặt TRƯỚC @Patch(':channelId') để 'reorder' không bị nuốt thành channelId.
+  @Patch('reorder')
+  @HttpCode(204)
+  reorder(
+    @Param('guildId') guildId: string,
+    @Body() body: ReorderChannelsDto,
+    @Req() req,
+  ) {
+    return this.reorderChannels.execute(
+      guildId,
+      req.user.userId,
+      body.orderedIds,
+    );
   }
 
   @Patch(':channelId')

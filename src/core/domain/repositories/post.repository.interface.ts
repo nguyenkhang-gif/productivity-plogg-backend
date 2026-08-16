@@ -1,3 +1,4 @@
+import { PostEmbedCard } from '../entities/message-embed.entity';
 import { Post, PostModerationStatus } from '../entities/post.entity';
 
 export const POST_REPOSITORY = 'POST_REPOSITORY';
@@ -79,4 +80,5 @@ export interface PostRepository {
   getShareCount(postId: string): Promise<number>;
   incrementShareCount(postId: string): Promise<void>;
   decrementShareCount(postId: string): Promise<void>;
+  findManyForEmbed(ids: string[], viewerId: string): Promise<PostEmbedCard[]>;
 }

@@ -114,5 +114,6 @@ import { DeleteCategoryUseCase } from 'src/use-case/category/delete-category.use
     AdminGetPostUseCase,
     AdminForceDeletePostUseCase,
   ],
+  exports: [POST_REPOSITORY],
 })
 export class PostModule {}

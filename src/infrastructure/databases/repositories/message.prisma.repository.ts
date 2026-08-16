@@ -5,6 +5,7 @@ import {
   MessageRepository,
 } from 'src/core/domain/repositories/message.repository.interface';
 import { Message } from 'src/core/domain/entities/message.entity';
+import { MessageEmbed } from 'src/core/domain/entities/message-embed.entity';
 
 @Injectable()
 export class MessagePrismaRepository implements MessageRepository {
@@ -23,6 +24,22 @@ export class MessagePrismaRepository implements MessageRepository {
       isDeleted: row.isDeleted,
       editedAt: row.editedAt,
       createdAt: row.createdAt,
+      embeds: (row.embeds ?? []).map(
+        (e: any) =>
+          new MessageEmbed({
+            id: e.id,
+            url: e.url,
+            provider: e.provider,
+            refId: e.refId,
+            title: e.title,
+            description: e.description,
+            imageUrl: e.imageUrl,
+            siteName: e.siteName,
+            authorName: e.authorName,
+            embedUrl: e.embedUrl,
+            position: e.position,
+          }),
+      ),
     });
   }
   async findByChannel(
@@ -32,6 +49,7 @@ export class MessagePrismaRepository implements MessageRepository {
   ): Promise<Message[]> {
     const rows = await this.prisma.message.findMany({
       where: { channelId },
+      include: { embeds: { orderBy: { position: 'asc' } } },
       orderBy: { createdAt: 'desc' },
       take: limit,
       ...(cursor && { skip: 1, cursor: { id: cursor } }),
@@ -40,7 +58,25 @@ export class MessagePrismaRepository implements MessageRepository {
   }
 
   async create(data: CreateMessageData): Promise<Message> {
-    const row = await this.prisma.message.create({ data });
+    const { embeds, ...rest } = data;
+    const row = await this.prisma.message.create({
+      data: {
+        ...rest,
+        ...(embeds?.length
+          ? {
+              embeds: {
+                create: embeds.map((e, i) => ({
+                  url: e.url,
+                  provider: e.provider,
+                  refId: e.refId ?? null,
+                  position: i,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: { embeds: { orderBy: { position: 'asc' } } },
+    });
     return this.map(row);
   }
 

@@ -17,7 +17,9 @@ import { REDIS_CLIENT } from './cache.constants';
         // Bắt buộc có listener 'error': nếu không, ETIMEDOUT/reset từ Upstash
         // → 'Unhandled error event' và có thể crash process.
         const logger = new Logger('CacheRedis');
-        client.on('error', (err) => logger.error(`Redis error: ${err.message}`));
+        client.on('error', (err) =>
+          logger.error(`Redis error: ${err.message}`),
+        );
         return client;
       },
     },

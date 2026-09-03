@@ -65,9 +65,7 @@ export class RedisIoAdapter extends IoAdapter {
         client.disconnect();
       }
     } catch (err) {
-      this.logger.warn(
-        `Bỏ qua lỗi khi đóng Redis: ${(err as Error).message}`,
-      );
+      this.logger.warn(`Bỏ qua lỗi khi đóng Redis: ${(err as Error).message}`);
       client.disconnect();
     }
   }

@@ -33,9 +33,9 @@ describe('extractLinks', () => {
     });
 
     it('bỏ qua link YouTube không có video id', () => {
-      expect(extractLinks('https://www.youtube.com/feed/subscriptions', HOSTS)).toEqual(
-        [],
-      );
+      expect(
+        extractLinks('https://www.youtube.com/feed/subscriptions', HOSTS),
+      ).toEqual([]);
     });
 
     it('bỏ qua video id sai độ dài', () => {
@@ -66,7 +66,9 @@ describe('extractLinks', () => {
     });
 
     it('bỏ qua đường dẫn khác trên cùng domain', () => {
-      expect(extractLinks('https://plog.app/settings/profile', HOSTS)).toEqual([]);
+      expect(extractLinks('https://plog.app/settings/profile', HOSTS)).toEqual(
+        [],
+      );
     });
 
     it('bỏ qua domain lạ dù đúng path', () => {
@@ -81,7 +83,10 @@ describe('extractLinks', () => {
 
   describe('quy tắc chung', () => {
     it('bỏ dấu câu dính đuôi URL', () => {
-      const out = extractLinks('xem bài này https://plog.app/posts/abc123.', HOSTS);
+      const out = extractLinks(
+        'xem bài này https://plog.app/posts/abc123.',
+        HOSTS,
+      );
       expect(out[0].url).toBe('https://plog.app/posts/abc123');
     });
 
@@ -109,10 +114,7 @@ describe('extractLinks', () => {
         'https://plog.app/posts/abc123 rồi https://youtu.be/dQw4w9WgXcQ',
         HOSTS,
       );
-      expect(out.map((e) => e.provider)).toEqual([
-        'INTERNAL_POST',
-        'YOUTUBE',
-      ]);
+      expect(out.map((e) => e.provider)).toEqual(['INTERNAL_POST', 'YOUTUBE']);
     });
   });
 });

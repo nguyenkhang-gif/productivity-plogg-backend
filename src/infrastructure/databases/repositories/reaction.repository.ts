@@ -43,7 +43,8 @@ export class MongoReactionRepository implements ReactionRepository {
     return this.mapToDomain(doc);
   }
 
-  async deleteByPostAndUser(postId: string, userId: string): Promise<void> {
-    await this.reactionModel.deleteOne({ postId, userId }).exec();
+  async deleteByPostAndUser(postId: string, userId: string): Promise<boolean> {
+    const res = await this.reactionModel.deleteOne({ postId, userId }).exec();
+    return res.deletedCount > 0;
   }
 }

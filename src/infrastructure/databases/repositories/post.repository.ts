@@ -178,6 +178,16 @@ const buildAddComputedFields = (currentUserId?: string) => ({
   },
 });
 
+/**
+ * Tie-breaker bắt buộc cho mọi $sort có phân trang.
+ *
+ * `createdAt` không unique — dữ liệu có hàng trăm post trùng nhau do seed hàng
+ * loạt. Sort chỉ theo `createdAt` là không ổn định giữa các query, mà phân
+ * trang lại chạy sort từ đầu ở mỗi trang → cùng một post rơi vào 2 trang, và
+ * post khác bị bỏ sót. `_id` unique nên cho ra đúng một thứ tự duy nhất.
+ */
+const TIE = { _id: -1 } as const;
+
 const buildReadPipeline = (currentUserId?: string) => [
   ADD_AUTHOR_OBJ_ID,
   LOOKUP_AUTHOR,
@@ -263,6 +273,10 @@ export class MongoPostRepository implements PostRepository {
     };
   }
 
+  private toObjId(id: string): Types.ObjectId | null {
+    return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
+  }
+
   private mapToDomain(doc: any): PostEntity {
     return new PostEntity({
       id: doc._id.toString(),
@@ -302,19 +316,31 @@ export class MongoPostRepository implements PostRepository {
     });
   }
 
+  private async bumpCounter(
+    postId: string,
+    field: 'reactCount' | 'commentCount',
+    delta: number,
+  ): Promise<void> {
+    const objId = this.toObjId(postId);
+    if (!objId) return;
+    await this.postModel.updateOne(
+      delta > 0 ? { _id: objId } : { _id: objId, [field]: { $gt: 0 } },
+      { $inc: { [field]: delta } },
+    );
+  }
+
   async findById(
     id: string,
     currentUserId?: string,
   ): Promise<PostEntity | null> {
+    const objId = this.toObjId(id);
+    if (!objId) return null;
+
     const [doc] = await this.postModel.aggregate([
       {
         $match: {
-          $expr: {
-            $and: [
-              { $eq: [{ $toString: '$_id' }, id] },
-              { $eq: ['$isPublished', true] },
-            ],
-          },
+          _id: objId,
+          isPublished: true,
         },
       },
       ...buildReadPipeline(currentUserId),
@@ -351,8 +377,10 @@ export class MongoPostRepository implements PostRepository {
   }
 
   async findByIdRaw(id: string): Promise<PostEntity | null> {
+    const postObjId = this.toObjId(id);
+    if (!postObjId) return null;
     const [doc] = await this.postModel.aggregate([
-      { $match: { $expr: { $eq: [{ $toString: '$_id' }, id] } } },
+      { $match: { _id: postObjId } },
       ...buildReadPipeline(),
     ]);
     if (!doc) return null;
@@ -370,7 +398,10 @@ export class MongoPostRepository implements PostRepository {
 
     const extraFilter: Record<string, any> = {};
     if (filter?.categoryId) extraFilter.categoryId = filter.categoryId;
-    if (filter?.excludeId) extraFilter._id = { $ne: filter.excludeId };
+    if (filter?.excludeId) {
+      const excludeObjId = this.toObjId(filter.excludeId);
+      if (excludeObjId) extraFilter._id = { $ne: excludeObjId };
+    }
     if (filter?.tags?.length) {
       const tagSlugs = filter.tags;
       const tagDocs = await this.postModel.db
@@ -394,8 +425,12 @@ export class MongoPostRepository implements PostRepository {
         {
           $sort:
             filter?.sortByUpdatedAt != null
-              ? { updatedAt: filter.sortByUpdatedAt }
-              : { createdAt: -1 },
+              ? {
+                  updatedAt: filter.sortByUpdatedAt,
+                  // tie-breaker cùng chiều với sort chính
+                  _id: filter.sortByUpdatedAt,
+                }
+              : { createdAt: -1, ...TIE },
         },
         { $skip: skip },
         { $limit: limit },
@@ -453,7 +488,7 @@ export class MongoPostRepository implements PostRepository {
       this.postModel.countDocuments(filter),
       this.postModel.aggregate([
         { $match: filter },
-        { $sort: { createdAt: -1 } },
+        { $sort: { createdAt: -1, ...TIE } },
         { $skip: skip },
         { $limit: limit },
         ...buildReadPipeline(currentUserId),
@@ -474,7 +509,7 @@ export class MongoPostRepository implements PostRepository {
     const items = await this.postModel.aggregate([
       { $match: visibilityFilter },
       ...buildReadPipeline(currentUserId),
-      { $sort: { reactCount: -1, createdAt: -1 } },
+      { $sort: { reactCount: -1, createdAt: -1, ...TIE } },
       { $limit: limit },
     ]);
     return items.map((doc) => this.mapToDomain(doc));
@@ -496,7 +531,7 @@ export class MongoPostRepository implements PostRepository {
       this.postModel.countDocuments(matchFilter),
       this.postModel.aggregate([
         { $match: matchFilter },
-        { $sort: { createdAt: -1 } },
+        { $sort: { createdAt: -1, ...TIE } },
         { $skip: skip },
         { $limit: limit },
         ...buildReadPipeline(),
@@ -528,7 +563,7 @@ export class MongoPostRepository implements PostRepository {
       this.postModel.countDocuments(matchFilter),
       this.postModel.aggregate([
         { $match: matchFilter },
-        { $sort: { createdAt: -1 } },
+        { $sort: { createdAt: -1, ...TIE } },
         { $skip: skip },
         { $limit: limit },
         { $project: { content: 0 } },
@@ -646,6 +681,15 @@ export class MongoPostRepository implements PostRepository {
       $inc: { viewCount: 1 },
     });
     if (!result) throw new NotFoundException('Post not found');
+  }
+
+  async incrementReactCount(postId: string, delta: number): Promise<void> {
+    if (delta === 0) return;
+    await this.bumpCounter(postId, 'reactCount', delta);
+  }
+  async incrementCommentCount(postId: string, delta: number): Promise<void> {
+    if (delta === 0) return;
+    await this.bumpCounter(postId, 'commentCount', delta);
   }
 
   async nullifyCategoryOnPosts(categoryId: string): Promise<void> {

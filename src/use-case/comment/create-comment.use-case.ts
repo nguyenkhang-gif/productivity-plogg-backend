@@ -25,9 +25,9 @@ export class CreateCommentUseCase {
 
   async execute(input: CreateCommentInput): Promise<Comment> {
     const post = await this.postRepo.findById(input.postId, input.authorId);
-    if (!post) throw new NotFoundException('Post not found');
 
-    return this.commentRepo.create(
+    if (!post) throw new NotFoundException('Post not found');
+    const comment = await this.commentRepo.create(
       new Comment({
         postId: input.postId,
         authorId: input.authorId,
@@ -35,5 +35,9 @@ export class CreateCommentUseCase {
         iconUrl: input.iconUrl,
       }),
     );
+
+    await this.postRepo.incrementCommentCount(input.postId, +1);
+
+    return comment;
   }
 }

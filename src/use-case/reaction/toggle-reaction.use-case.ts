@@ -32,13 +32,19 @@ export class ToggleReactionUseCase {
     const existing = await this.reactionRepo.findByPostAndUser(postId, userId);
 
     if (existing && existing.type === type) {
-      await this.reactionRepo.deleteByPostAndUser(postId, userId);
+      const deleted = await this.reactionRepo.deleteByPostAndUser(
+        postId,
+        userId,
+      );
+      if (deleted) await this.postRepo.incrementReactCount(postId, -1);
       return { action: 'removed', reaction: null };
     }
 
     const reaction = await this.reactionRepo.save(
       new Reaction({ postId, userId, type, icon }),
     );
+
+    if (!existing) await this.postRepo.incrementReactCount(postId, +1);
 
     return { action: existing ? 'changed' : 'added', reaction };
   }

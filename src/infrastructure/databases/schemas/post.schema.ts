@@ -35,6 +35,12 @@ export class Post {
   @Prop({ default: 0 })
   shareCount: number;
 
+  @Prop({ default: 0 })
+  reactCount: number;
+
+  @Prop({ default: 0 })
+  commentCount: number;
+
   @Prop({
     type: String,
     enum: ['PUBLIC', 'FRIENDS', 'PRIVATE'],
@@ -78,3 +84,6 @@ PostSchema.index(
   { unique: true, sparse: true },
 );
 PostSchema.index({ moderationStatus: 1, visibility: 1, createdAt: -1 });
+PostSchema.index({ isPublished: 1, createdAt: -1, _id: -1 });
+PostSchema.index({ isPublished: 1, updatedAt: -1, _id: -1 });
+PostSchema.index({ authorId: 1, isPublished: 1 });

@@ -69,6 +69,8 @@ export interface PostRepository {
   ): Promise<Post>;
   delete(id: string): Promise<void>;
   incrementViewCount(id: string): Promise<void>;
+  incrementReactCount(postId: string, delta: number): Promise<void>;
+  incrementCommentCount(postId: string, delta: number): Promise<void>;
   nullifyCategoryOnPosts(categoryId: string): Promise<void>;
   countByAuthor(authorId: string): Promise<number>;
   findAllAdmin(filter: AdminPostFilter): Promise<PaginatedPosts>;

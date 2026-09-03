@@ -24,4 +24,10 @@ export class AppController {
   health(): object {
     return { status: 'ok' };
   }
+
+  /** Tạm — đo round-trip tới Redis/Mongo/Postgres từ chính server. Xoá sau khi đo. */
+  @Get('/ping-deps')
+  pingDeps(): Promise<object> {
+    return this.appService.pingDeps();
+  }
 }

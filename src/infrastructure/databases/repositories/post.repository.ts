@@ -42,29 +42,10 @@ const UNWIND_AUTHOR = {
   $unwind: { path: '$_author', preserveNullAndEmptyArrays: true },
 };
 
-const LOOKUP_COMMENT_COUNT = {
-  $lookup: {
-    from: 'comments',
-    let: { postId: { $toString: '$_id' } },
-    pipeline: [
-      { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
-      { $count: 'total' },
-    ],
-    as: '_commentCount',
-  },
-};
-
-const LOOKUP_REACT_COUNT = {
-  $lookup: {
-    from: 'reactions',
-    let: { postId: { $toString: '$_id' } },
-    pipeline: [
-      { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
-      { $count: 'total' },
-    ],
-    as: '_reactCount',
-  },
-};
+// `reactCount` / `commentCount` từng được tính bằng $lookup + $count ở đây —
+// mỗi post trong trang là một sub-query riêng. Giờ chúng là field lưu sẵn trên
+// document, cập nhật bằng $inc trong reaction/comment use-case và đối soát bằng
+// `src/scripts/backfill-post-counters.ts`.
 
 const LOOKUP_CATEGORY = {
   $lookup: {
@@ -136,10 +117,6 @@ const buildLookupBookmark = (userId: string) => ({
 
 const buildAddComputedFields = (currentUserId?: string) => ({
   $addFields: {
-    commentCount: {
-      $ifNull: [{ $arrayElemAt: ['$_commentCount.total', 0] }, 0],
-    },
-    reactCount: { $ifNull: [{ $arrayElemAt: ['$_reactCount.total', 0] }, 0] },
     category: {
       $cond: {
         if: { $gt: [{ $size: '$_category' }, 0] },
@@ -192,8 +169,6 @@ const buildReadPipeline = (currentUserId?: string) => [
   ADD_AUTHOR_OBJ_ID,
   LOOKUP_AUTHOR,
   UNWIND_AUTHOR,
-  LOOKUP_COMMENT_COUNT,
-  LOOKUP_REACT_COUNT,
   LOOKUP_CATEGORY,
   LOOKUP_TAGS,
   ...(currentUserId ? [buildLookupUserReaction(currentUserId)] : []),
@@ -507,10 +482,13 @@ export class MongoPostRepository implements PostRepository {
   ): Promise<PostEntity[]> {
     const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
     const items = await this.postModel.aggregate([
-      { $match: visibilityFilter },
-      ...buildReadPipeline(currentUserId),
+      { $match: { ...visibilityFilter, type: { $ne: 'REPOST' } } },
+      // $sort/$limit phải đứng TRƯỚC pipeline: `reactCount` giờ là field lưu
+      // sẵn nên sort được ngay, và các $lookup chỉ chạy trên `limit` document
+      // thay vì toàn bộ collection như trước.
       { $sort: { reactCount: -1, createdAt: -1, ...TIE } },
       { $limit: limit },
+      ...buildReadPipeline(currentUserId),
     ]);
     return items.map((doc) => this.mapToDomain(doc));
   }
@@ -601,30 +579,17 @@ export class MongoPostRepository implements PostRepository {
   }
 
   async getStatsByAuthor(authorId: string): Promise<PostStats> {
+    // Trước đây $lookup TOÀN BỘ mảng reactions/comments của từng post rồi $size
+    // — nặng nhất repository. Giờ cộng thẳng field lưu sẵn, không lookup nào.
+    // $ifNull vì post cũ chưa qua backfill có thể thiếu field.
     const [result] = await this.postModel.aggregate([
       { $match: { authorId, isPublished: true } },
-      {
-        $lookup: {
-          from: 'reactions',
-          let: { postId: { $toString: '$_id' } },
-          pipeline: [{ $match: { $expr: { $eq: ['$postId', '$$postId'] } } }],
-          as: '_reactions',
-        },
-      },
-      {
-        $lookup: {
-          from: 'comments',
-          let: { postId: { $toString: '$_id' } },
-          pipeline: [{ $match: { $expr: { $eq: ['$postId', '$$postId'] } } }],
-          as: '_comments',
-        },
-      },
       {
         $group: {
           _id: null,
           postCount: { $sum: 1 },
-          totalReactionsReceived: { $sum: { $size: '$_reactions' } },
-          totalComments: { $sum: { $size: '$_comments' } },
+          totalReactionsReceived: { $sum: { $ifNull: ['$reactCount', 0] } },
+          totalComments: { $sum: { $ifNull: ['$commentCount', 0] } },
         },
       },
     ]);

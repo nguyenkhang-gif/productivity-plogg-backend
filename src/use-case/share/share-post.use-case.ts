@@ -11,6 +11,7 @@ import {
 } from 'src/core/domain/repositories/post.repository.interface';
 import { Post } from 'src/core/domain/entities/post.entity';
 import { Types } from 'mongoose';
+import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface SharePostResult {
   action: 'shared';
@@ -22,6 +23,7 @@ export interface SharePostResult {
 export class SharePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly cache: CacheService,
   ) {}
 
   async execute(
@@ -57,6 +59,14 @@ export class SharePostUseCase {
 
     await this.postRepo.incrementShareCount(originalPostId);
     const shareCount = await this.postRepo.getShareCount(originalPostId);
+
+    // Khác reaction/comment: share TẠO một post mới nên thành viên của feed
+    // thay đổi thật → phải xoá cả cache feed, không chỉ cache post.
+    await Promise.all([
+      this.cache.delByPattern(`post:${originalPostId}:*`),
+      this.cache.delByPattern('posts:all:*'),
+      this.cache.delByPattern(`posts:author:${userId}:*`),
+    ]);
 
     return { action: 'shared', shareCount, repost };
   }

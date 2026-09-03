@@ -7,6 +7,7 @@ import {
   REACTION_REPOSITORY,
   ReactionRepository,
 } from 'src/core/domain/repositories/reaction.repository.interface';
+import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 @Injectable()
 export class RemoveReactionUseCase {
@@ -15,10 +16,15 @@ export class RemoveReactionUseCase {
     private readonly postRepo: PostRepository,
     @Inject(REACTION_REPOSITORY)
     private readonly reactionRepo: ReactionRepository,
+    private readonly cache: CacheService,
   ) {}
 
   async execute(postId: string, userId: string): Promise<void> {
     const deleted = await this.reactionRepo.deleteByPostAndUser(postId, userId);
-    if (deleted) await this.postRepo.incrementReactCount(postId, -1);
+    if (!deleted) return;
+
+    await this.postRepo.incrementReactCount(postId, -1);
+    // chỉ `post:{id}:*` — xem ghi chú ở ToggleReactionUseCase
+    await this.cache.delByPattern(`post:${postId}:*`);
   }
 }

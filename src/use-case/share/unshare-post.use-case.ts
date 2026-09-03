@@ -9,6 +9,7 @@ import {
   PostRepository,
 } from 'src/core/domain/repositories/post.repository.interface';
 import { Types } from 'mongoose';
+import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface UnsharePostResult {
   action: 'unshared';
@@ -19,6 +20,7 @@ export interface UnsharePostResult {
 export class UnsharePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly cache: CacheService,
   ) {}
 
   async execute(
@@ -37,6 +39,14 @@ export class UnsharePostUseCase {
     await this.postRepo.delete(repost.id);
     await this.postRepo.decrementShareCount(originalPostId);
     const shareCount = await this.postRepo.getShareCount(originalPostId);
+
+    // Unshare XOÁ một post → thành viên feed thay đổi, xem ghi chú ở SharePost.
+    await Promise.all([
+      this.cache.delByPattern(`post:${originalPostId}:*`),
+      this.cache.delByPattern(`post:${repost.id}:*`),
+      this.cache.delByPattern('posts:all:*'),
+      this.cache.delByPattern(`posts:author:${userId}:*`),
+    ]);
 
     return { action: 'unshared', shareCount };
   }

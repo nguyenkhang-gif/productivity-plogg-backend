@@ -8,6 +8,7 @@ import {
   PostRepository,
 } from 'src/core/domain/repositories/post.repository.interface';
 import { Comment } from 'src/core/domain/entities/comment.entity';
+import { CacheService } from 'src/infrastructure/cache/cache.service';
 
 export interface CreateCommentInput {
   postId: string;
@@ -21,6 +22,7 @@ export class CreateCommentUseCase {
   constructor(
     @Inject(COMMENT_REPOSITORY) private readonly commentRepo: CommentRepository,
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly cache: CacheService,
   ) {}
 
   async execute(input: CreateCommentInput): Promise<Comment> {
@@ -37,6 +39,8 @@ export class CreateCommentUseCase {
     );
 
     await this.postRepo.incrementCommentCount(input.postId, +1);
+    // cache post chứa `commentCount` — xem ghi chú ở ToggleReactionUseCase
+    await this.cache.delByPattern(`post:${input.postId}:*`);
 
     return comment;
   }

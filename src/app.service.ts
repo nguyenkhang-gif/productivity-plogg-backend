@@ -69,7 +69,6 @@ export class AppService {
     const connectionState = mongoose.connection.readyState;
     return {
       status: state[connectionState],
-      connectionString: process.env.MONGO_DB_URI,
     };
   }
 }

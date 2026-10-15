@@ -83,7 +83,7 @@ export class GuildGateway
     // Auth đã xử lý ở afterInit middleware — client.data đã có sẵn khi tới đây.
   }
 
-  handleDisconnect(client: Socket) {}
+  handleDisconnect(_client: Socket) {}
 
   @SubscribeMessage('join_guild')
   async handleJoinGuild(

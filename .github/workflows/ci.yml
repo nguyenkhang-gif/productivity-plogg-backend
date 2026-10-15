@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master, dev]
   pull_request:
-    branches: [master, main]
+
+# Push liên tiếp vào cùng một nhánh/PR: huỷ run cũ, chỉ giữ run mới nhất.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -23,11 +27,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Bắt buộc: schema ở prisma/schema/ sinh client ra generated/prisma,
+      # thư mục đó không commit và package.json không có postinstall.
+      # Thiếu bước này thì build không resolve nổi import từ generated/prisma.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      # lint:ci chứ không phải lint — lint có --fix, trong CI sẽ tự sửa rồi
+      # báo xanh, che mất lỗi đáng ra phải chặn merge.
       - name: Lint
-        run: npm run lint
+        run: npm run lint:ci
 
       - name: Build
         run: npm run build
 
+      # Config jest mặc định có rootDir=src nên chỉ chạy unit test.
+      # Integration (test/integration) cần DB thật, để riêng ngoài CI.
       - name: Unit tests
         run: npm test -- --ci

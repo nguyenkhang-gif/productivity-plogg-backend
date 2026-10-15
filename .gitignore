@@ -72,3 +72,6 @@ dev-scratch/
 backups/
 /generated/prisma
 .cloudflared/
+
+# deploy artifact from manual EC2 deploys
+deploy.zip

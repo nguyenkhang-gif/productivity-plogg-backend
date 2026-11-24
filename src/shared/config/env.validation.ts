@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -24,8 +25,9 @@ class EnvironmentVariables {
   @IsNumber()
   PORT: number;
 
+  @ValidateIf((env) => env.DATA_BACKEND !== 'postgres')
   @IsString()
-  MONGO_DB_URI: string;
+  MONGO_DB_URI?: string;
 
   @IsString()
   EMAIL_USER: string;

@@ -53,9 +53,16 @@ import { PrismaModule } from './shared/database/prisma.module';
     BookmarkModule,
     MongooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_DB_URI'),
-      }),
+      useFactory: async (configService: ConfigService) =>
+        configService.get<string>('DATA_BACKEND') === 'postgres'
+          ? {
+              uri:
+                configService.get<string>('MONGO_DB_URI') ??
+                'mongodb://127.0.0.1:27017/unused',
+              lazyConnection: true,
+              bufferCommands: false,
+            }
+          : { uri: configService.get<string>('MONGO_DB_URI') },
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MailModule,

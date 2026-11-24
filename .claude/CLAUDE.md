@@ -8,7 +8,7 @@
 
 # Architecture
 
-NestJS 11 modular monolith. MongoDB (Mongoose) holds users, posts and most social/productivity data; PostgreSQL (Prisma 7, schema in `prisma/schema/*.prisma`) holds the guild system. They are linked only by string `userId`. Redis backs sessions, cache and the Socket.IO adapter.
+NestJS 11 modular monolith on PostgreSQL (Prisma 7, schema in `prisma/schema/*.prisma`, one file per module). Every Mongo-backed repository also has a Prisma implementation; `DATA_BACKEND=postgres` uses them and opens no MongoDB connection (`MONGO_DB_URI` becomes optional), `DATA_BACKEND=mongo` (default until cut-over) keeps the legacy Mongoose repositories. Redis backs sessions, cache and the Socket.IO adapter.
 
 ```
 src/shared/      config, database (Prisma), cache, realtime (Socket.IO Redis adapter), security (JWT/roles guards, throttler), http (pagination, regex escape, image type detection)
@@ -40,6 +40,8 @@ Rules (enforced by `npm run lint:arch`):
 - Per-module checklist: schema → migration → Prisma repository → `backendProvider` → contract test → migrator + transform tests. Then list remaining direct Mongo model usages.
 - Status `labs`: epub, story-context, translation-context and mail-log are ported (`prisma/schema/labs.prisma`, `Prisma*Repository`, migrators `epubs`/`story-contexts`/`translation-contexts`/`mail-logs`); `EpubService` now goes through `EPUB_REPOSITORY`. Orphan rows (owner missing in Postgres) are reported as failed with a reason by the migrators. Drive and ai have no repository (unchanged); the Mongoose schemas stay for the Mongo backend.
 - Status: `social` ported (`prisma/schema/social.prisma`; contracts in `test/contracts/{post,friendship,taxonomy,engagement}-repository.contract.ts`; migrators `categories,tags,friendships,posts,post_tags,comments,reactions,bookmarks`). `USER_RELATIONS` and the lastSeen middleware also follow `DATA_BACKEND`. `upsertBatch` may return `{ skipped: reasons[] }` for rows with missing references.
+
+Cut-over runbook (dev → prod): `npx prisma migrate deploy` → `npm run migrate:mongo-to-pg -- --dry-run` → `npm run migrate:mongo-to-pg` (check every collection reports `verified`) → set `DATA_BACKEND=postgres` and restart → smoke-test → after a soak period remove the Mongo repositories/schemas. Differences from Mongo: deletes cascade (post → comments/reactions/bookmarks/reposts; user → their content), one friendship edge per user pair, raw focus sessions and daily rollups no longer expire (Mongo TTL 30 days / 1 year).
 
 # graphify
 

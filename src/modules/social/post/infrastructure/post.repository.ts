@@ -789,6 +789,7 @@ export class MongoPostRepository implements PostRepository {
   async findManyForEmbed(
     ids: string[],
     viewerId: string,
+    blockedAuthorIds: string[] = [],
   ): Promise<PostEmbedCard[]> {
     const objIds = ids
       .filter((id) => Types.ObjectId.isValid(id))
@@ -796,7 +797,10 @@ export class MongoPostRepository implements PostRepository {
 
     if (objIds.length === 0) return [];
 
-    const visibility = await this.buildVisibilityFilter(viewerId);
+    const visibility = await this.buildVisibilityFilter(
+      viewerId,
+      blockedAuthorIds,
+    );
 
     const docs = await this.postModel.aggregate([
       { $match: { _id: { $in: objIds }, ...visibility } },

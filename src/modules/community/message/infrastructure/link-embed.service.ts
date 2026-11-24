@@ -5,7 +5,11 @@ import {
   extractLinks,
   ParsedLink,
 } from 'src/modules/community/message/domain/link-parser';
-import { POST_REPOSITORY, PostRepository } from 'src/modules/social';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+  RelationshipService,
+} from 'src/modules/social';
 
 @Injectable()
 export class LinkEmbedService {
@@ -14,6 +18,7 @@ export class LinkEmbedService {
 
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly relationships: RelationshipService,
   ) {
     this.internalHosts = LinkEmbedService.resolveInternalHosts();
   }
@@ -61,7 +66,8 @@ export class LinkEmbedService {
     let cards: PostEmbedCard[] = [];
     try {
       // 1 query Mongo cho CẢ trang — không N+1
-      cards = await this.postRepo.findManyForEmbed(postIds, viewerId);
+      const blocked = await this.relationships.getBlockedIds(viewerId);
+      cards = await this.postRepo.findManyForEmbed(postIds, viewerId, blocked);
     } catch (err) {
       // Mongo lỗi thì chat vẫn phải chạy, chỉ mất card
       this.logger.warn(`populate embeds failed: ${String(err)}`);

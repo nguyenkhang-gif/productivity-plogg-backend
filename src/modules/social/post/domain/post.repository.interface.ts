@@ -93,5 +93,9 @@ export interface PostRepository {
   getShareCount(postId: string): Promise<number>;
   incrementShareCount(postId: string): Promise<void>;
   decrementShareCount(postId: string): Promise<void>;
-  findManyForEmbed(ids: string[], viewerId: string): Promise<PostEmbedCard[]>;
+  findManyForEmbed(
+    ids: string[],
+    viewerId: string,
+    blockedAuthorIds?: string[],
+  ): Promise<PostEmbedCard[]>;
 }

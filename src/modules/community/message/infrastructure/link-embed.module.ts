@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { PostModule } from 'src/modules/social';
+import { FriendshipModule, PostModule } from 'src/modules/social';
 import { LinkEmbedService } from './link-embed.service';
 
 @Module({
-  imports: [PostModule],
+  imports: [PostModule, FriendshipModule],
   providers: [LinkEmbedService],
   exports: [LinkEmbedService],
 })

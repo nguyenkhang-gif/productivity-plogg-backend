@@ -1,6 +1,7 @@
 export const REFRESH_TOKEN_PREFIX = 'auth:refresh:';
 export const SESSION_PREFIX = 'auth:sessions:';
 export const BLACKLIST_PREFIX = 'auth:blacklist:';
+export const REFRESH_REUSE_GRACE_MS = 30_000;
 export const REFRESH_USED_PREFIX = 'auth:refresh-used:';
 export const REVOKED_SESSION_PREFIX = 'auth:revoked-sid:';
 export const OAUTH_CODE_PREFIX = 'auth:oauth-code:';

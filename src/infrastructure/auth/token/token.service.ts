@@ -14,6 +14,7 @@ import {
   OAUTH_CODE_TTL_SECONDS,
   REFRESH_TOKEN_PREFIX,
   REFRESH_TTL_SECONDS,
+  REFRESH_REUSE_GRACE_MS,
   REFRESH_USED_PREFIX,
   REVOKED_SESSION_PREFIX,
   SESSION_PREFIX,
@@ -169,11 +170,14 @@ export class TokenService {
 
     const [userId, sessionId, rawSecret] = parts;
 
-    const usedSessionId = await this.cacheService.get<string>(
-      `${REFRESH_USED_PREFIX}${hashToken(rawSecret)}`,
-    );
-    if (usedSessionId) {
-      await this.revokeRefreshToken(`${userId}.${usedSessionId}.x`, userId);
+    const used = await this.cacheService.get<{
+      sessionId: string;
+      rotatedAt: number;
+    }>(`${REFRESH_USED_PREFIX}${hashToken(rawSecret)}`);
+    if (used) {
+      if (Date.now() - used.rotatedAt > REFRESH_REUSE_GRACE_MS) {
+        await this.revokeRefreshToken(`${userId}.${used.sessionId}.x`, userId);
+      }
       throw new UnauthorizedException('Refresh token reuse detected');
     }
 
@@ -219,7 +223,7 @@ export class TokenService {
 
     const tombstoned = await this.cacheService.set(
       `${REFRESH_USED_PREFIX}${hashToken(oldSecret)}`,
-      sessionId,
+      { sessionId, rotatedAt: Date.now() },
       REFRESH_TTL_SECONDS,
     );
     const ok =

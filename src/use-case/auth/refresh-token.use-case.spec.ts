@@ -79,10 +79,13 @@ describe('RefreshTokenUseCase', () => {
     expect(await tokens.isSessionRevoked(tokens.getSessionId(rt)!)).toBe(true);
   });
 
-  it('revokes the whole session when a rotated token is replayed', async () => {
+  it('revokes the whole session when a rotated token is replayed after the grace window', async () => {
+    jest.useFakeTimers({ now: 1_000_000 });
     const rt1 = await login();
     const { refresh_token: rt2 } = await useCase.execute(rt1);
     expect(await tokens.listSessions('u1')).toHaveLength(1);
+
+    jest.setSystemTime(1_000_000 + 31_000);
 
     await expect(useCase.execute(rt1)).rejects.toBeInstanceOf(
       UnauthorizedException,
@@ -91,5 +94,6 @@ describe('RefreshTokenUseCase', () => {
     await expect(useCase.execute(rt2)).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
+    jest.useRealTimers();
   });
 });

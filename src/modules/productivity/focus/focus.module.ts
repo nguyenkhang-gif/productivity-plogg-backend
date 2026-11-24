@@ -20,10 +20,20 @@ import {
   FocusSessionMonthly,
   FocusSessionMonthlySchema,
 } from 'src/modules/productivity/focus/infrastructure/focus-session-monthly.schema';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaUserProgressRepository } from 'src/modules/productivity/focus/infrastructure/user-progress.prisma.repository';
+import { PrismaFocusSessionRepository } from 'src/modules/productivity/focus/infrastructure/focus-session.prisma.repository';
 import { MongoUserProgressRepository } from 'src/modules/productivity/focus/infrastructure/user-progress.repository';
 import { MongoFocusSessionRepository } from 'src/modules/productivity/focus/infrastructure/focus-session.repository';
-import { USER_PROGRESS_REPOSITORY } from 'src/modules/productivity/focus/domain/user-progress.repository.interface';
-import { FOCUS_SESSION_REPOSITORY } from 'src/modules/productivity/focus/domain/focus-session.repository.interface';
+import {
+  USER_PROGRESS_REPOSITORY,
+  type UserProgressRepository,
+} from 'src/modules/productivity/focus/domain/user-progress.repository.interface';
+import {
+  FOCUS_SESSION_REPOSITORY,
+  type FocusSessionRepository,
+} from 'src/modules/productivity/focus/domain/focus-session.repository.interface';
 import { FocusController } from 'src/modules/productivity/focus/presentation/focus.controller';
 import { RecordFocusSessionUseCase } from 'src/modules/productivity/focus/application/record-focus-session.use-case';
 import { GetFocusProgressUseCase } from 'src/modules/productivity/focus/application/get-focus-progress.use-case';
@@ -37,6 +47,7 @@ import { GetFocusReportUseCase } from 'src/modules/productivity/focus/applicatio
 // (FocusRollupScheduler) is deferred — see plan Step 5
 @Module({
   imports: [
+    PrismaModule,
     MongooseModule.forFeature([
       { name: UserProgress.name, schema: UserProgressSchema },
       { name: FocusSessionRaw.name, schema: FocusSessionRawSchema },
@@ -47,14 +58,20 @@ import { GetFocusReportUseCase } from 'src/modules/productivity/focus/applicatio
   ],
   controllers: [FocusController],
   providers: [
-    {
-      provide: USER_PROGRESS_REPOSITORY,
-      useClass: MongoUserProgressRepository,
-    },
-    {
-      provide: FOCUS_SESSION_REPOSITORY,
-      useClass: MongoFocusSessionRepository,
-    },
+    MongoUserProgressRepository,
+    PrismaUserProgressRepository,
+    MongoFocusSessionRepository,
+    PrismaFocusSessionRepository,
+    backendProvider<UserProgressRepository>(
+      USER_PROGRESS_REPOSITORY,
+      MongoUserProgressRepository,
+      PrismaUserProgressRepository,
+    ),
+    backendProvider<FocusSessionRepository>(
+      FOCUS_SESSION_REPOSITORY,
+      MongoFocusSessionRepository,
+      PrismaFocusSessionRepository,
+    ),
     RecordFocusSessionUseCase,
     GetFocusProgressUseCase,
     UpdateFocusConfigUseCase,

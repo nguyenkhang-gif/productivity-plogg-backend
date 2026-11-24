@@ -57,4 +57,12 @@ model User {
   @@index([membership])
   @@index([createdAt(sort: Desc)])
   @@map("users")
+
+  // productivity
+  focusSessionsRaw    FocusSessionRaw[]
+  focusRollupsDaily   FocusRollupDaily[]
+  focusRollupsWeekly  FocusRollupWeekly[]
+  focusRollupsMonthly FocusRollupMonthly[]
+  userProgress        UserProgress?
+  encryptedVaults     EncryptedVault[]
 }

@@ -1,0 +1,109 @@
+/// Raw focus sessions. Idempotency key: (userId, clientSessionId).
+/// Mongo expired these after 30 days via TTL; Postgres keeps them until a purge job is added.
+model FocusSessionRaw {
+  id              String   @id @db.VarChar(24)
+  userId          String   @db.VarChar(24)
+  clientSessionId String
+  completedAt     DateTime
+  /// "YYYY-MM-DD" in the user's timezone, computed at ingest.
+  localDate       String   @db.VarChar(10)
+  durationMin     Int
+  xpEarned        Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientSessionId])
+  @@index([userId, localDate])
+  @@index([localDate])
+  @@index([completedAt])
+  @@map("focus_sessions_raw")
+}
+
+/// Rebuilt from raw sessions by rollupDaily (replace semantics, idempotent).
+model FocusRollupDaily {
+  userId        String   @db.VarChar(24)
+  /// "YYYY-MM-DD"
+  date          String   @db.VarChar(10)
+  sessionsCount Int
+  totalFocusMin Int
+  totalXp       Int
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+  @@index([date])
+  @@index([createdAt])
+  @@map("focus_rollups_daily")
+}
+
+model FocusRollupWeekly {
+  userId        String @db.VarChar(24)
+  /// Monday of the ISO week, "YYYY-MM-DD"
+  weekStart     String @db.VarChar(10)
+  sessionsCount Int
+  totalFocusMin Int
+  totalXp       Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, weekStart])
+  @@map("focus_rollups_weekly")
+}
+
+model FocusRollupMonthly {
+  userId        String @db.VarChar(24)
+  /// "YYYY-MM"
+  month         String @db.VarChar(7)
+  sessionsCount Int
+  totalFocusMin Int
+  totalXp       Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, month])
+  @@map("focus_rollups_monthly")
+}
+
+model UserProgress {
+  id                  String   @id @db.VarChar(24)
+  userId              String   @unique @db.VarChar(24)
+  totalXp             Int      @default(0)
+  totalFocusMin       Int      @default(0)
+  drinkId             String?
+  /// Minutes east of UTC (e.g. Vietnam = +420).
+  tzOffset            Int      @default(0)
+  todayCount          Int      @default(0)
+  todayFocusMin       Int      @default(0)
+  /// "YYYY-MM-DD" in the user's timezone.
+  lastActiveLocalDate String?  @db.VarChar(10)
+  currentStreak       Int      @default(0)
+  longestStreak       Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_progress")
+}
+
+/// Zero-knowledge blob: every payload column is opaque base64 produced client-side. Never log it.
+model EncryptedVault {
+  id         String   @id @db.VarChar(24)
+  userId     String   @db.VarChar(24)
+  scope      String
+  ciphertext String
+  iv         String
+  wrappedKey String
+  /// { algo, salt, iterations } - opaque to the server.
+  kdf        Json
+  /// Optimistic-concurrency counter, +1 per successful PUT.
+  version    Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope])
+  @@map("encrypted_vaults")
+}

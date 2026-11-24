@@ -62,7 +62,14 @@ FRIENDSHIP_API.md
 UPLOAD_API.md
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/settings.json
+!.claude/CLAUDE.md
+!.claude/hooks/
+!.claude/skills/
+
+# graphify (rebuilt by .claude/hooks/graphify-session-start.sh)
+graphify-out/
 
 # Docs (internal planning, not for repo)
 docs/

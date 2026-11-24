@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
   AdminPostFilter,
+  FindPostByIdOptions,
   PaginatedPosts,
   PostFeedFilter,
   PostRepository,
@@ -24,6 +25,8 @@ import {
 } from '../../friendship/infrastructure/friendship.schema';
 import { escapeRegex } from 'src/shared/http/regex';
 import { PostEmbedCard } from '../domain/post-embed-card';
+import { canViewAuthorPage, decidePostView } from '../domain/post.policy';
+import { Relationship } from '../../friendship/domain/relationship';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -226,6 +229,24 @@ export class MongoPostRepository implements PostRepository {
     );
   }
 
+  private async buildRelationship(
+    authorId: string,
+    currentUserId: string | undefined,
+    needsFriendship: boolean,
+  ): Promise<Relationship> {
+    const isSelf = !!currentUserId && currentUserId === authorId;
+    const isFriend =
+      !isSelf && !!currentUserId && needsFriendship
+        ? (await this.getFriendIds(currentUserId)).has(authorId)
+        : false;
+    return {
+      isSelf,
+      isFriend,
+      blockedByViewer: false,
+      blockedViewer: false,
+    };
+  }
+
   private async isHiddenByPrivateAccount(
     authorId: string,
     currentUserId?: string,
@@ -235,13 +256,22 @@ export class MongoPostRepository implements PostRepository {
     const author: any = await this.userModel
       .findById(authorId, { isPrivate: 1 })
       .lean();
-    if (!author?.isPrivate) return false;
-    if (!currentUserId) return true;
-    const friendIds = await this.getFriendIds(currentUserId);
-    return !friendIds.has(authorId);
+    const relationship = await this.buildRelationship(
+      authorId,
+      currentUserId,
+      !!author?.isPrivate,
+    );
+    return !canViewAuthorPage(
+      { id: currentUserId },
+      { id: authorId, isPrivate: !!author?.isPrivate },
+      relationship,
+    );
   }
 
-  private async buildVisibilityFilter(currentUserId: string) {
+  private async buildVisibilityFilter(
+    currentUserId: string,
+    blockedAuthorIds: string[] = [],
+  ) {
     const [friendIds, privateUsers] = await Promise.all([
       this.getFriendIds(currentUserId),
       this.userModel.find({ isPrivate: true }, { _id: 1 }).lean(),
@@ -282,6 +312,9 @@ export class MongoPostRepository implements PostRepository {
     return {
       isPublished: true,
       $or: visibilityConditions,
+      ...(blockedAuthorIds.length > 0
+        ? { authorId: { $nin: blockedAuthorIds } }
+        : {}),
     };
   }
 
@@ -327,6 +360,7 @@ export class MongoPostRepository implements PostRepository {
   async findById(
     id: string,
     currentUserId?: string,
+    options?: FindPostByIdOptions,
   ): Promise<PostEntity | null> {
     const [doc] = await this.postModel.aggregate([
       {
@@ -344,31 +378,37 @@ export class MongoPostRepository implements PostRepository {
     if (!doc) return null;
 
     const visibility = doc.visibility ?? 'PUBLIC';
-    const moderationStatus = doc.moderationStatus ?? 'APPROVED';
     const authorId = doc.authorId;
 
-    if (await this.isHiddenByPrivateAccount(authorId, currentUserId)) {
-      return null;
-    }
+    if (options?.blockedAuthorIds?.includes(authorId)) return null;
 
-    // A PUBLIC post that is still PENDING/REJECTED is visible only to its author.
-    if (
-      visibility === 'PUBLIC' &&
-      moderationStatus !== 'APPROVED' &&
-      currentUserId !== authorId
-    ) {
-      throw new ForbiddenException('This post is awaiting moderation');
-    }
+    const needsFriendship =
+      visibility === 'FRIENDS' || !!doc._author?.isPrivate;
+    const relationship = await this.buildRelationship(
+      authorId,
+      currentUserId,
+      needsFriendship,
+    );
+    const decision = decidePostView(
+      { id: currentUserId },
+      {
+        authorId,
+        visibility,
+        moderationStatus: doc.moderationStatus ?? 'APPROVED',
+      },
+      doc._author ? { id: authorId, isPrivate: !!doc._author.isPrivate } : null,
+      relationship,
+    );
 
-    if (visibility === 'PRIVATE') {
-      if (currentUserId !== authorId)
-        throw new ForbiddenException('This post is private');
-    } else if (visibility === 'FRIENDS') {
-      if (currentUserId !== authorId) {
-        if (!currentUserId)
-          throw new ForbiddenException('This post is for friends only');
-        const friendIds = await this.getFriendIds(currentUserId);
-        if (!friendIds.has(authorId))
+    if (!decision.allowed) {
+      switch (decision.reason) {
+        case 'NOT_FOUND':
+          return null;
+        case 'AWAITING_MODERATION':
+          throw new ForbiddenException('This post is awaiting moderation');
+        case 'PRIVATE':
+          throw new ForbiddenException('This post is private');
+        case 'FRIENDS_ONLY':
           throw new ForbiddenException('This post is for friends only');
       }
     }
@@ -392,7 +432,10 @@ export class MongoPostRepository implements PostRepository {
     filter?: PostFeedFilter,
   ): Promise<PaginatedPosts> {
     const skip = (page - 1) * limit;
-    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
+    const visibilityFilter = await this.buildVisibilityFilter(
+      currentUserId,
+      filter?.blockedAuthorIds,
+    );
 
     const extraFilter: Record<string, any> = {};
     if (filter?.categoryId) extraFilter.categoryId = filter.categoryId;
@@ -502,8 +545,12 @@ export class MongoPostRepository implements PostRepository {
   async findTrending(
     limit: number,
     currentUserId: string,
+    blockedAuthorIds?: string[],
   ): Promise<PostEntity[]> {
-    const visibilityFilter = await this.buildVisibilityFilter(currentUserId);
+    const visibilityFilter = await this.buildVisibilityFilter(
+      currentUserId,
+      blockedAuthorIds,
+    );
     const items = await this.postModel.aggregate([
       { $match: visibilityFilter },
       ...buildReadPipeline(currentUserId),

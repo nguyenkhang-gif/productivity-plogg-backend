@@ -26,7 +26,7 @@ export class UserController {
   }
 
   @Get(':id/profile')
-  async getProfile(@Param('id') id: string) {
-    return this.getUserProfile.execute(id);
+  async getProfile(@Param('id') id: string, @Req() req) {
+    return this.getUserProfile.execute(id, req.user.userId);
   }
 }

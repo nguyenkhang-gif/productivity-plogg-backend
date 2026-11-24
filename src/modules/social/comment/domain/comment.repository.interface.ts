@@ -18,6 +18,7 @@ export interface CommentRepository {
     postId: string,
     page: number,
     limit: number,
+    excludeAuthorIds?: string[],
   ): Promise<PaginatedComments>;
   create(comment: Comment): Promise<Comment>;
   update(id: string, content: string): Promise<Comment>;

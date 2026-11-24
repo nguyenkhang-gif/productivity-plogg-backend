@@ -86,11 +86,15 @@ export class MongoUserRepository implements UserRepository {
     return this.mapToDomain(savedUser);
   }
 
-  async search(query: string, excludeUserId: string): Promise<UserEntity[]> {
+  async search(
+    query: string,
+    excludeUserId: string,
+    excludeIds: string[] = [],
+  ): Promise<UserEntity[]> {
     const regex = new RegExp(escapeRegex(query), 'i');
     const docs = await this.userModel
       .find({
-        _id: { $ne: excludeUserId },
+        _id: { $nin: [excludeUserId, ...excludeIds] },
         $or: [{ username: regex }, { fullName: regex }],
       })
       .select('fullName username profilePic')

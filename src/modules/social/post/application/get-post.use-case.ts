@@ -4,6 +4,7 @@ import {
   PostRepository,
 } from 'src/modules/social/post/domain/post.repository.interface';
 import { Post } from 'src/modules/social/post/domain/post.entity';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 import { CacheService } from 'src/shared/cache/cache.service';
 import { CACHE_TTL } from 'src/shared/cache/cache-ttl.constant';
 
@@ -12,6 +13,7 @@ export class GetPostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
     private readonly cache: CacheService,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(id: string, currentUserId?: string): Promise<Post> {
@@ -19,7 +21,12 @@ export class GetPostUseCase {
     const cached = await this.cache.get<Post>(key);
     if (cached) return cached;
 
-    const post = await this.postRepo.findById(id, currentUserId);
+    const blockedAuthorIds = currentUserId
+      ? await this.relationships.getBlockedIds(currentUserId)
+      : [];
+    const post = await this.postRepo.findById(id, currentUserId, {
+      blockedAuthorIds,
+    });
     if (!post) throw new NotFoundException('Post not found');
 
     await this.cache.set(key, post, CACHE_TTL.POST_SINGLE);

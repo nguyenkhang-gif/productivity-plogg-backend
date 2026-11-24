@@ -64,8 +64,11 @@ import { CreateCategoryUseCase } from 'src/modules/social/category/application/c
 import { UpdateCategoryUseCase } from 'src/modules/social/category/application/update-category.use-case';
 import { DeleteCategoryUseCase } from 'src/modules/social/category/application/delete-category.use-case';
 
+import { FriendshipModule } from 'src/modules/social/friendship/friendship.module';
+
 @Module({
   imports: [
+    FriendshipModule,
     MongooseModule.forFeature([
       { name: Post.name, schema: PostSchema },
       { name: User.name, schema: UserSchema },

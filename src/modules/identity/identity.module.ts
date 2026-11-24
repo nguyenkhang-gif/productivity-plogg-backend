@@ -11,6 +11,7 @@ import {
   PostSchema,
   POST_REPOSITORY,
   MongoPostRepository,
+  FriendshipModule,
 } from 'src/modules/social';
 import { AuthController } from 'src/modules/identity/auth/presentation/auth.controller';
 import { USER_REPOSITORY } from 'src/modules/identity/user/domain/user.repository.interface';
@@ -40,6 +41,7 @@ import { SESSION_TOKEN_PORT } from './auth/domain/session-token.port';
 
 @Module({
   imports: [
+    FriendshipModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Friendship.name, schema: FriendshipSchema },

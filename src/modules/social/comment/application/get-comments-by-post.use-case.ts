@@ -8,12 +8,14 @@ import {
   POST_REPOSITORY,
   PostRepository,
 } from 'src/modules/social/post/domain/post.repository.interface';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 
 @Injectable()
 export class GetCommentsByPostUseCase {
   constructor(
     @Inject(COMMENT_REPOSITORY) private readonly commentRepo: CommentRepository,
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(
@@ -22,8 +24,11 @@ export class GetCommentsByPostUseCase {
     page = 1,
     limit = 20,
   ): Promise<PaginatedComments> {
-    const post = await this.postRepo.findById(postId, userId);
+    const blockedAuthorIds = await this.relationships.getBlockedIds(userId);
+    const post = await this.postRepo.findById(postId, userId, {
+      blockedAuthorIds,
+    });
     if (!post) throw new NotFoundException('Post not found');
-    return this.commentRepo.findByPost(postId, page, limit);
+    return this.commentRepo.findByPost(postId, page, limit, blockedAuthorIds);
   }
 }

@@ -24,8 +24,11 @@ import { ReactionController } from 'src/modules/social/reaction/presentation/rea
 import { ToggleReactionUseCase } from 'src/modules/social/reaction/application/toggle-reaction.use-case';
 import { RemoveReactionUseCase } from 'src/modules/social/reaction/application/remove-reaction.use-case';
 
+import { FriendshipModule } from 'src/modules/social/friendship/friendship.module';
+
 @Module({
   imports: [
+    FriendshipModule,
     MongooseModule.forFeature([
       { name: Reaction.name, schema: ReactionSchema },
       { name: Post.name, schema: PostSchema },

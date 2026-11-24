@@ -3,7 +3,12 @@ import {
   USER_REPOSITORY,
   UserRepository,
 } from 'src/modules/identity/user/domain/user.repository.interface';
-import { POST_REPOSITORY, PostRepository } from 'src/modules/social';
+import {
+  POST_REPOSITORY,
+  PostRepository,
+  RelationshipService,
+  canViewProfile,
+} from 'src/modules/social';
 import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
@@ -12,9 +17,17 @@ export class GetUserProfileUseCase {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     @Inject(POST_REPOSITORY) private readonly postRepository: PostRepository,
     private readonly cache: CacheService,
+    private readonly relationships: RelationshipService,
   ) {}
 
-  async execute(targetId: string) {
+  async execute(targetId: string, viewerId: string) {
+    const relationship = await this.relationships.getRelationship(
+      viewerId,
+      targetId,
+    );
+    if (!canViewProfile({ id: viewerId }, { id: targetId }, relationship))
+      throw new NotFoundException('User not found');
+
     const user = await this.userRepository.findById(targetId);
     if (!user) throw new NotFoundException('User not found');
 

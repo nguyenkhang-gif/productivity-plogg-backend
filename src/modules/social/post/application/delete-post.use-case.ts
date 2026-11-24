@@ -16,6 +16,7 @@ import {
   CATEGORY_REPOSITORY,
   CategoryRepository,
 } from 'src/modules/social/category/domain/category.repository.interface';
+import { canDeletePost } from 'src/modules/social/post/domain/post.policy';
 import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
@@ -31,7 +32,7 @@ export class DeletePostUseCase {
   async execute(id: string, requesterId: string): Promise<void> {
     const post = await this.postRepo.findById(id, requesterId);
     if (!post) throw new NotFoundException('Post not found');
-    if (post.authorId !== requesterId)
+    if (!canDeletePost({ id: requesterId }, post))
       throw new ForbiddenException('Not your post');
 
     await this.postRepo.delete(id);

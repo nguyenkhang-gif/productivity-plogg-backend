@@ -61,17 +61,21 @@ export class MongoCommentRepository implements CommentRepository {
     postId: string,
     page: number,
     limit: number,
+    excludeAuthorIds: string[] = [],
   ): Promise<PaginatedComments> {
     const skip = (page - 1) * limit;
+    const match: Record<string, any> = { postId };
+    if (excludeAuthorIds.length > 0)
+      match.authorId = { $nin: excludeAuthorIds };
     const [items, total] = await Promise.all([
       this.commentModel.aggregate([
-        { $match: { postId } },
+        { $match: match },
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
         ...AUTHOR_LOOKUP,
       ]),
-      this.commentModel.countDocuments({ postId }),
+      this.commentModel.countDocuments(match),
     ]);
 
     return {

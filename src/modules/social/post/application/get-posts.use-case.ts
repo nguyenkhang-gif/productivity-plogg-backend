@@ -5,6 +5,7 @@ import {
   POST_REPOSITORY,
   PostRepository,
 } from 'src/modules/social/post/domain/post.repository.interface';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 import { CacheService } from 'src/shared/cache/cache.service';
 import { CACHE_TTL } from 'src/shared/cache/cache-ttl.constant';
 
@@ -13,6 +14,7 @@ export class GetPostsUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
     private readonly cache: CacheService,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(
@@ -28,12 +30,12 @@ export class GetPostsUseCase {
     const cached = await this.cache.get<PaginatedPosts>(key);
     if (cached) return cached;
 
-    const result = await this.postRepo.findAll(
-      page,
-      limit,
-      currentUserId,
-      filter,
-    );
+    const blockedAuthorIds =
+      await this.relationships.getBlockedIds(currentUserId);
+    const result = await this.postRepo.findAll(page, limit, currentUserId, {
+      ...filter,
+      blockedAuthorIds,
+    });
     await this.cache.set(key, result, CACHE_TTL.POST_LIST);
     return result;
   }

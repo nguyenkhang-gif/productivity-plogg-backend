@@ -22,6 +22,7 @@ import {
   PostVisibility,
   deriveModerationStatus,
 } from 'src/modules/social/post/domain/post.entity';
+import { canEditPost } from 'src/modules/social/post/domain/post.policy';
 import { CacheService } from 'src/shared/cache/cache.service';
 
 export interface UpdatePostInput {
@@ -51,7 +52,7 @@ export class UpdatePostUseCase {
   ): Promise<Post> {
     const post = await this.postRepo.findById(id, requesterId);
     if (!post) throw new NotFoundException('Post not found');
-    if (post.authorId !== requesterId)
+    if (!canEditPost({ id: requesterId }, post))
       throw new ForbiddenException('Not your post');
 
     const updateData: Partial<Post> = {};

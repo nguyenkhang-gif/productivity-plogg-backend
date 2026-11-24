@@ -23,7 +23,11 @@ export interface UserRepository {
   findByUsername(username: string): Promise<User | null>;
   create(user: User): Promise<User>;
   update(id: string, user: Partial<User>): Promise<User>;
-  search(query: string, excludeUserId: string): Promise<User[]>;
+  search(
+    query: string,
+    excludeUserId: string,
+    excludeIds?: string[],
+  ): Promise<User[]>;
   findByGoogleId(googleId: string): Promise<User | null>;
   findByFacebookId(facebookId: string): Promise<User | null>;
   findSuggestions(currentUserId: string, limit: number): Promise<User[]>;

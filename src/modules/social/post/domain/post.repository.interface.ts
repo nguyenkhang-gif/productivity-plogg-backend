@@ -18,6 +18,11 @@ export interface PostFeedFilter {
   tags?: string[];
   excludeId?: string;
   sortByUpdatedAt?: 1 | -1;
+  blockedAuthorIds?: string[];
+}
+
+export interface FindPostByIdOptions {
+  blockedAuthorIds?: string[];
 }
 
 export interface AdminPostFilter {
@@ -36,7 +41,11 @@ export interface PostStats {
 }
 
 export interface PostRepository {
-  findById(id: string, currentUserId?: string): Promise<Post | null>;
+  findById(
+    id: string,
+    currentUserId?: string,
+    options?: FindPostByIdOptions,
+  ): Promise<Post | null>;
   // raw fetch without visibility/moderation enforcement (moderator/internal use)
   findByIdRaw(id: string): Promise<Post | null>;
   findAll(
@@ -51,7 +60,11 @@ export interface PostRepository {
     limit: number,
     currentUserId: string,
   ): Promise<PaginatedPosts>;
-  findTrending(limit: number, currentUserId: string): Promise<Post[]>;
+  findTrending(
+    limit: number,
+    currentUserId: string,
+    blockedAuthorIds?: string[],
+  ): Promise<Post[]>;
   getStatsByAuthor(authorId: string): Promise<PostStats>;
   // moderation
   findPendingPublic(page: number, limit: number): Promise<PaginatedPosts>;

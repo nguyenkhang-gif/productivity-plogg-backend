@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -10,6 +11,8 @@ import {
   PostRepository,
 } from 'src/modules/social/post/domain/post.repository.interface';
 import { Post } from 'src/modules/social/post/domain/post.entity';
+import { canShare } from 'src/modules/social/post/domain/post.policy';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 import { Types } from 'mongoose';
 
 export interface SharePostResult {
@@ -22,6 +25,7 @@ export interface SharePostResult {
 export class SharePostUseCase {
   constructor(
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(
@@ -33,6 +37,13 @@ export class SharePostUseCase {
       throw new NotFoundException('Post not found');
     const original = await this.postRepo.findById(originalPostId, userId);
     if (!original) throw new NotFoundException('Post not found');
+
+    const relationship = await this.relationships.getRelationship(
+      userId,
+      original.authorId,
+    );
+    if (!canShare({ id: userId }, original, null, relationship))
+      throw new ForbiddenException('You cannot interact with this user');
     if (original.type === 'REPOST')
       throw new BadRequestException('Cannot share a repost');
 

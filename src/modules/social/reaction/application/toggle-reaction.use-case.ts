@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   REACTION_REPOSITORY,
   ReactionRepository,
@@ -8,6 +13,8 @@ import {
   PostRepository,
 } from 'src/modules/social/post/domain/post.repository.interface';
 import { Reaction } from 'src/modules/social/reaction/domain/reaction.entity';
+import { canReact } from 'src/modules/social/post/domain/post.policy';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 
 @Injectable()
 export class ToggleReactionUseCase {
@@ -15,6 +22,7 @@ export class ToggleReactionUseCase {
     @Inject(REACTION_REPOSITORY)
     private readonly reactionRepo: ReactionRepository,
     @Inject(POST_REPOSITORY) private readonly postRepo: PostRepository,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(
@@ -35,6 +43,13 @@ export class ToggleReactionUseCase {
       await this.reactionRepo.deleteByPostAndUser(postId, userId);
       return { action: 'removed', reaction: null };
     }
+
+    const relationship = await this.relationships.getRelationship(
+      userId,
+      post.authorId,
+    );
+    if (!canReact({ id: userId }, post, null, relationship))
+      throw new ForbiddenException('You cannot interact with this user');
 
     const reaction = await this.reactionRepo.save(
       new Reaction({ postId, userId, type, icon }),

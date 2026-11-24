@@ -26,8 +26,11 @@ import { GetCommentsByPostUseCase } from 'src/modules/social/comment/application
 import { UpdateCommentUseCase } from 'src/modules/social/comment/application/update-comment.use-case';
 import { DeleteCommentUseCase } from 'src/modules/social/comment/application/delete-comment.use-case';
 
+import { FriendshipModule } from 'src/modules/social/friendship/friendship.module';
+
 @Module({
   imports: [
+    FriendshipModule,
     MongooseModule.forFeature([
       { name: Comment.name, schema: CommentSchema },
       { name: Post.name, schema: PostSchema },

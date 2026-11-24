@@ -57,6 +57,10 @@ async function bootstrap() {
   );
 
   const allowedOrigins = new Set([
+    'https://knn-productivity.vercel.app',
+    'http://knnpb.duckdns.org',
+    'http://34.206.37.238',
+    'http://107.21.107.160',
     ...(process.env.CLIENT_ORIGIN ?? '')
       .split(',')
       .map((o) => o.trim())

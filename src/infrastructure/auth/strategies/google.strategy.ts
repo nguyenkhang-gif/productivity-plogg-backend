@@ -27,6 +27,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const user = await this.googleAuthUseCase.execute({
       googleId: profile.id,
       email: profile.emails[0].value,
+      emailVerified:
+        profile.emails[0].verified === true ||
+        profile.emails[0].verified === 'true' ||
+        profile._json?.email_verified === true ||
+        profile._json?.email_verified === 'true',
       fullName: profile.displayName,
       profilePic: profile.photos?.[0]?.value,
     });

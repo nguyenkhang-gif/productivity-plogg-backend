@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import {
   USER_REPOSITORY,
   UserRepository,
@@ -8,6 +8,7 @@ import { User } from 'src/core/domain/entities/user.entity';
 interface GoogleProfile {
   googleId: string;
   email: string;
+  emailVerified?: boolean;
   fullName: string;
   profilePic?: string;
 }
@@ -24,6 +25,11 @@ export class GoogleAuthUseCase {
 
     user = await this.userRepository.findByEmail(profile.email);
     if (user) {
+      if (!profile.emailVerified) {
+        throw new ConflictException(
+          'Account exists; log in with password and link Google from settings',
+        );
+      }
       return this.userRepository.update(user.id, {
         googleId: profile.googleId,
       });

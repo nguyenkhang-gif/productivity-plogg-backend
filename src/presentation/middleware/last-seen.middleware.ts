@@ -2,6 +2,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
+import { verify } from 'jsonwebtoken';
 import {
   User,
   UserDocument,
@@ -9,10 +10,11 @@ import {
 
 const THROTTLE_MS = 60_000;
 
-function decodeJwtPayload(token: string): any {
+function verifyJwtPayload(token: string): any {
+  const secret = process.env.JWT_SECRET_KEY?.trim();
+  if (!secret) return null;
   try {
-    const base64 = token.split('.')[1];
-    return JSON.parse(Buffer.from(base64, 'base64url').toString('utf8'));
+    return verify(token, secret);
   } catch {
     return null;
   }
@@ -29,9 +31,9 @@ export class LastSeenMiddleware implements NestMiddleware {
       const authHeader = req.headers['authorization'];
       if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.slice(7);
-        const payload = decodeJwtPayload(token);
+        const payload = verifyJwtPayload(token);
         const userId = payload?.userId || payload?.sub;
-        if (userId) {
+        if (typeof userId === 'string' && userId) {
           const doc = await this.userModel
             .findById(userId, { lastSeen: 1 })
             .lean();

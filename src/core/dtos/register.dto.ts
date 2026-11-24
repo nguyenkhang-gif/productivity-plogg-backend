@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   MinLength,
+  MaxLength,
   IsOptional,
   IsString,
   IsEnum,
@@ -21,7 +22,8 @@ export class RegisterDto {
   email: string;
 
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
+  @MaxLength(128)
   password: string;
 
   @IsEnum(['male', 'female', 'other'])

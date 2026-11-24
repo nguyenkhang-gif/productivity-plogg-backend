@@ -25,7 +25,7 @@ export class RegisterUseCase {
       throw new ConflictException('Username already in use');
     }
 
-    const saltOrRounds = 10;
+    const saltOrRounds = 12;
     const passwordHash = await bcrypt.hash(dto.password, saltOrRounds);
 
     const newUser = new User({

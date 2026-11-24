@@ -14,17 +14,24 @@ export class ValidateUserUseCase {
     identifier: string,
     pass: string,
   ): Promise<Omit<User, 'passwordHash'> | null> {
+    if (
+      typeof identifier !== 'string' ||
+      typeof pass !== 'string' ||
+      !identifier ||
+      !pass ||
+      identifier.length > 254 ||
+      pass.length > 128
+    ) {
+      return null;
+    }
+
     let user = await this.userRepository.findByEmail(identifier);
-    console.log(`Validating user with identifier: `, user);
 
     if (!user) {
       user = await this.userRepository.findByUsername(identifier);
-      console.log(`Validating user with identifier layer2: `, user);
     }
 
-    if (user && (await bcrypt.compare(pass, user.passwordHash))) {
-      console.log(`Password for user ${user.username} is valid.`);
-
+    if (user?.passwordHash && (await bcrypt.compare(pass, user.passwordHash))) {
       const { passwordHash: _passwordHash, ...result } = user;
       return result;
     }

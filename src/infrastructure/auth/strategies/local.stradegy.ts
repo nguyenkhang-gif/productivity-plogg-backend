@@ -12,9 +12,19 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(identifier: string, pass: string): Promise<any> {
+    if (
+      typeof identifier !== 'string' ||
+      typeof pass !== 'string' ||
+      !identifier ||
+      !pass ||
+      identifier.length > 254 ||
+      pass.length > 128
+    ) {
+      throw new UnauthorizedException();
+    }
     const user = await this.validateUserUseCase.execute(identifier, pass);
     if (!user) {
-      this.logger.error(`Xác thực thất bại cho: ${identifier}`);
+      this.logger.warn('Authentication failed');
       throw new UnauthorizedException();
     }
     return user;

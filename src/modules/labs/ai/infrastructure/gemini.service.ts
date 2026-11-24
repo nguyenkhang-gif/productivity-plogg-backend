@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { TextGeneratorPort } from 'src/modules/labs/ai/domain/text-generator.port';
 
 @Injectable()
-export class GeminiService {
+export class GeminiService implements TextGeneratorPort {
   private readonly genAI: GoogleGenerativeAI;
 
   constructor(private readonly configService: ConfigService) {

@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { GeminiService } from 'src/modules/labs/ai/infrastructure/gemini.service';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  TEXT_GENERATOR,
+  TextGeneratorPort,
+} from 'src/modules/labs/ai/domain/text-generator.port';
 
 @Injectable()
 export class PromptTestUseCase {
-  constructor(private readonly geminiService: GeminiService) {}
+  constructor(
+    @Inject(TEXT_GENERATOR) private readonly textGenerator: TextGeneratorPort,
+  ) {}
 
   async execute(prompt: string): Promise<{ result: string }> {
-    const result = await this.geminiService.generateText(prompt);
+    const result = await this.textGenerator.generateText(prompt);
     return { result };
   }
 }

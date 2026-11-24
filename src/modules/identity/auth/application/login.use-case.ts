@@ -1,26 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { User } from '../../user/domain/user.entity';
 import {
-  TokenService,
+  SESSION_TOKEN_PORT,
   SessionMetadata,
-} from 'src/modules/identity/auth/infrastructure/token/token.service';
+  SessionTokenPort,
+} from 'src/modules/identity/auth/domain/session-token.port';
 
 @Injectable()
 export class LoginUseCase {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(
+    @Inject(SESSION_TOKEN_PORT) private readonly tokens: SessionTokenPort,
+  ) {}
 
   async execute(
     user: Omit<User, 'passwordHash'>,
     metadata: SessionMetadata = {},
   ) {
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const refresh_token = await this.tokenService.issueRefreshToken(
+    const refresh_token = await this.tokens.issueRefreshToken(
       payload,
       metadata,
     );
-    const { token: access_token } = this.tokenService.issueAccessToken(
+    const { token: access_token } = this.tokens.issueAccessToken(
       payload,
-      this.tokenService.getSessionId(refresh_token) ?? undefined,
+      this.tokens.getSessionId(refresh_token) ?? undefined,
     );
     return { access_token, refresh_token };
   }

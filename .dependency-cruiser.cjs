@@ -49,9 +49,12 @@ module.exports = {
     {
       name: 'application-no-own-infrastructure',
       comment:
-        'Known debt: use-cases import concrete infrastructure (TokenService, CacheService, ...).',
-      severity: 'warn',
-      from: { path: '^src/modules/([^/]+)/.+/application/' },
+        'Use-cases depend on domain ports, not on concrete infrastructure of their own module.',
+      severity: 'error',
+      from: {
+        path: '^src/modules/([^/]+)/.+/application/',
+        pathNot: '\\.spec\\.ts$',
+      },
       to: { path: '^src/modules/$1/.+/infrastructure/' },
     },
     {

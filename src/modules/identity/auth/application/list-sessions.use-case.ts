@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  TokenService,
+  SESSION_TOKEN_PORT,
   SessionInfo,
-} from 'src/modules/identity/auth/infrastructure/token/token.service';
+  SessionTokenPort,
+} from 'src/modules/identity/auth/domain/session-token.port';
 
 @Injectable()
 export class ListSessionsUseCase {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(
+    @Inject(SESSION_TOKEN_PORT) private readonly tokens: SessionTokenPort,
+  ) {}
 
   execute(userId: string, currentSessionId?: string): Promise<SessionInfo[]> {
-    return this.tokenService.listSessions(userId, currentSessionId);
+    return this.tokens.listSessions(userId, currentSessionId);
   }
 }

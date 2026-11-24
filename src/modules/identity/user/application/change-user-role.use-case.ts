@@ -11,13 +11,16 @@ import {
 } from 'src/modules/identity/user/domain/user.repository.interface';
 import { UserRole } from 'src/shared/security/user-role.enum';
 import { User } from 'src/modules/identity/user/domain/user.entity';
-import { TokenService } from 'src/modules/identity/auth/infrastructure/token/token.service';
+import {
+  SESSION_TOKEN_PORT,
+  SessionTokenPort,
+} from 'src/modules/identity/auth/domain/session-token.port';
 
 @Injectable()
 export class ChangeUserRoleUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: UserRepository,
-    private readonly tokenService: TokenService,
+    @Inject(SESSION_TOKEN_PORT) private readonly tokens: SessionTokenPort,
   ) {}
 
   async execute(
@@ -37,7 +40,7 @@ export class ChangeUserRoleUseCase {
     if (!target) throw new NotFoundException('User not found');
 
     const updated = await this.userRepo.update(targetUserId, { role });
-    await this.tokenService.revokeAllSessions(targetUserId);
+    await this.tokens.revokeAllSessions(targetUserId);
     const { passwordHash: _passwordHash, ...safe } = updated;
     return safe;
   }

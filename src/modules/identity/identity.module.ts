@@ -36,6 +36,7 @@ import { GoogleAuthUseCase } from 'src/modules/identity/auth/application/google-
 import { GetSuggestionsUseCase } from 'src/modules/identity/user/application/get-suggestions.use-case';
 import { ChangeUserRoleUseCase } from 'src/modules/identity/user/application/change-user-role.use-case';
 import { TokenService } from './auth/infrastructure/token/token.service';
+import { SESSION_TOKEN_PORT } from './auth/domain/session-token.port';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { TokenService } from './auth/infrastructure/token/token.service';
       useClass: MongoPostRepository,
     },
     TokenService,
+    { provide: SESSION_TOKEN_PORT, useExisting: TokenService },
     ValidateUserUseCase,
     LoginUseCase,
     ListSessionsUseCase,

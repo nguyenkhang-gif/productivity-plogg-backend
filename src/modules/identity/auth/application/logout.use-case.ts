@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { TokenService } from 'src/modules/identity/auth/infrastructure/token/token.service';
+import {
+  SESSION_TOKEN_PORT,
+  SessionTokenPort,
+} from 'src/modules/identity/auth/domain/session-token.port';
 
 @Injectable()
 export class LogoutUseCase {
   constructor(
-    private readonly tokenService: TokenService,
+    @Inject(SESSION_TOKEN_PORT) private readonly tokens: SessionTokenPort,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -20,14 +23,14 @@ export class LogoutUseCase {
         exp?: number;
       } | null;
       if (payload?.jti && payload?.exp) {
-        await this.tokenService.blacklistAccessToken(payload.jti, payload.exp);
+        await this.tokens.blacklistAccessToken(payload.jti, payload.exp);
       }
     } catch {
       // token malformed — ignore, still revoke refresh
     }
 
     if (refreshToken) {
-      await this.tokenService.revokeRefreshToken(refreshToken, userId);
+      await this.tokens.revokeRefreshToken(refreshToken, userId);
     }
   }
 }

@@ -19,25 +19,14 @@ import {
   REVOKED_SESSION_PREFIX,
   SESSION_PREFIX,
 } from './token.constants';
+import {
+  SessionInfo,
+  SessionMetadata,
+  SessionTokenPort,
+  UserPayload,
+} from '../../domain/session-token.port';
 
-export interface UserPayload {
-  sub: string;
-  email: string;
-  role?: string;
-}
-
-export interface SessionMetadata {
-  userAgent?: string;
-  ip?: string;
-}
-
-export interface SessionInfo {
-  sessionId: string;
-  createdAt: string;
-  browser: string;
-  os: string;
-  ip: string;
-}
+export type { SessionInfo, SessionMetadata, UserPayload };
 
 interface StoredSession {
   tokenHash: string;
@@ -87,7 +76,7 @@ function maskIp(ip: string): string {
 }
 
 @Injectable()
-export class TokenService {
+export class TokenService implements SessionTokenPort {
   constructor(
     private readonly jwtService: JwtService,
     private readonly cacheService: CacheService,

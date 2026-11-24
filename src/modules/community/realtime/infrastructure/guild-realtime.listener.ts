@@ -152,29 +152,53 @@ export class GuildRealtimeListener {
   }
 
   @OnEvent(ChannelCreated.eventName)
-  onChannelCreated(e: ChannelCreated) {
-    this.realtime
-      .getServer()
-      ?.to(`guild:${e.guildId}`)
-      .emit('channel_created', e.channel);
+  async onChannelCreated(e: ChannelCreated) {
+    await this.emitToChannelViewers(e.guildId, 'channel_created', e.channel);
   }
 
   @OnEvent(ChannelUpdated.eventName)
   async onChannelUpdated(e: ChannelUpdated) {
-    this.realtime
-      .getServer()
-      ?.to(`guild:${e.guildId}`)
-      .emit('channel_updated', e.channel);
+    await this.emitToChannelViewers(e.guildId, 'channel_updated', e.channel);
     await this.recheckChannelAccess(e.guildId);
   }
 
   @OnEvent(ChannelDeleted.eventName)
-  onChannelDeleted(e: ChannelDeleted) {
+  async onChannelDeleted(e: ChannelDeleted) {
     const server = this.realtime.getServer();
-    server
-      ?.to(`guild:${e.guildId}`)
-      .emit('channel_deleted', { guildId: e.guildId, channelId: e.channelId });
+    await this.emitToChannelViewers(e.guildId, 'channel_deleted', {
+      guildId: e.guildId,
+      channelId: e.channelId,
+    });
     server?.in(`channel:${e.channelId}`).socketsLeave(`channel:${e.channelId}`);
+  }
+
+  private async emitToChannelViewers(
+    guildId: string,
+    event: string,
+    payload: unknown,
+  ) {
+    const server: Server | undefined = this.realtime.getServer();
+    if (!server) return;
+    try {
+      const sockets = await server.in(`guild:${guildId}`).fetchSockets();
+      const verdicts = new Map<string, boolean>();
+      for (const socket of sockets) {
+        const userId: string | undefined = socket.data?.userId;
+        if (!userId) continue;
+        let allowed = verdicts.get(userId);
+        if (allowed === undefined) {
+          const perms = await this.memberRepo.getResolvedPermissions(
+            guildId,
+            userId,
+          );
+          allowed = hasPermission(perms, GuildPermissions.VIEW_CHANNELS);
+          verdicts.set(userId, allowed);
+        }
+        if (allowed) socket.emit(event, payload);
+      }
+    } catch (err) {
+      this.logger.warn(`emitToChannelViewers failed: ${(err as Error).message}`);
+    }
   }
 
   private async evictFromGuild(userId: string, guildId: string) {

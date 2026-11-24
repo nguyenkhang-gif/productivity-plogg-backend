@@ -4,14 +4,9 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.ts$": "ts-jest",
-    "node_modules/(@nestjs/event-emitter|eventemitter2)/.+\\.js$": "<rootDir>/esm-to-cjs.transformer.cjs"
+    "^.+\\.ts$": "ts-jest"
   },
-  "transformIgnorePatterns": [
-    "/node_modules/(?!(@nestjs/event-emitter|eventemitter2)/)"
-  ],
   "moduleNameMapper": {
-    "^src/(.*)$": "<rootDir>/../src/$1",
-    "^uuid$": "<rootDir>/uuid.cjs-shim.js"
+    "^src/(.*)$": "<rootDir>/../src/$1"
   }
 }

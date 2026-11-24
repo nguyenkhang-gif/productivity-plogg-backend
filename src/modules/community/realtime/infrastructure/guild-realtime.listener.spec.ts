@@ -1,4 +1,3 @@
-jest.mock('@nestjs/event-emitter', () => ({ OnEvent: () => () => undefined }));
 
 import { ChannelDeleted } from 'src/modules/community/channel/domain/events/channel.events';
 import {
@@ -131,12 +130,26 @@ describe('GuildRealtimeListener', () => {
     expect(leaveOther).not.toHaveBeenCalled();
   });
 
-  it('removes all sockets from a deleted channel room', () => {
-    listener.onChannelDeleted(new ChannelDeleted('g1', 'c1'));
-    expect(emit).toHaveBeenCalledWith('channel_deleted', {
+  it('sends channel events only to members who can view channels and clears the deleted room', async () => {
+    const viewerEmit = jest.fn();
+    const blindEmit = jest.fn();
+    fetchSockets.mockResolvedValue([
+      { data: { userId: 'viewer' }, emit: viewerEmit },
+      { data: { userId: 'blind' }, emit: blindEmit },
+    ]);
+    memberRepo.getResolvedPermissions.mockImplementation(
+      async (_g: string, userId: string) =>
+        userId === 'viewer' ? GuildPermissions.VIEW_CHANNELS : 0n,
+    );
+
+    await listener.onChannelDeleted(new ChannelDeleted('g1', 'c1'));
+
+    expect(server.in).toHaveBeenCalledWith('guild:g1');
+    expect(viewerEmit).toHaveBeenCalledWith('channel_deleted', {
       guildId: 'g1',
       channelId: 'c1',
     });
+    expect(blindEmit).not.toHaveBeenCalled();
     expect(server.in).toHaveBeenCalledWith('channel:c1');
     expect(socketsLeave).toHaveBeenCalledWith('channel:c1');
   });

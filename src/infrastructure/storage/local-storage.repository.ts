@@ -7,6 +7,7 @@ import {
   LocalPaginatedFiles,
   LocalStorageRepository,
 } from 'src/core/domain/repositories/local-storage.repository.interface';
+import { requireImageType } from 'src/shared/http/file-type';
 
 const PRIMARY_STORAGE = process.env.LOCAL_STORAGE_PATH ?? '/app/storage';
 const FALLBACK_STORAGE = '/tmp/plog-storage';
@@ -34,12 +35,11 @@ export class LocalStorageRepositoryImpl implements LocalStorageRepository {
     userId: string,
     bucket: LocalBucket,
   ): Promise<string> {
+    const detected = requireImageType(file);
     const dir = await this.dir(bucket, userId);
     await fs.mkdir(dir, { recursive: true });
 
-    const ext =
-      path.extname(file.originalname) || `.${file.mimetype.split('/')[1]}`;
-    const fileName = `${Date.now()}${ext}`;
+    const fileName = `${Date.now()}.${detected.ext}`;
     await fs.writeFile(path.join(dir, fileName), file.buffer);
 
     return `${PUBLIC_BASE_URL}/${bucket}/${userId}/${fileName}`;
@@ -63,7 +63,7 @@ export class LocalStorageRepositoryImpl implements LocalStorageRepository {
     const dir = safeSub ? path.join(base, safeSub) : base;
 
     // Ensure dir is still inside base (double-check)
-    if (!dir.startsWith(base))
+    if (dir !== base && !dir.startsWith(base + path.sep))
       return {
         items: [],
         pagination: { page, limit, total: 0, totalPages: 0 },
@@ -114,7 +114,10 @@ export class LocalStorageRepositoryImpl implements LocalStorageRepository {
     userId: string,
     bucket: LocalBucket,
   ): Promise<void> {
-    const filePath = path.join(await this.dir(bucket, userId), fileName);
+    const filePath = path.join(
+      await this.dir(bucket, userId),
+      path.basename(fileName),
+    );
     await fs.unlink(filePath);
   }
 }

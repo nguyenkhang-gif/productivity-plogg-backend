@@ -13,6 +13,14 @@ import * as path from 'path';
 import { resolveStorageRoot } from 'src/infrastructure/storage/local-storage.repository';
 import { verifyFileToken } from 'src/infrastructure/storage/file-token.util';
 
+const IMAGE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
+
 const ALLOWED_BUCKETS = ['upload', 'icons'] as const;
 
 @Controller('files')
@@ -40,13 +48,25 @@ export class LocalFilePublicController {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    const root = await resolveStorageRoot();
-    const filePath = path.join(root, bucket, userId, safeName);
+    const root = path.resolve(await resolveStorageRoot());
+    const filePath = path.resolve(root, bucket, userId, safeName);
+    if (!filePath.startsWith(root + path.sep)) {
+      throw new NotFoundException('File not found');
+    }
 
     try {
       await fs.access(filePath);
     } catch {
       throw new NotFoundException('File not found');
+    }
+
+    const mime = IMAGE_TYPES[path.extname(safeName).toLowerCase()];
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (mime) {
+      res.setHeader('Content-Type', mime);
+    } else {
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', 'attachment');
     }
 
     res.sendFile(filePath);

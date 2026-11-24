@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import {
   CLOUDINARY_STORAGE,
   CloudinaryFolder,
@@ -30,7 +30,20 @@ export class UploadCloudinaryUseCase {
     return this.cloudinaryRepo.listFiles(userId, folder, page, limit);
   }
 
-  async deleteFile(publicId: string): Promise<void> {
+  async deleteFile(
+    publicId: string,
+    userId: string,
+    role?: string,
+  ): Promise<void> {
+    if (role !== 'admin') {
+      const owned =
+        !publicId.split('/').includes('..') &&
+        (publicId.startsWith(`uploads/${userId}/`) ||
+          publicId.startsWith(`icons/${userId}/`));
+      if (!userId || !owned) {
+        throw new ForbiddenException('You cannot delete this file');
+      }
+    }
     return this.cloudinaryRepo.deleteFile(publicId);
   }
 }

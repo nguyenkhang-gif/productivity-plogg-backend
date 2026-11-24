@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -14,6 +15,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as path from 'path';
+import { MAX_UPLOAD_BYTES } from 'src/shared/http/file-type';
+import { clampPagination } from 'src/shared/http/pagination';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { UploadLocalUseCase } from 'src/use-case/storage/upload-local.use-case';
 
@@ -23,9 +26,11 @@ export class UploadLocalController {
   constructor(private readonly uploadLocal: UploadLocalUseCase) {}
 
   @Post('file')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async upload(@UploadedFile() file: Express.Multer.File, @Req() req) {
-    if (!file) return { message: 'No file provided' };
+    if (!file) throw new BadRequestException('No file provided');
     const publicUrl = await this.uploadLocal.execute(
       file,
       req.user.userId,
@@ -35,9 +40,11 @@ export class UploadLocalController {
   }
 
   @Post('icon')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async uploadIcon(@UploadedFile() file: Express.Multer.File, @Req() req) {
-    if (!file) return { message: 'No file provided' };
+    if (!file) throw new BadRequestException('No file provided');
     const publicUrl = await this.uploadLocal.execute(
       file,
       req.user.userId,
@@ -53,11 +60,12 @@ export class UploadLocalController {
     @Query('limit') limit = '20',
     @Query('path') subPath = '',
   ) {
+    const pg = clampPagination(page, limit);
     return this.uploadLocal.listFiles(
       req.user.userId,
       'upload',
-      +page,
-      +limit,
+      pg.page,
+      pg.limit,
       subPath,
     );
   }
@@ -69,11 +77,12 @@ export class UploadLocalController {
     @Query('limit') limit = '20',
     @Query('path') subPath = '',
   ) {
+    const pg = clampPagination(page, limit);
     return this.uploadLocal.listFiles(
       req.user.userId,
       'icons',
-      +page,
-      +limit,
+      pg.page,
+      pg.limit,
       subPath,
     );
   }

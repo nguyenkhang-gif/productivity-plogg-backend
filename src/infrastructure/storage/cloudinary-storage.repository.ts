@@ -6,6 +6,7 @@ import {
   CloudinaryPaginatedFiles,
   CloudinaryStorageRepository as ICloudinaryStorageRepository,
 } from 'src/core/domain/repositories/cloudinary-storage.repository.interface';
+import { requireImageType } from 'src/shared/http/file-type';
 
 @Injectable()
 export class CloudinaryStorageRepository
@@ -24,10 +25,11 @@ export class CloudinaryStorageRepository
     userId: string,
     folder: CloudinaryFolder = 'uploads',
   ): Promise<string> {
+    requireImageType(file);
     return new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
-          { folder: `${folder}/${userId}`, resource_type: 'auto' },
+          { folder: `${folder}/${userId}`, resource_type: 'image' },
           (error, result) => {
             if (error) return reject(new Error(error.message));
             resolve(result.secure_url);

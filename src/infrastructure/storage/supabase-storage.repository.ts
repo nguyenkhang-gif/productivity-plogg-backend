@@ -6,6 +6,7 @@ import {
   PaginatedFiles,
   StorageBucket,
 } from 'src/core/domain/repositories/file-storage.repository.interface';
+import { requireImageType } from 'src/shared/http/file-type';
 import * as ws from 'ws';
 @Injectable()
 export class SupabaseStorageRepository implements FileStorageRepository {
@@ -28,12 +29,12 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     userId: string,
     bucket: StorageBucket = 'upload',
   ): Promise<string> {
-    const ext = file.originalname.split('.').pop();
-    const path = `${userId}/${Date.now()}.${ext}`;
+    const detected = requireImageType(file);
+    const path = `${userId}/${Date.now()}.${detected.ext}`;
 
     const { error } = await this.client.storage
       .from(bucket)
-      .upload(path, file.buffer, { contentType: file.mimetype, upsert: false });
+      .upload(path, file.buffer, { contentType: detected.mime, upsert: false });
 
     if (error) throw new Error(error.message);
 
@@ -77,7 +78,7 @@ export class SupabaseStorageRepository implements FileStorageRepository {
     userId: string,
     bucket: StorageBucket,
   ): Promise<void> {
-    const path = `${userId}/${fileName}`;
+    const path = `${userId}/${fileName.split(/[\\/]/).pop()}`;
     const { error } = await this.client.storage.from(bucket).remove([path]);
     if (error) throw new Error(error.message);
   }

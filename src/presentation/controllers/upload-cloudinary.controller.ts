@@ -14,6 +14,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { MAX_UPLOAD_BYTES } from 'src/shared/http/file-type';
+import { clampPagination } from 'src/shared/http/pagination';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { UploadCloudinaryUseCase } from 'src/use-case/storage/upload-cloudinary.use-case';
 
@@ -24,7 +26,9 @@ export class UploadCloudinaryController {
 
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async upload(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) throw new BadRequestException('No file provided');
     const url = await this.uploadCloudinary.upload(
@@ -37,7 +41,9 @@ export class UploadCloudinaryController {
 
   @Post('icon')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
+  )
   async uploadIcon(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) throw new BadRequestException('No file provided');
     const url = await this.uploadCloudinary.upload(
@@ -54,11 +60,12 @@ export class UploadCloudinaryController {
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
+    const pg = clampPagination(page, limit);
     return this.uploadCloudinary.listFiles(
       req.user.userId,
       'uploads',
-      +page,
-      +limit,
+      pg.page,
+      pg.limit,
     );
   }
 
@@ -68,18 +75,19 @@ export class UploadCloudinaryController {
     @Query('page') page = '1',
     @Query('limit') limit = '20',
   ) {
+    const pg = clampPagination(page, limit);
     return this.uploadCloudinary.listFiles(
       req.user.userId,
       'icons',
-      +page,
-      +limit,
+      pg.page,
+      pg.limit,
     );
   }
 
   @Delete('files/*publicId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteFile(@Param('publicId') publicId: string | string[]) {
+  async deleteFile(@Param('publicId') publicId: string | string[], @Req() req) {
     const id = Array.isArray(publicId) ? publicId.join('/') : publicId;
-    await this.uploadCloudinary.deleteFile(id);
+    await this.uploadCloudinary.deleteFile(id, req.user.userId, req.user.role);
   }
 }

@@ -1,5 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
+import { JwtAuthGuard } from './shared/security/jwt-auth.guard';
+import { Roles } from './shared/security/roles.decorator';
+import { RolesGuard } from './shared/security/roles.guard';
 
 @Controller('/api')
 export class AppController {
@@ -10,11 +13,15 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Get('/mongoose-status')
-  getMongooseStatus(): Promise<object> {
+  getMongooseStatus(): object {
     return this.appService.checkMongooseStatus();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Get('/postgres-status')
   getPostgresStatus(): Promise<object> {
     return this.appService.checkPostgresStatus();

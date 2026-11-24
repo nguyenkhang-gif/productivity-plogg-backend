@@ -14,8 +14,16 @@ import {
   FriendshipModule,
 } from 'src/modules/social';
 import { AuthController } from 'src/modules/identity/auth/presentation/auth.controller';
-import { USER_REPOSITORY } from 'src/modules/identity/user/domain/user.repository.interface';
+import {
+  USER_REPOSITORY,
+  type UserRepository,
+} from 'src/modules/identity/user/domain/user.repository.interface';
 import { MongoUserRepository } from './user/infrastructure/user.repository';
+import { PrismaUserRepository } from './user/infrastructure/user.prisma.repository';
+import { MongoUserRelations } from './user/infrastructure/user-relations.mongo';
+import { USER_RELATIONS } from './user/domain/user-relations.port';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import { backendProvider } from 'src/shared/database/backend-provider';
 import { ValidateUserUseCase } from 'src/modules/identity/auth/application/validate-user.use-case';
 import { LoginUseCase } from 'src/modules/identity/auth/application/login.use-case';
 import { LogoutUseCase } from 'src/modules/identity/auth/application/logout.use-case';
@@ -41,6 +49,7 @@ import { SESSION_TOKEN_PORT } from './auth/domain/session-token.port';
 
 @Module({
   imports: [
+    PrismaModule,
     FriendshipModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
@@ -71,10 +80,14 @@ import { SESSION_TOKEN_PORT } from './auth/domain/session-token.port';
   ],
   controllers: [AuthController, UserController, AdminUserController],
   providers: [
-    {
-      provide: USER_REPOSITORY,
-      useClass: MongoUserRepository,
-    },
+    MongoUserRepository,
+    PrismaUserRepository,
+    { provide: USER_RELATIONS, useClass: MongoUserRelations },
+    backendProvider<UserRepository>(
+      USER_REPOSITORY,
+      MongoUserRepository,
+      PrismaUserRepository,
+    ),
     {
       provide: POST_REPOSITORY,
       useClass: MongoPostRepository,

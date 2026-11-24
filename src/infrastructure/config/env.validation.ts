@@ -1,9 +1,21 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNumber, IsString, validateSync } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 
 class EnvironmentVariables {
   @IsString()
+  @MinLength(32)
   JWT_SECRET_KEY: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(32)
+  FILE_TOKEN_SECRET?: string;
 
   @IsString()
   JWT_EXPIRATION_TIME: string;

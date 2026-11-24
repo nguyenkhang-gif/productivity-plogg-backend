@@ -3,7 +3,11 @@ import { createHmac, timingSafeEqual } from 'crypto';
 const TTL_SECONDS = 5 * 60;
 
 function secret() {
-  return process.env.JWT_SECRET_KEY ?? 'fallback-secret';
+  const value = process.env.FILE_TOKEN_SECRET || process.env.JWT_SECRET_KEY;
+  if (!value) {
+    throw new Error('FILE_TOKEN_SECRET or JWT_SECRET_KEY must be set');
+  }
+  return value;
 }
 
 export function signFileToken(

@@ -25,8 +25,12 @@ COPY prisma ./prisma
 # Copy compiled output
 COPY --from=builder /app/dist ./dist
 
+RUN mkdir -p /app/storage && chown -R node:node /app
+
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
+
+USER node
 
 CMD ["node", "dist/main"]

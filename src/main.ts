@@ -2,19 +2,30 @@ import './polyfills';
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 import { RedisIoAdapter } from './infrastructure/websocket/redis-io.adapter';
 
+const LARGE_BODY_PREFIXES = [
+  '/api/epub',
+  '/api/translation-contexts',
+  '/api/story-contexts',
+];
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  console.log('listen on port : ', process.env.PORT);
+  app.set('trust proxy', 1);
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-  // Tăng giới hạn kích thước payload
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  for (const prefix of LARGE_BODY_PREFIXES) {
+    app.use(prefix, express.json({ limit: '10mb' }));
+  }
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
   app.enableShutdownHooks();
 
@@ -38,26 +49,24 @@ async function bootstrap() {
   process.on('SIGINT', () => shutdown('SIGINT'));
 
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      transform: true,
+    }),
   );
 
   const allowedOrigins = new Set([
-    'http://localhost:3000',
-    'https://knn-productivity.vercel.app',
-    'http://knnpb.duckdns.org',
-    'http://34.206.37.238',
-    'http://107.21.107.160',
-    ...(process.env.CLIENT_ORIGIN ? [process.env.CLIENT_ORIGIN] : []),
+    ...(process.env.CLIENT_ORIGIN ?? '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000'] : []),
   ]);
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        origin === 'null' ||
-        allowedOrigins.has(origin) ||
-        origin?.endsWith('.trycloudflare.com')
-      ) {
+      if (!origin || allowedOrigins.has(origin)) {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));
@@ -81,15 +90,7 @@ async function bootstrap() {
     backlog: 2048,
   });
 
-  const memoryUsage = process.memoryUsage();
-  console.log('Memory Usage at Start:', {
-    port: process.env.PORT ?? 3000,
-    rss: (memoryUsage.rss / 1024 / 1024).toFixed(2) + ' MB',
-    heapTotal: (memoryUsage.heapTotal / 1024 / 1024).toFixed(2) + ' MB',
-    heapUsed: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2) + ' MB',
-    external: (memoryUsage.external / 1024 / 1024).toFixed(2) + ' MB',
-    arrayBuffers: (memoryUsage.arrayBuffers / 1024 / 1024).toFixed(2) + ' MB',
-  });
+  new Logger('Bootstrap').log(`Listening on port ${process.env.PORT ?? 3000}`);
 }
 
 bootstrap();

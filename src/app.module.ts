@@ -4,8 +4,9 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import * as path from 'path';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { HttpThrottlerGuard } from './shared/security/http-throttler.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LastSeenMiddleware } from './presentation/middleware/last-seen.middleware';
@@ -41,11 +42,7 @@ import { PrismaModule } from './infrastructure/databases/prisma/prisma.module';
   imports: [
     AppConfigModule,
     CacheModule,
-    ServeStaticModule.forRoot({
-      rootPath: path.resolve(process.env.LOCAL_STORAGE_PATH ?? '/app/storage'),
-      serveRoot: '/files',
-      serveStaticOptions: { index: false, fallthrough: false },
-    }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     TagModule,
     CategoryModule,
     BookmarkModule,
@@ -74,7 +71,11 @@ import { PrismaModule } from './infrastructure/databases/prisma/prisma.module';
     PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService, LastSeenMiddleware],
+  providers: [
+    AppService,
+    LastSeenMiddleware,
+    { provide: APP_GUARD, useClass: HttpThrottlerGuard },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

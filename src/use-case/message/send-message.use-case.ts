@@ -1,4 +1,6 @@
+import { safeDisplayName } from 'src/core/domain/constants/display-name';
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -50,10 +52,25 @@ export class SendMessageUseCase {
     if (!hasPermission(perms, GuildPermissions.SEND_MESSAGES))
       throw new ForbiddenException();
 
+    if (input.replyToId) {
+      const parent = await this.messageRepo.findById(input.replyToId);
+      if (!parent || parent.channelId !== input.channelId)
+        throw new BadRequestException('Invalid replyToId');
+    }
+
+    const member = await this.memberRepo.findMember(
+      channel.guildId,
+      input.senderId,
+    );
+    const senderName = safeDisplayName(
+      member?.username,
+      safeDisplayName(input.senderName, input.senderId),
+    );
+
     return this.messageRepo.create({
       channelId: input.channelId,
       senderId: input.senderId,
-      senderName: input.senderName,
+      senderName,
       senderAvatar: input.senderAvatar,
       replyToId: input.replyToId,
       content: input.content,

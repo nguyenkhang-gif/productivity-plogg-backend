@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { clampLimit } from 'src/infrastructure/guild/pagination';
 import { GetMessagesUseCase } from 'src/use-case/message/get-messages.use-case';
 
 @UseGuards(JwtAuthGuard)
@@ -18,7 +19,7 @@ export class MessageController {
       channelId,
       req.user.userId,
       cursor,
-      limit ? Number(limit) : undefined,
+      clampLimit(limit, 30),
     );
   }
 }

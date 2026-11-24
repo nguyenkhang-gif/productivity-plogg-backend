@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   GuildPermissions,
   hasPermission,
@@ -29,24 +34,30 @@ export class DeleteMessageUseCase {
     messageId: string,
     channelId: string,
     userId: string,
-  ): Promise<void> {
-    const channel = await this.channelRepo.findById(channelId);
+  ): Promise<{ channelId: string }> {
+    const message = await this.messageRepo.findById(messageId);
+    if (!message || message.channelId !== channelId)
+      throw new NotFoundException('Message not found');
 
+    const channel = await this.channelRepo.findById(message.channelId);
     if (!channel) throw new NotFoundException('Channel not found');
+
     const perms = await this.memberRepo.getResolvedPermissions(
       channel.guildId,
       userId,
     );
+    if (!hasPermission(perms, GuildPermissions.VIEW_CHANNELS))
+      throw new ForbiddenException();
 
-    const hasManagePermission = hasPermission(
-      perms,
-      GuildPermissions.MANAGE_MESSAGES,
-    );
+    const canManage = hasPermission(perms, GuildPermissions.MANAGE_MESSAGES);
 
     const deleted = await this.messageRepo.softDelete(
       messageId,
-      hasManagePermission ? undefined : userId,
+      message.channelId,
+      canManage ? undefined : userId,
     );
     if (!deleted) throw new NotFoundException('Not found or already deleted');
+
+    return { channelId: message.channelId };
   }
 }

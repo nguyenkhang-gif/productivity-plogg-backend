@@ -35,8 +35,12 @@ export class AddReactionUseCase {
     channelId: string,
     userId: string,
     emoji: string,
-  ): Promise<void> {
-    const channel = await this.channelRepo.findById(channelId);
+  ): Promise<{ channelId: string }> {
+    const message = await this.messageRepo.findById(messageId);
+    if (!message || message.isDeleted || message.channelId !== channelId)
+      throw new NotFoundException('Message not found');
+
+    const channel = await this.channelRepo.findById(message.channelId);
     if (!channel) throw new NotFoundException('Channel not found');
 
     const perms = await this.memberRepo.getResolvedPermissions(
@@ -47,5 +51,6 @@ export class AddReactionUseCase {
       throw new ForbiddenException();
 
     await this.messageRepo.addReaction(messageId, userId, emoji);
+    return { channelId: message.channelId };
   }
 }

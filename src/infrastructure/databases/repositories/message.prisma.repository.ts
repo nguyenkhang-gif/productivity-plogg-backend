@@ -80,10 +80,22 @@ export class MessagePrismaRepository implements MessageRepository {
     return this.map(row);
   }
 
-  async softDelete(messageId: string, userId?: string): Promise<boolean> {
+  async findById(messageId: string): Promise<Message | null> {
+    const row = await this.prisma.message.findUnique({
+      where: { id: messageId },
+    });
+    return row ? this.map(row) : null;
+  }
+
+  async softDelete(
+    messageId: string,
+    channelId: string,
+    userId?: string,
+  ): Promise<boolean> {
     const result = await this.prisma.message.updateMany({
       where: {
         id: messageId,
+        channelId,
         isDeleted: false,
         ...(userId ? { senderId: userId } : {}),
       },
@@ -95,18 +107,16 @@ export class MessagePrismaRepository implements MessageRepository {
 
   async edit(
     messageId: string,
+    channelId: string,
     userId: string,
     content: string,
   ): Promise<Message | null> {
     const result = await this.prisma.message.updateMany({
-      where: { id: messageId, senderId: userId },
+      where: { id: messageId, channelId, senderId: userId, isDeleted: false },
       data: { content, editedAt: new Date() },
     });
     if (result.count === 0) return null;
-    const row = await this.prisma.message.findUnique({
-      where: { id: messageId },
-    });
-    return row ? this.map(row) : null;
+    return this.findById(messageId);
   }
 
   async addReaction(

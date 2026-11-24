@@ -27,9 +27,15 @@ export interface MessageRepository {
     limit?: number,
   ): Promise<Message[]>;
   create(data: CreateMessageData): Promise<Message>;
-  softDelete(messageId: string, userId?: string): Promise<boolean>;
+  findById(messageId: string): Promise<Message | null>;
+  softDelete(
+    messageId: string,
+    channelId: string,
+    userId?: string,
+  ): Promise<boolean>;
   edit(
     messageId: string,
+    channelId: string,
     userId: string,
     content: string,
   ): Promise<Message | null>;

@@ -37,6 +37,7 @@ Rules (enforced by `npm run lint:arch`):
 - Contract tests: `test/contracts/<x>-repository.contract.ts` export a `describe...Contract(name, factory)`; Prisma implementation runs it from `test/integration/<x>.prisma.repository.spec.ts`. Cross-module reads a repository needs (e.g. `UserRelations`) are ports backed by Mongo until their owner migrates; swap the binding then.
 - Data migration: `npm run migrate:mongo-to-pg -- [--only=users,posts] [--dry-run] [--batch=500]` (`src/scripts/migrate-mongo-to-postgres/`). Add a `migrators/<x>.migrator.ts` + `.spec.ts` and register it in `registry.ts`; `dependsOn` sets the order. Writes are per-row upserts in one transaction per batch (idempotent re-runs).
 - Per-module checklist: schema → migration → Prisma repository → `backendProvider` → contract test → migrator + transform tests. Then list remaining direct Mongo model usages.
+- Status `labs`: epub, story-context, translation-context and mail-log are ported (`prisma/schema/labs.prisma`, `Prisma*Repository`, migrators `epubs`/`story-contexts`/`translation-contexts`/`mail-logs`); `EpubService` now goes through `EPUB_REPOSITORY`. Orphan rows (owner missing in Postgres) are reported as failed with a reason by the migrators. Drive and ai have no repository (unchanged); the Mongoose schemas stay for the Mongo backend.
 
 # graphify
 

@@ -5,7 +5,7 @@ import { ServerOptions } from 'socket.io';
 import Redis from 'ioredis';
 
 export class RedisIoAdapter extends IoAdapter {
-  private readonly logger = new Logger(RedisIoAdapter.name);
+  private readonly redisLogger = new Logger(RedisIoAdapter.name);
 
   private adapterConstructor?: ReturnType<typeof createAdapter>;
   private pubClient?: Redis;
@@ -14,7 +14,7 @@ export class RedisIoAdapter extends IoAdapter {
   async connectToRedis(): Promise<void> {
     const url = process.env.REDIS_URL;
     if (!url) {
-      this.logger.warn('REDIS_URL chưa set — chạy single-instance.');
+      this.redisLogger.warn('REDIS_URL chưa set — chạy single-instance.');
       return;
     }
 
@@ -22,11 +22,11 @@ export class RedisIoAdapter extends IoAdapter {
     this.subClient = this.pubClient.duplicate();
 
     this.pubClient.on('error', (err) => {
-      this.logger.error(`Redis pubClient error: ${err.message}`);
+      this.redisLogger.error(`Redis pubClient error: ${err.message}`);
     });
 
     this.subClient.on('error', (err) =>
-      this.logger.error(`Redis subClient error: ${err.message}`),
+      this.redisLogger.error(`Redis subClient error: ${err.message}`),
     );
 
     await Promise.all([
@@ -41,13 +41,13 @@ export class RedisIoAdapter extends IoAdapter {
     ]);
 
     this.adapterConstructor = createAdapter(this.pubClient, this.subClient);
-    this.logger.log('Redis Adapter kết nối thành công.');
+    this.redisLogger.log('Redis Adapter kết nối thành công.');
   }
 
   async closeRedis(): Promise<void> {
     await Promise.allSettled([
-      this.closeClient(this.pubClient),
-      this.closeClient(this.subClient),
+      this.closeRedisClient(this.pubClient),
+      this.closeRedisClient(this.subClient),
     ]);
   }
 
@@ -56,7 +56,7 @@ export class RedisIoAdapter extends IoAdapter {
    * đóng/timeout (vd Upstash ETIMEDOUT), `quit()` sẽ ném 'Connection is closed'
    * qua event async → dùng `disconnect()` (đồng bộ, không ném) thay thế.
    */
-  private async closeClient(client?: Redis): Promise<void> {
+  private async closeRedisClient(client?: Redis): Promise<void> {
     if (!client) return;
     try {
       if (client.status === 'ready') {
@@ -65,7 +65,7 @@ export class RedisIoAdapter extends IoAdapter {
         client.disconnect();
       }
     } catch (err) {
-      this.logger.warn(
+      this.redisLogger.warn(
         `Bỏ qua lỗi khi đóng Redis: ${(err as Error).message}`,
       );
       client.disconnect();

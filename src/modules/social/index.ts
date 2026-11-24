@@ -27,3 +27,4 @@ export {
 } from './post/domain/post.repository.interface';
 export type { PostEmbedCard } from './post/domain/post-embed-card';
 export { MongoPostRepository } from './post/infrastructure/post.repository';
+export { PrismaPostRepository } from './post/infrastructure/post.prisma.repository';

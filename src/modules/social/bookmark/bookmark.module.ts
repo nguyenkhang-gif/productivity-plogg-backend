@@ -5,16 +5,27 @@ import {
   BookmarkSchema,
 } from 'src/modules/social/bookmark/infrastructure/bookmark.schema';
 import { MongoBookmarkRepository } from 'src/modules/social/bookmark/infrastructure/bookmark.repository';
+import { PrismaBookmarkRepository } from 'src/modules/social/bookmark/infrastructure/bookmark.prisma.repository';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import type { BookmarkRepository } from 'src/modules/social/bookmark/domain/bookmark.repository.interface';
 import { BOOKMARK_REPOSITORY } from 'src/modules/social/bookmark/domain/bookmark.repository.interface';
 
 @Module({
   imports: [
+    PrismaModule,
     MongooseModule.forFeature([
       { name: Bookmark.name, schema: BookmarkSchema },
     ]),
   ],
   providers: [
-    { provide: BOOKMARK_REPOSITORY, useClass: MongoBookmarkRepository },
+    MongoBookmarkRepository,
+    PrismaBookmarkRepository,
+    backendProvider<BookmarkRepository>(
+      BOOKMARK_REPOSITORY,
+      MongoBookmarkRepository,
+      PrismaBookmarkRepository,
+    ),
   ],
   exports: [BOOKMARK_REPOSITORY],
 })

@@ -5,6 +5,10 @@ import {
   FriendshipSchema,
 } from 'src/modules/social/friendship/infrastructure/friendship.schema';
 import { MongoFriendshipRepository } from 'src/modules/social/friendship/infrastructure/friendship.repository';
+import { PrismaFriendshipRepository } from 'src/modules/social/friendship/infrastructure/friendship.prisma.repository';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import type { FriendshipRepository } from 'src/modules/social/friendship/domain/friendship.repository.interface';
 import { FRIENDSHIP_REPOSITORY } from 'src/modules/social/friendship/domain/friendship.repository.interface';
 import { FriendshipController } from 'src/modules/social/friendship/presentation/friendship.controller';
 import { SendFriendRequestUseCase } from 'src/modules/social/friendship/application/send-friend-request.use-case';
@@ -18,13 +22,20 @@ import { GetPendingRequestsUseCase } from 'src/modules/social/friendship/applica
 
 @Module({
   imports: [
+    PrismaModule,
     MongooseModule.forFeature([
       { name: Friendship.name, schema: FriendshipSchema },
     ]),
   ],
   controllers: [FriendshipController],
   providers: [
-    { provide: FRIENDSHIP_REPOSITORY, useClass: MongoFriendshipRepository },
+    MongoFriendshipRepository,
+    PrismaFriendshipRepository,
+    backendProvider<FriendshipRepository>(
+      FRIENDSHIP_REPOSITORY,
+      MongoFriendshipRepository,
+      PrismaFriendshipRepository,
+    ),
     SendFriendRequestUseCase,
     AcceptFriendRequestUseCase,
     RejectFriendRequestUseCase,

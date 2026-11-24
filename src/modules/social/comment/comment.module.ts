@@ -17,6 +17,12 @@ import {
   FriendshipSchema,
 } from 'src/modules/social/friendship/infrastructure/friendship.schema';
 import { MongoCommentRepository } from 'src/modules/social/comment/infrastructure/comment.repository';
+import { PrismaCommentRepository } from 'src/modules/social/comment/infrastructure/comment.prisma.repository';
+import { PrismaPostRepository } from 'src/modules/social/post/infrastructure/post.prisma.repository';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import type { CommentRepository } from 'src/modules/social/comment/domain/comment.repository.interface';
+import type { PostRepository } from 'src/modules/social/post/domain/post.repository.interface';
 import { MongoPostRepository } from 'src/modules/social/post/infrastructure/post.repository';
 import { COMMENT_REPOSITORY } from 'src/modules/social/comment/domain/comment.repository.interface';
 import { POST_REPOSITORY } from 'src/modules/social/post/domain/post.repository.interface';
@@ -30,6 +36,7 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
 
 @Module({
   imports: [
+    PrismaModule,
     FriendshipModule,
     MongooseModule.forFeature([
       { name: Comment.name, schema: CommentSchema },
@@ -40,8 +47,20 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
   ],
   controllers: [CommentController],
   providers: [
-    { provide: COMMENT_REPOSITORY, useClass: MongoCommentRepository },
-    { provide: POST_REPOSITORY, useClass: MongoPostRepository },
+    MongoCommentRepository,
+    PrismaCommentRepository,
+    MongoPostRepository,
+    PrismaPostRepository,
+    backendProvider<CommentRepository>(
+      COMMENT_REPOSITORY,
+      MongoCommentRepository,
+      PrismaCommentRepository,
+    ),
+    backendProvider<PostRepository>(
+      POST_REPOSITORY,
+      MongoPostRepository,
+      PrismaPostRepository,
+    ),
     CreateCommentUseCase,
     GetCommentsByPostUseCase,
     UpdateCommentUseCase,

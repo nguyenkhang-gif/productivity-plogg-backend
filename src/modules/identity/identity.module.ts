@@ -11,7 +11,9 @@ import {
   PostSchema,
   POST_REPOSITORY,
   MongoPostRepository,
+  PrismaPostRepository,
   FriendshipModule,
+  type PostRepository,
 } from 'src/modules/social';
 import { AuthController } from 'src/modules/identity/auth/presentation/auth.controller';
 import {
@@ -21,7 +23,11 @@ import {
 import { MongoUserRepository } from './user/infrastructure/user.repository';
 import { PrismaUserRepository } from './user/infrastructure/user.prisma.repository';
 import { MongoUserRelations } from './user/infrastructure/user-relations.mongo';
-import { USER_RELATIONS } from './user/domain/user-relations.port';
+import { PrismaUserRelations } from './user/infrastructure/user-relations.prisma';
+import {
+  USER_RELATIONS,
+  type UserRelations,
+} from './user/domain/user-relations.port';
 import { PrismaModule } from 'src/shared/database/prisma.module';
 import { backendProvider } from 'src/shared/database/backend-provider';
 import { ValidateUserUseCase } from 'src/modules/identity/auth/application/validate-user.use-case';
@@ -82,16 +88,25 @@ import { SESSION_TOKEN_PORT } from './auth/domain/session-token.port';
   providers: [
     MongoUserRepository,
     PrismaUserRepository,
-    { provide: USER_RELATIONS, useClass: MongoUserRelations },
+    MongoUserRelations,
+    PrismaUserRelations,
+    backendProvider<UserRelations>(
+      USER_RELATIONS,
+      MongoUserRelations,
+      PrismaUserRelations,
+    ),
     backendProvider<UserRepository>(
       USER_REPOSITORY,
       MongoUserRepository,
       PrismaUserRepository,
     ),
-    {
-      provide: POST_REPOSITORY,
-      useClass: MongoPostRepository,
-    },
+    MongoPostRepository,
+    PrismaPostRepository,
+    backendProvider<PostRepository>(
+      POST_REPOSITORY,
+      MongoPostRepository,
+      PrismaPostRepository,
+    ),
     TokenService,
     { provide: SESSION_TOKEN_PORT, useExisting: TokenService },
     ValidateUserUseCase,

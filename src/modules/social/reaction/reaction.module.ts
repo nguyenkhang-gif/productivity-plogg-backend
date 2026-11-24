@@ -5,6 +5,12 @@ import {
   ReactionSchema,
 } from 'src/modules/social/reaction/infrastructure/reaction.schema';
 import { MongoReactionRepository } from 'src/modules/social/reaction/infrastructure/reaction.repository';
+import { PrismaReactionRepository } from 'src/modules/social/reaction/infrastructure/reaction.prisma.repository';
+import { PrismaPostRepository } from 'src/modules/social/post/infrastructure/post.prisma.repository';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import type { ReactionRepository } from 'src/modules/social/reaction/domain/reaction.repository.interface';
+import type { PostRepository } from 'src/modules/social/post/domain/post.repository.interface';
 import { REACTION_REPOSITORY } from 'src/modules/social/reaction/domain/reaction.repository.interface';
 import {
   Post,
@@ -28,6 +34,7 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
 
 @Module({
   imports: [
+    PrismaModule,
     FriendshipModule,
     MongooseModule.forFeature([
       { name: Reaction.name, schema: ReactionSchema },
@@ -38,8 +45,20 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
   ],
   controllers: [ReactionController],
   providers: [
-    { provide: REACTION_REPOSITORY, useClass: MongoReactionRepository },
-    { provide: POST_REPOSITORY, useClass: MongoPostRepository },
+    MongoReactionRepository,
+    PrismaReactionRepository,
+    MongoPostRepository,
+    PrismaPostRepository,
+    backendProvider<ReactionRepository>(
+      REACTION_REPOSITORY,
+      MongoReactionRepository,
+      PrismaReactionRepository,
+    ),
+    backendProvider<PostRepository>(
+      POST_REPOSITORY,
+      MongoPostRepository,
+      PrismaPostRepository,
+    ),
     ToggleReactionUseCase,
     RemoveReactionUseCase,
   ],

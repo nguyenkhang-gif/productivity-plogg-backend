@@ -25,6 +25,16 @@ import {
   BookmarkSchema,
 } from 'src/modules/social/bookmark/infrastructure/bookmark.schema';
 import { MongoPostRepository } from 'src/modules/social/post/infrastructure/post.repository';
+import { PrismaPostRepository } from 'src/modules/social/post/infrastructure/post.prisma.repository';
+import { PrismaTagRepository } from 'src/modules/social/tag/infrastructure/tag.prisma.repository';
+import { PrismaCategoryRepository } from 'src/modules/social/category/infrastructure/category.prisma.repository';
+import { PrismaBookmarkRepository } from 'src/modules/social/bookmark/infrastructure/bookmark.prisma.repository';
+import { backendProvider } from 'src/shared/database/backend-provider';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import type { PostRepository } from 'src/modules/social/post/domain/post.repository.interface';
+import type { TagRepository } from 'src/modules/social/tag/domain/tag.repository.interface';
+import type { CategoryRepository } from 'src/modules/social/category/domain/category.repository.interface';
+import type { BookmarkRepository } from 'src/modules/social/bookmark/domain/bookmark.repository.interface';
 import { MongoTagRepository } from 'src/modules/social/tag/infrastructure/tag.repository';
 import { MongoCategoryRepository } from 'src/modules/social/category/infrastructure/category.repository';
 import { MongoBookmarkRepository } from 'src/modules/social/bookmark/infrastructure/bookmark.repository';
@@ -68,6 +78,7 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
 
 @Module({
   imports: [
+    PrismaModule,
     FriendshipModule,
     MongooseModule.forFeature([
       { name: Post.name, schema: PostSchema },
@@ -86,10 +97,34 @@ import { FriendshipModule } from 'src/modules/social/friendship/friendship.modul
     CategoryController,
   ],
   providers: [
-    { provide: POST_REPOSITORY, useClass: MongoPostRepository },
-    { provide: TAG_REPOSITORY, useClass: MongoTagRepository },
-    { provide: CATEGORY_REPOSITORY, useClass: MongoCategoryRepository },
-    { provide: BOOKMARK_REPOSITORY, useClass: MongoBookmarkRepository },
+    MongoPostRepository,
+    PrismaPostRepository,
+    MongoTagRepository,
+    PrismaTagRepository,
+    MongoCategoryRepository,
+    PrismaCategoryRepository,
+    MongoBookmarkRepository,
+    PrismaBookmarkRepository,
+    backendProvider<PostRepository>(
+      POST_REPOSITORY,
+      MongoPostRepository,
+      PrismaPostRepository,
+    ),
+    backendProvider<TagRepository>(
+      TAG_REPOSITORY,
+      MongoTagRepository,
+      PrismaTagRepository,
+    ),
+    backendProvider<CategoryRepository>(
+      CATEGORY_REPOSITORY,
+      MongoCategoryRepository,
+      PrismaCategoryRepository,
+    ),
+    backendProvider<BookmarkRepository>(
+      BOOKMARK_REPOSITORY,
+      MongoBookmarkRepository,
+      PrismaBookmarkRepository,
+    ),
     CreatePostUseCase,
     GetPostsUseCase,
     GetPostUseCase,

@@ -55,6 +55,7 @@ export class EpubService {
   async delete(id: string, userId: string): Promise<void> {
     this.assertValidId(id);
     const deleted = await this.epubRepository.deleteForUser(id, userId);
-    if (!deleted) throw new NotFoundException('Epub not found or no permission');
+    if (!deleted)
+      throw new NotFoundException('Epub not found or no permission');
   }
 }

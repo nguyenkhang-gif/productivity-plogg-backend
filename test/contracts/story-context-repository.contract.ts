@@ -81,7 +81,9 @@ export function describeStoryContextRepositoryContract(
           targetLanguage: 'vi',
         });
         expect(created.characters).toEqual(make(alice).characters);
-        expect(created.glossary).toEqual([{ original: 'ki', translation: 'khí' }]);
+        expect(created.glossary).toEqual([
+          { original: 'ki', translation: 'khí' },
+        ]);
         expect(created.styleGuide.keepHonorifics).toBe(true);
         expect(created.chapterSummaries).toEqual([
           { chapterNumber: '1', summary: 'Start' },

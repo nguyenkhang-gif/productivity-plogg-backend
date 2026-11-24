@@ -59,7 +59,9 @@ export function describeEpubRepositoryContract(
       });
 
       it('sampleUrl is optional', async () => {
-        const created = await repo.create(make(alice, { sampleUrl: undefined }));
+        const created = await repo.create(
+          make(alice, { sampleUrl: undefined }),
+        );
         expect(created.sampleUrl).toBeUndefined();
       });
 
@@ -99,7 +101,7 @@ export function describeEpubRepositoryContract(
         expect(await repo.findAllByUser(newObjectId())).toEqual([]);
       });
 
-      it('findByIdForUser never returns another user\'s epub', async () => {
+      it("findByIdForUser never returns another user's epub", async () => {
         const created = await repo.create(make(alice));
         expect((await repo.findByIdForUser(created.id, alice))?.id).toBe(
           created.id,
@@ -108,7 +110,7 @@ export function describeEpubRepositoryContract(
         expect(await repo.findByIdForUser(newObjectId(), alice)).toBeNull();
       });
 
-      it('updateForUser updates own epub and leaves another user\'s untouched', async () => {
+      it("updateForUser updates own epub and leaves another user's untouched", async () => {
         const created = await repo.create(make(alice));
 
         expect(
@@ -135,7 +137,7 @@ export function describeEpubRepositoryContract(
         ).toBeNull();
       });
 
-      it('deleteForUser refuses another user\'s epub and deletes own', async () => {
+      it("deleteForUser refuses another user's epub and deletes own", async () => {
         const created = await repo.create(make(alice));
         expect(await repo.deleteForUser(created.id, bob)).toBe(false);
         expect(await repo.findById(created.id)).not.toBeNull();

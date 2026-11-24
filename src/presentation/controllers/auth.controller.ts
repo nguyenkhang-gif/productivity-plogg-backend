@@ -12,7 +12,10 @@ import {
   Headers,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { RegisterDto } from '../../core/dtos/register.dto';
+import { LoginDto } from '../../core/dtos/login.dto';
+import { OAuthExchangeDto } from '../../core/dtos/oauth-exchange.dto';
 import { LocalAuthGuard } from '../guards/local-auth.guard';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GoogleAuthGuard } from '../guards/google-auth.guard';
@@ -26,6 +29,8 @@ import { ListSessionsUseCase } from 'src/use-case/auth/list-sessions.use-case';
 import { RevokeSessionUseCase } from 'src/use-case/auth/revoke-session.use-case';
 import { UpdateProfileDto } from 'src/core/dtos/update-profile.dto';
 import { ConfigService } from '@nestjs/config';
+import { TokenService } from 'src/infrastructure/auth/token/token.service';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Controller('api/auth')
 export class AuthController {
@@ -39,16 +44,19 @@ export class AuthController {
     private readonly listSessionsUseCase: ListSessionsUseCase,
     private readonly revokeSessionUseCase: RevokeSessionUseCase,
     private readonly configService: ConfigService,
+    private readonly tokenService: TokenService,
   ) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.registerUseCase.execute(registerDto);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: any) {
+  async login(@Request() req: any, @Body() _dto: LoginDto) {
     const metadata = {
       userAgent: req.headers['user-agent'] ?? '',
       ip: req.ip ?? req.headers['x-forwarded-for'] ?? '',
@@ -72,6 +80,7 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
   async refresh(@Body('refresh_token') refreshToken: string) {
     return this.refreshTokenUseCase.execute(refreshToken);
@@ -143,12 +152,24 @@ export class AuthController {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ||
       'https://knn-productivity.vercel.app';
+    if (this.configService.get<string>('OAUTH_CODE_EXCHANGE') === 'true') {
+      const code = await this.tokenService.createOAuthCode({
+        access_token,
+        refresh_token,
+      });
+      return res.redirect(
+        `${frontendUrl}/auth/callback?code=${encodeURIComponent(code)}`,
+      );
+    }
     const redirectUrl = `${frontendUrl}/auth/callback?token=${access_token}&refresh_token=${refresh_token}`;
-    console.log(
-      '[GoogleCallback] FRONTEND_URL env:',
-      this.configService.get<string>('FRONTEND_URL'),
-    );
-    console.log('[GoogleCallback] Redirecting to:', redirectUrl.split('?')[0]);
     return res.redirect(redirectUrl);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('oauth/exchange')
+  async oauthExchange(@Body() dto: OAuthExchangeDto) {
+    const tokens = await this.tokenService.consumeOAuthCode(dto.code);
+    if (!tokens) throw new UnauthorizedException('Invalid or expired code');
+    return tokens;
   }
 }

@@ -27,7 +27,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed:guild": "ts-node prisma/seed-guild.ts"
+    "seed:guild": "ts-node prisma/seed-guild.ts",
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs"
   },
   "dependencies": {
     "@google/genai": "^1.21.0",
@@ -90,6 +91,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "dependency-cruiser": "^18.9.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",

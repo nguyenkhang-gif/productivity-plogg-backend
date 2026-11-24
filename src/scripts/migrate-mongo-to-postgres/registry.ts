@@ -15,6 +15,14 @@ import {
   commentsMigrator,
   reactionsMigrator,
 } from './migrators/engagement.migrators';
+import {
+  focusDailyMigrator,
+  focusMonthlyMigrator,
+  focusRawMigrator,
+  focusWeeklyMigrator,
+} from './migrators/focus.migrator';
+import { userProgressMigrator } from './migrators/user-progress.migrator';
+import { vaultMigrator } from './migrators/vault.migrator';
 
 /** Register new migrators here; order is resolved from `dependsOn`. */
 export const MIGRATORS: CollectionMigrator[] = [
@@ -31,4 +39,10 @@ export const MIGRATORS: CollectionMigrator[] = [
   commentsMigrator,
   reactionsMigrator,
   bookmarksMigrator,
+  focusRawMigrator,
+  focusDailyMigrator,
+  focusWeeklyMigrator,
+  focusMonthlyMigrator,
+  userProgressMigrator,
+  vaultMigrator,
 ];

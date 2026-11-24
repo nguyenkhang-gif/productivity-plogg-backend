@@ -20,6 +20,14 @@ export interface CollectionMigrator<TDoc = any, TRow = any> {
   transform(doc: TDoc): TRow | null;
   /** Must be idempotent: re-running with the same rows yields the same table. */
   upsertBatch(prisma: PrismaClient, rows: TRow[]): Promise<void | BatchResult>;
+  /**
+   * Optional: drop transformed rows whose parent rows (e.g. the owning user)
+   * do not exist in Postgres. Each returned reason counts as one skipped row.
+   */
+  filterBatch?(
+    prisma: PrismaClient,
+    rows: TRow[],
+  ): Promise<{ rows: TRow[]; skipped: string[] }>;
   countTarget(prisma: PrismaClient): Promise<number>;
 }
 
@@ -169,7 +177,7 @@ export async function runMigrators(
     log(`> ${migrator.name}${dryRun ? ' (dry run)' : ''}`);
 
     for await (const docs of source.read(migrator.collection, batchSize)) {
-      const rows: unknown[] = [];
+      let rows: unknown[] = [];
       for (const doc of docs) {
         stats.read += 1;
         try {
@@ -179,6 +187,18 @@ export async function runMigrators(
         } catch (error) {
           stats.failed += 1;
           recordFailure(stats, error);
+        }
+      }
+      if (migrator.filterBatch && rows.length > 0) {
+        const filtered = await migrator.filterBatch(prisma, rows);
+        rows = filtered.rows;
+        stats.skipped += filtered.skipped.length;
+        for (const reason of filtered.skipped) {
+          stats.skipReasons ??= {};
+          stats.skipReasons[reason] = (stats.skipReasons[reason] ?? 0) + 1;
+        }
+        for (const reason of filtered.skipped.slice(0, MAX_ERRORS_KEPT)) {
+          log(`  skipped: ${reason}`);
         }
       }
       if (dryRun) stats.written += rows.length;

@@ -16,6 +16,10 @@ import {
   GUILD_REPOSITORY,
   GuildRepository,
 } from 'src/core/domain/repositories/guild.repository.interface';
+import {
+  GUILD_REALTIME,
+  GuildRealtime,
+} from 'src/infrastructure/guild/guild-realtime.interface';
 
 @Injectable()
 export class KickMemberUseCase {
@@ -24,6 +28,7 @@ export class KickMemberUseCase {
     private readonly memberRepo: GuildMemberRepository,
     @Inject(GUILD_REPOSITORY)
     private readonly guildRepo: GuildRepository,
+    @Inject(GUILD_REALTIME) private readonly realtime: GuildRealtime,
   ) {}
 
   async execute(
@@ -56,5 +61,6 @@ export class KickMemberUseCase {
     }
 
     await this.memberRepo.remove(guildId, targetId);
+    await this.realtime.evictFromGuild(targetId, guildId);
   }
 }

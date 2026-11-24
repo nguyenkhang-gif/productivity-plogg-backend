@@ -1,4 +1,10 @@
-import { Inject, UseFilters } from '@nestjs/common';
+import {
+  Inject,
+  UseFilters,
+  UsePipes,
+  ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
@@ -12,6 +18,11 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import {
+  GuildPermissions,
+  hasPermission,
+} from 'src/core/domain/constants/guild-permissions';
+import { safeDisplayName } from 'src/core/domain/constants/display-name';
 import { Message } from 'src/core/domain/entities/message.entity';
 import {
   CHANNEL_REPOSITORY,
@@ -21,7 +32,18 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/core/domain/repositories/guild-member.repository.interface';
+import {
+  AddReactionPayloadDto,
+  ChannelIdPayloadDto,
+  DeleteMessagePayloadDto,
+  EditMessagePayloadDto,
+  GuildIdPayloadDto,
+  SendMessagePayloadDto,
+  TypingPayloadDto,
+} from 'src/core/dtos/guild-gateway.dto';
 import { TokenService } from 'src/infrastructure/auth/token/token.service';
+import { GuildRealtimeService } from 'src/infrastructure/guild/guild-realtime.service';
+import { SlidingWindowLimiter } from 'src/infrastructure/guild/rate-limiter';
 import { AddReactionUseCase } from 'src/use-case/message/add-reaction.use-case';
 import { DeleteMessageUseCase } from 'src/use-case/message/delete-message.use-case';
 import { EditMessageUseCase } from 'src/use-case/message/edit-message.use-case';
@@ -30,15 +52,30 @@ import { SendMessageUseCase } from 'src/use-case/message/send-message.use-case';
 import { WsHttpExceptionFilter } from './ws-exception.filter';
 
 @UseFilters(new WsHttpExceptionFilter())
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    exceptionFactory: (errors: ValidationError[]) =>
+      new WsException(
+        errors.flatMap((e) => Object.values(e.constraints ?? {})),
+      ),
+  }),
+)
 @WebSocketGateway({ namespace: '/guild', cors: { origin: '*' } })
 export class GuildGateway
   implements OnGatewayConnection, OnGatewayInit, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
 
+  private readonly messageLimiter = new SlidingWindowLimiter(10, 5000);
+  private readonly typingLimiter = new SlidingWindowLimiter(1, 1000);
+  private readonly reactionLimiter = new SlidingWindowLimiter(10, 5000);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly tokenService: TokenService,
+    private readonly realtime: GuildRealtimeService,
 
     private readonly getMessageUseCase: GetMessagesUseCase,
     private readonly sendMessageUseCase: SendMessageUseCase,
@@ -52,6 +89,8 @@ export class GuildGateway
   ) {}
 
   afterInit(server: Server) {
+    this.realtime.setServer(server);
+
     server.use(async (socket, next) => {
       try {
         const token =
@@ -70,7 +109,10 @@ export class GuildGateway
         }
 
         socket.data.userId = payload.sub;
-        socket.data.username = payload.email;
+        socket.data.username = safeDisplayName(
+          payload.username ?? payload.name,
+          payload.sub,
+        );
 
         next();
       } catch {
@@ -79,15 +121,29 @@ export class GuildGateway
     });
   }
 
-  handleConnection(_client: Socket) {
-    // Auth đã xử lý ở afterInit middleware — client.data đã có sẵn khi tới đây.
+  handleConnection(client: Socket) {
+    client.join(`user:${client.data.userId}`);
   }
 
-  handleDisconnect(client: Socket) {}
+  handleDisconnect(client: Socket) {
+    this.messageLimiter.clear(client.id);
+    this.typingLimiter.clear(client.id);
+    this.reactionLimiter.clear(client.id);
+  }
+
+  private throttled(
+    limiter: SlidingWindowLimiter,
+    client: Socket,
+    event: string,
+  ): boolean {
+    if (limiter.allow(`${client.id}:${event}`)) return false;
+    client.emit('error', { event, message: 'Rate limit exceeded' });
+    return true;
+  }
 
   @SubscribeMessage('join_guild')
   async handleJoinGuild(
-    @MessageBody() payload: { guildId: string },
+    @MessageBody() payload: GuildIdPayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<{ status: string; guildId: string }> {
     const isMember = await this.memberRepo.isMember(
@@ -102,7 +158,7 @@ export class GuildGateway
 
   @SubscribeMessage('join_channel')
   async handleJoinChannel(
-    @MessageBody() payload: { channelId: string },
+    @MessageBody() payload: ChannelIdPayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<{ status: string; data: { messages: Message[] } }> {
     const channel = await this.channelRepo.findById(payload.channelId);
@@ -114,19 +170,26 @@ export class GuildGateway
     );
     if (!isMember) throw new WsException('not a member');
 
-    client.join(`channel:${payload.channelId}`);
+    const perms = await this.memberRepo.getResolvedPermissions(
+      channel.guildId,
+      client.data.userId,
+    );
+    if (!hasPermission(perms, GuildPermissions.VIEW_CHANNELS))
+      throw new WsException('forbidden');
 
     const messages = await this.getMessageUseCase.execute(
       payload.channelId,
       client.data.userId,
     );
 
+    client.join(`channel:${payload.channelId}`);
+
     return { status: 'channel_ready', data: { messages } };
   }
 
   @SubscribeMessage('leave_channel')
   handleLeaveChannel(
-    @MessageBody() payload: { channelId: string },
+    @MessageBody() payload: ChannelIdPayloadDto,
     @ConnectedSocket() client: Socket,
   ) {
     client.leave(`channel:${payload.channelId}`);
@@ -134,10 +197,11 @@ export class GuildGateway
 
   @SubscribeMessage('send_message')
   async handleSendMessage(
-    @MessageBody()
-    payload: { channelId: string; content: string; replyToId?: string },
+    @MessageBody() payload: SendMessagePayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
+    if (this.throttled(this.messageLimiter, client, 'send_message')) return;
+
     const message = await this.sendMessageUseCase.execute({
       channelId: payload.channelId,
       senderId: client.data.userId,
@@ -146,23 +210,23 @@ export class GuildGateway
       replyToId: payload.replyToId,
     });
 
-    this.server.to(`channel:${payload.channelId}`).emit('new_message', message);
+    this.server.to(`channel:${message.channelId}`).emit('new_message', message);
   }
 
   @SubscribeMessage('edit_message')
   async handleEditMessage(
-    @MessageBody()
-    payload: { messageId: string; channelId: string; content: string },
+    @MessageBody() payload: EditMessagePayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { messageId, channelId, content } = payload;
     const message = await this.editMessageUseCase.execute(
       messageId,
+      channelId,
       client.data.userId,
       content,
     );
 
-    this.server.to(`channel:${channelId}`).emit('message_edited', {
+    this.server.to(`channel:${message.channelId}`).emit('message_edited', {
       messageId: messageId,
       content: message.content,
       editedAt: message.editedAt,
@@ -171,52 +235,70 @@ export class GuildGateway
 
   @SubscribeMessage('delete_message')
   async handleDeleteMessage(
-    @MessageBody()
-    payload: { messageId: string; channelId: string },
+    @MessageBody() payload: DeleteMessagePayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { messageId, channelId } = payload;
-    await this.delelteMessageUseCase.execute(
+    const result = await this.delelteMessageUseCase.execute(
       messageId,
       channelId,
       client.data.userId,
     );
 
-    this.server.to(`channel:${channelId}`).emit('message_deleted', {
+    this.server.to(`channel:${result.channelId}`).emit('message_deleted', {
       messageId: messageId,
     });
   }
 
   @SubscribeMessage('add_reaction')
   async handleAddReaction(
-    @MessageBody()
-    payload: { messageId: string; channelId: string; emoji: string },
+    @MessageBody() payload: AddReactionPayloadDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
+    if (this.throttled(this.reactionLimiter, client, 'add_reaction')) return;
+
     const { messageId, channelId, emoji } = payload;
 
-    await this.addReactionUseCase.execute(
+    const result = await this.addReactionUseCase.execute(
       messageId,
       channelId,
       client.data.userId,
       emoji,
     );
 
-    this.server.to(`channel:${payload.channelId}`).emit('reaction_updated', {
-      messageId: payload.messageId,
-      emoji: payload.emoji,
+    this.server.to(`channel:${result.channelId}`).emit('reaction_updated', {
+      messageId,
+      emoji,
       userId: client.data.userId,
     });
   }
 
   @SubscribeMessage('typing')
-  handleTyping(
-    @MessageBody() payload: { channelId: string; action: 'start' | 'stop' },
+  async handleTyping(
+    @MessageBody() payload: TypingPayloadDto,
     @ConnectedSocket() client: Socket,
-  ) {
-    client.to(`channel:${payload.channelId}`).emit('typing_update', {
+  ): Promise<void> {
+    if (this.throttled(this.typingLimiter, client, 'typing')) return;
+
+    const channel = await this.channelRepo.findById(payload.channelId);
+    if (!channel) throw new WsException('channel not found');
+
+    const member = await this.memberRepo.findMember(
+      channel.guildId,
+      client.data.userId,
+    );
+    if (!member) throw new WsException('not a member');
+
+    const perms = await this.memberRepo.getResolvedPermissions(
+      channel.guildId,
+      client.data.userId,
+    );
+    if (!hasPermission(perms, GuildPermissions.VIEW_CHANNELS))
+      throw new WsException('forbidden');
+
+    client.to(`channel:${channel.id}`).emit('typing_update', {
       userId: client.data.userId,
-      username: client.data.username,
+      username: safeDisplayName(member.username, client.data.username),
       action: payload.action,
     });
   }

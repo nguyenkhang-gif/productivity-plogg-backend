@@ -11,6 +11,9 @@ import { ChannelPrismaRepository } from 'src/infrastructure/databases/repositori
 import { GuildMemberPrismaRepository } from 'src/infrastructure/databases/repositories/guild-member.prisma.repository';
 import { MessagePrismaRepository } from 'src/infrastructure/databases/repositories/message.prisma.repository';
 
+import { GUILD_REALTIME } from './guild-realtime.interface';
+import { GuildRealtimeService } from './guild-realtime.service';
+import { DeleteInviteUseCase } from 'src/use-case/invite/delete-invite.use-case';
 import { GuildGateway } from 'src/presentation/gateways/guild.gateway';
 import { CreateGuildUseCase } from 'src/use-case/guild/create-guild.use-case';
 import { GetGuildUseCase } from 'src/use-case/guild/get-guild.use-case';
@@ -23,7 +26,6 @@ import { UpdateChannelUseCase } from 'src/use-case/channel/update-channel.use-ca
 import { DeleteChannelUseCase } from 'src/use-case/channel/delete-channel.use-case';
 import { ReorderChannelsUseCase } from 'src/use-case/channel/reorder-channels.use-case';
 import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-case';
-import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case';
 import { KickMemberUseCase } from 'src/use-case/guild-member/kick-member.use-case';
 import { AssignRoleUseCase } from 'src/use-case/guild-member/assign-role.use-case';
 import { RemoveRoleUseCase } from 'src/use-case/guild-member/remove-role.use-case';
@@ -71,6 +73,8 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     { provide: MESSAGE_REPOSITORY, useClass: MessagePrismaRepository },
     { provide: ROLE_REPOSITORY, useClass: RolePrismaRepository },
     { provide: GUILD_INVITE_REPOSITORY, useClass: GuildInvitePrismaRepository },
+    GuildRealtimeService,
+    { provide: GUILD_REALTIME, useExisting: GuildRealtimeService },
     GuildGateway,
     CreateGuildUseCase,
     GetMyGuildsUseCase,
@@ -82,7 +86,6 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     UpdateChannelUseCase,
     DeleteChannelUseCase,
     ReorderChannelsUseCase,
-    JoinGuildUseCase,
     LeaveGuildUseCase,
     KickMemberUseCase,
     AssignRoleUseCase,
@@ -91,6 +94,7 @@ import { DeleteRoleUseCase } from 'src/use-case/role/delete-role.use-case';
     CreateInviteUseCase,
     GetInvitePreviewUseCase,
     JoinViaInviteUseCase,
+    DeleteInviteUseCase,
     GetMessagesUseCase,
     SendMessageUseCase,
     EditMessageUseCase,

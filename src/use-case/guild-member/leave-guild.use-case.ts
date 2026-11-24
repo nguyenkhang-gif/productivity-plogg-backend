@@ -12,6 +12,10 @@ import {
   GUILD_REPOSITORY,
   GuildRepository,
 } from 'src/core/domain/repositories/guild.repository.interface';
+import {
+  GUILD_REALTIME,
+  GuildRealtime,
+} from 'src/infrastructure/guild/guild-realtime.interface';
 
 @Injectable()
 export class LeaveGuildUseCase {
@@ -20,6 +24,7 @@ export class LeaveGuildUseCase {
     private readonly guildMemberRepo: GuildMemberRepository,
 
     @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
+    @Inject(GUILD_REALTIME) private readonly realtime: GuildRealtime,
   ) {}
 
   async execute(guildId: string, userId: string): Promise<void> {
@@ -29,5 +34,6 @@ export class LeaveGuildUseCase {
       throw new ForbiddenException('owner cannot leave');
     }
     await this.guildMemberRepo.remove(guildId, userId);
+    await this.realtime.evictFromGuild(userId, guildId);
   }
 }

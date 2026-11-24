@@ -11,16 +11,28 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { EpubService } from 'src/modules/labs/epub/infrastructure/epub.service';
 import { JwtAuthGuard } from 'src/shared/security/jwt-auth.guard';
 
 class CreateEpubDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
   sampleUrl?: string;
+
+  @IsObject()
   properties: Record<string, any>;
 }
 
 class UpdateEpubDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
   sampleUrl?: string;
+
+  @IsOptional()
+  @IsObject()
   properties?: Record<string, any>;
 }
 

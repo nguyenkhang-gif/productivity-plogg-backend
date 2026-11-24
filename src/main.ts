@@ -16,6 +16,7 @@ const LARGE_BODY_PREFIXES = [
 ];
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.set('trust proxy', 1);
@@ -34,12 +35,12 @@ async function bootstrap() {
   try {
     await redisIoAdapter.connectToRedis();
   } catch (err) {
-    console.error('Redis adapter fail — chạy single-instance:', err.message);
+    logger.warn(`Redis adapter unavailable, running single-instance: ${err.message}`);
   }
   app.useWebSocketAdapter(redisIoAdapter);
 
   const shutdown = async (signal: string) => {
-    console.log(`Nhận ${signal} - đóng redis + app...`);
+    logger.log(`Received ${signal}, closing Redis and app`);
     await redisIoAdapter.closeRedis();
     await app.close();
     process.exit(0);
@@ -94,7 +95,7 @@ async function bootstrap() {
     backlog: 2048,
   });
 
-  new Logger('Bootstrap').log(`Listening on port ${process.env.PORT ?? 3000}`);
+  logger.log(`Listening on port ${process.env.PORT ?? 3000}`);
 }
 
 bootstrap();

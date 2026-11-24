@@ -47,9 +47,10 @@ import { TokenService } from './token/token.service';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const secret =
-          configService.get<string>('JWT_SECRET_KEY')?.trim() ||
-          'defaultSecret';
+        const secret = configService.get<string>('JWT_SECRET_KEY')?.trim();
+        if (!secret) {
+          throw new Error('JWT_SECRET_KEY is not defined');
+        }
         let expiresIn =
           configService.get<string>('JWT_EXPIRATION_TIME') || '900s';
 

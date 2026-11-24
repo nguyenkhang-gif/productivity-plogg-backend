@@ -1,13 +1,21 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash } from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { CacheService } from 'src/infrastructure/cache/cache.service';
 import {
   BLACKLIST_PREFIX,
+  ACCESS_TOKEN_MAX_TTL_SECONDS,
   MAX_SESSIONS_PER_USER,
+  OAUTH_CODE_PREFIX,
+  OAUTH_CODE_TTL_SECONDS,
   REFRESH_TOKEN_PREFIX,
   REFRESH_TTL_SECONDS,
+  REFRESH_USED_PREFIX,
+  REVOKED_SESSION_PREFIX,
   SESSION_PREFIX,
 } from './token.constants';
 
@@ -84,13 +92,17 @@ export class TokenService {
     private readonly cacheService: CacheService,
   ) {}
 
-  issueAccessToken(user: UserPayload): { token: string; jti: string } {
-    const jti = uuidv4();
+  issueAccessToken(
+    user: UserPayload,
+    sessionId?: string,
+  ): { token: string; jti: string } {
+    const jti = randomUUID();
     const token = this.jwtService.sign({
       sub: user.sub,
       email: user.email,
       role: user.role,
       jti,
+      ...(sessionId ? { sid: sessionId } : {}),
     });
     return { token, jti };
   }
@@ -100,8 +112,8 @@ export class TokenService {
     user: UserPayload,
     metadata: SessionMetadata = {},
   ): Promise<string> {
-    const sessionId = uuidv4();
-    const rawSecret = uuidv4();
+    const sessionId = randomUUID();
+    const rawSecret = randomUUID();
     const tokenHash = hashToken(rawSecret);
 
     const stored: StoredSession = {
@@ -156,6 +168,15 @@ export class TokenService {
     if (parts.length !== 3) return null;
 
     const [userId, sessionId, rawSecret] = parts;
+
+    const usedSessionId = await this.cacheService.get<string>(
+      `${REFRESH_USED_PREFIX}${hashToken(rawSecret)}`,
+    );
+    if (usedSessionId) {
+      await this.revokeRefreshToken(`${userId}.${usedSessionId}.x`, userId);
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
     const tokenKey = `${REFRESH_TOKEN_PREFIX}${userId}:${sessionId}`;
     const stored = await this.cacheService.get<StoredSession>(tokenKey);
 
@@ -173,6 +194,53 @@ export class TokenService {
     };
   }
 
+  async rotateRefreshToken(
+    oldToken: string,
+    user: UserPayload,
+  ): Promise<string> {
+    const parts = oldToken.split('.');
+    if (parts.length !== 3 || parts[0] !== user.sub) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+    const [userId, sessionId, oldSecret] = parts;
+    const tokenKey = `${REFRESH_TOKEN_PREFIX}${userId}:${sessionId}`;
+    const previous = await this.cacheService.get<StoredSession>(tokenKey);
+    if (!previous) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const rawSecret = randomUUID();
+    const stored: StoredSession = {
+      ...previous,
+      tokenHash: hashToken(rawSecret),
+      email: user.email,
+      role: user.role,
+    };
+
+    const tombstoned = await this.cacheService.set(
+      `${REFRESH_USED_PREFIX}${hashToken(oldSecret)}`,
+      sessionId,
+      REFRESH_TTL_SECONDS,
+    );
+    const ok =
+      tombstoned &&
+      (await this.cacheService.set(tokenKey, stored, REFRESH_TTL_SECONDS));
+    if (!ok) throw new ServiceUnavailableException('Session store unavailable');
+
+    await this.cacheService.sadd(`${SESSION_PREFIX}${userId}`, sessionId);
+    await this.cacheService.expire(
+      `${SESSION_PREFIX}${userId}`,
+      REFRESH_TTL_SECONDS,
+    );
+
+    return `${userId}.${sessionId}.${rawSecret}`;
+  }
+
+  getSessionId(refreshToken: string): string | null {
+    const parts = refreshToken.split('.');
+    return parts.length === 3 ? parts[1] : null;
+  }
+
   async revokeRefreshToken(token: string, userId: string): Promise<void> {
     const parts = token.split('.');
     if (parts.length !== 3) return;
@@ -181,6 +249,49 @@ export class TokenService {
       `${REFRESH_TOKEN_PREFIX}${userId}:${sessionId}`,
     );
     await this.cacheService.srem(`${SESSION_PREFIX}${userId}`, sessionId);
+    await this.markSessionRevoked(sessionId);
+  }
+
+  async markSessionRevoked(sessionId: string): Promise<void> {
+    await this.cacheService.set(
+      `${REVOKED_SESSION_PREFIX}${sessionId}`,
+      '1',
+      ACCESS_TOKEN_MAX_TTL_SECONDS,
+    );
+  }
+
+  async isSessionRevoked(sessionId: string): Promise<boolean> {
+    const val = await this.cacheService.get(
+      `${REVOKED_SESSION_PREFIX}${sessionId}`,
+    );
+    return val !== null;
+  }
+
+  async createOAuthCode(tokens: {
+    access_token: string;
+    refresh_token: string;
+  }): Promise<string> {
+    const code = randomBytes(32).toString('base64url');
+    const ok = await this.cacheService.set(
+      `${OAUTH_CODE_PREFIX}${hashToken(code)}`,
+      tokens,
+      OAUTH_CODE_TTL_SECONDS,
+    );
+    if (!ok) throw new ServiceUnavailableException('Session store unavailable');
+    return code;
+  }
+
+  async consumeOAuthCode(
+    code: string,
+  ): Promise<{ access_token: string; refresh_token: string } | null> {
+    const key = `${OAUTH_CODE_PREFIX}${hashToken(code)}`;
+    const tokens = await this.cacheService.get<{
+      access_token: string;
+      refresh_token: string;
+    }>(key);
+    if (!tokens) return null;
+    await this.cacheService.del(key);
+    return tokens;
   }
 
   async revokeAllSessions(
@@ -195,9 +306,10 @@ export class TokenService {
       : sessionIds;
 
     await Promise.all(
-      toRevoke.map((sid) =>
-        this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${userId}:${sid}`),
-      ),
+      toRevoke.map(async (sid) => {
+        await this.cacheService.del(`${REFRESH_TOKEN_PREFIX}${userId}:${sid}`);
+        await this.markSessionRevoked(sid);
+      }),
     );
 
     if (exceptSessionId) {

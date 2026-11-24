@@ -14,10 +14,13 @@ export class LoginUseCase {
     metadata: SessionMetadata = {},
   ) {
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const { token: access_token } = this.tokenService.issueAccessToken(payload);
     const refresh_token = await this.tokenService.issueRefreshToken(
       payload,
       metadata,
+    );
+    const { token: access_token } = this.tokenService.issueAccessToken(
+      payload,
+      this.tokenService.getSessionId(refresh_token) ?? undefined,
     );
     return { access_token, refresh_token };
   }

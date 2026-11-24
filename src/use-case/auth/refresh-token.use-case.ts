@@ -1,26 +1,43 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from 'src/infrastructure/auth/token/token.service';
+import { USER_REPOSITORY } from 'src/core/domain/repositories/user.repository.interface';
+import type { UserRepository } from 'src/core/domain/repositories/user.repository.interface';
 
 @Injectable()
 export class RefreshTokenUseCase {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(
+    private readonly tokenService: TokenService,
+    @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
+  ) {}
 
   async execute(
     refreshToken: string,
   ): Promise<{ access_token: string; refresh_token: string }> {
+    if (typeof refreshToken !== 'string' || !refreshToken) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
     const result = await this.tokenService.verifyRefreshToken(refreshToken);
     if (!result)
       throw new UnauthorizedException('Invalid or expired refresh token');
 
-    const { payload, sessionId: _sessionId } = result;
+    const { payload, sessionId } = result;
 
-    // Revoke current token (rotation)
-    await this.tokenService.revokeRefreshToken(refreshToken, payload.sub);
+    const user = await this.userRepository.findById(payload.sub);
+    if (!user) {
+      await this.tokenService.revokeRefreshToken(refreshToken, payload.sub);
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
 
-    // Issue new pair — preserve sessionId metadata by passing empty metadata
-    // (metadata already stored, new token gets fresh sessionId intentionally for rotation)
-    const { token: access_token } = this.tokenService.issueAccessToken(payload);
-    const refresh_token = await this.tokenService.issueRefreshToken(payload);
+    const freshPayload = { sub: user.id, email: user.email, role: user.role };
+    const refresh_token = await this.tokenService.rotateRefreshToken(
+      refreshToken,
+      freshPayload,
+    );
+    const { token: access_token } = this.tokenService.issueAccessToken(
+      freshPayload,
+      sessionId,
+    );
 
     return { access_token, refresh_token };
   }

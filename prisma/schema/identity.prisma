@@ -1,0 +1,47 @@
+enum UserGender {
+  male
+  female
+  other
+
+  @@map("user_gender")
+}
+
+enum UserMembership {
+  basic
+  advance
+  premium
+
+  @@map("user_membership")
+}
+
+enum UserAccountRole {
+  user
+  moderator
+  admin
+
+  @@map("user_account_role")
+}
+
+model User {
+  id                 String          @id @db.VarChar(24)
+  fullName           String
+  username           String          @unique
+  email              String          @unique
+  passwordHash       String          @default("")
+  gender             UserGender      @default(other)
+  profilePic         String?
+  membership         UserMembership  @default(basic)
+  role               UserAccountRole @default(user)
+  isPrivate          Boolean         @default(false)
+  resetPasswordToken String?
+  googleId           String?         @unique
+  facebookId         String?         @unique
+  lastSeen           DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([role])
+  @@index([membership])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+}

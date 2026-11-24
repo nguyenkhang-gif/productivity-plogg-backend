@@ -1,5 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import {
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -34,6 +35,10 @@ class EnvironmentVariables {
 
   @IsString()
   GEMINI_API_KEY: string;
+
+  @IsOptional()
+  @IsIn(['mongo', 'postgres'])
+  DATA_BACKEND?: 'mongo' | 'postgres';
 }
 
 export function validate(config: Record<string, unknown>) {

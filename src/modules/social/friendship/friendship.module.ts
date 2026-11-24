@@ -13,6 +13,7 @@ import { RejectFriendRequestUseCase } from 'src/modules/social/friendship/applic
 import { BlockUserUseCase } from 'src/modules/social/friendship/application/block-user.use-case';
 import { UnfriendUseCase } from 'src/modules/social/friendship/application/unfriend.use-case';
 import { GetFriendsUseCase } from 'src/modules/social/friendship/application/get-friends.use-case';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 import { GetPendingRequestsUseCase } from 'src/modules/social/friendship/application/get-pending-requests.use-case';
 
 @Module({
@@ -31,6 +32,8 @@ import { GetPendingRequestsUseCase } from 'src/modules/social/friendship/applica
     UnfriendUseCase,
     GetFriendsUseCase,
     GetPendingRequestsUseCase,
+    RelationshipService,
   ],
+  exports: [RelationshipService, FRIENDSHIP_REPOSITORY],
 })
 export class FriendshipModule {}

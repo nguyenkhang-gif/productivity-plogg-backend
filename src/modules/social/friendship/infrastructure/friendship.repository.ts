@@ -56,6 +56,20 @@ export class MongoFriendshipRepository implements FriendshipRepository {
     return doc ? this.mapToDomain(doc) : null;
   }
 
+  async findBlocksInvolving(userId: string): Promise<FriendshipEntity[]> {
+    const docs = await this.model
+      .find(
+        {
+          status: 'blocked',
+          $or: [{ userId }, { friendId: userId }],
+        },
+        { userId: 1, friendId: 1, status: 1 },
+      )
+      .lean()
+      .exec();
+    return docs.map((d) => this.mapToDomain(d));
+  }
+
   // friendInfo = người kia (không phải currentUser)
   async findFriends(userId: string): Promise<FriendshipEntity[]> {
     return this.model

@@ -9,14 +9,22 @@ import {
   FriendshipRepository,
 } from 'src/modules/social/friendship/domain/friendship.repository.interface';
 import { Friendship } from 'src/modules/social/friendship/domain/friendship.entity';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 
 @Injectable()
 export class BlockUserUseCase {
   constructor(
     @Inject(FRIENDSHIP_REPOSITORY) private readonly repo: FriendshipRepository,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(userId: string, targetId: string): Promise<Friendship> {
+    const blocked = await this.block(userId, targetId);
+    await this.relationships.invalidateVisibilityCaches(userId, targetId);
+    return blocked;
+  }
+
+  private async block(userId: string, targetId: string): Promise<Friendship> {
     if (userId === targetId)
       throw new BadRequestException('Cannot block yourself');
 

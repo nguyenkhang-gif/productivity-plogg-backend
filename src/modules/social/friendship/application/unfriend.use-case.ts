@@ -8,11 +8,13 @@ import {
   FRIENDSHIP_REPOSITORY,
   FriendshipRepository,
 } from 'src/modules/social/friendship/domain/friendship.repository.interface';
+import { RelationshipService } from 'src/modules/social/friendship/application/relationship.service';
 
 @Injectable()
 export class UnfriendUseCase {
   constructor(
     @Inject(FRIENDSHIP_REPOSITORY) private readonly repo: FriendshipRepository,
+    private readonly relationships: RelationshipService,
   ) {}
 
   async execute(userId: string, friendId: string): Promise<void> {
@@ -24,5 +26,6 @@ export class UnfriendUseCase {
       );
     }
     await this.repo.delete(friendship.id);
+    await this.relationships.invalidateVisibilityCaches(userId, friendId);
   }
 }

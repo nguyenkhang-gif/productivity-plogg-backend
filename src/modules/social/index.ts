@@ -1,5 +1,11 @@
 export { PostModule } from './post/post.module';
 export { FriendshipModule } from './friendship/friendship.module';
+export { RelationshipService } from './friendship/application/relationship.service';
+export {
+  type Relationship,
+  isBlockedEitherWay,
+} from './friendship/domain/relationship';
+export { canViewProfile } from './friendship/domain/profile.policy';
 export { CommentModule } from './comment/comment.module';
 export { ReactionModule } from './reaction/reaction.module';
 export { TagModule } from './tag/tag.module';

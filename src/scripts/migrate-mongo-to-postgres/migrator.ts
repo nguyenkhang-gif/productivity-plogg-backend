@@ -1,5 +1,15 @@
 import type { PrismaClient } from '../../../generated/prisma/client';
 
+/**
+ * Returned by `upsertBatch` when it left rows out because they reference
+ * records that do not exist in Postgres (e.g. a comment whose post was
+ * deleted). One reason string per skipped row; the runner counts them as
+ * skipped, not written, so verification still balances.
+ */
+export interface BatchResult {
+  skipped?: string[];
+}
+
 export interface CollectionMigrator<TDoc = any, TRow = any> {
   /** Unique key used by `--only` and `dependsOn`. */
   name: string;
@@ -9,7 +19,7 @@ export interface CollectionMigrator<TDoc = any, TRow = any> {
   /** Return null to skip a document that cannot be represented. */
   transform(doc: TDoc): TRow | null;
   /** Must be idempotent: re-running with the same rows yields the same table. */
-  upsertBatch(prisma: PrismaClient, rows: TRow[]): Promise<void>;
+  upsertBatch(prisma: PrismaClient, rows: TRow[]): Promise<void | BatchResult>;
   countTarget(prisma: PrismaClient): Promise<number>;
 }
 
@@ -23,6 +33,8 @@ export interface MigrationStats {
   read: number;
   written: number;
   skipped: number;
+  /** Why rows were skipped inside `upsertBatch` (reason -> count). */
+  skipReasons?: Record<string, number>;
   failed: number;
   sourceCount: number;
   targetCount: number | null;
@@ -76,6 +88,22 @@ export function orderMigrators(
   return only?.length ? ordered.filter((m) => only.includes(m.name)) : ordered;
 }
 
+function recordSkips(
+  stats: MigrationStats,
+  rowCount: number,
+  result: void | BatchResult,
+) {
+  const reasons = (result as BatchResult | undefined)?.skipped ?? [];
+  stats.written += rowCount - reasons.length;
+  stats.skipped += reasons.length;
+  if (reasons.length) {
+    stats.skipReasons ??= {};
+    for (const reason of reasons) {
+      stats.skipReasons[reason] = (stats.skipReasons[reason] ?? 0) + 1;
+    }
+  }
+}
+
 function recordFailure(stats: MigrationStats, error: unknown) {
   if (stats.errors.length < MAX_ERRORS_KEPT) {
     stats.errors.push(error instanceof Error ? error.message : String(error));
@@ -97,8 +125,7 @@ async function writeBatch<TRow>(
 ) {
   if (rows.length === 0) return;
   try {
-    await migrator.upsertBatch(prisma, rows);
-    stats.written += rows.length;
+    recordSkips(stats, rows.length, await migrator.upsertBatch(prisma, rows));
     return;
   } catch (batchError) {
     if (rows.length === 1) {
@@ -109,8 +136,7 @@ async function writeBatch<TRow>(
   }
   for (const row of rows) {
     try {
-      await migrator.upsertBatch(prisma, [row]);
-      stats.written += 1;
+      recordSkips(stats, 1, await migrator.upsertBatch(prisma, [row]));
     } catch (rowError) {
       recordFailure(stats, rowError);
       stats.failed += 1;
@@ -189,6 +215,9 @@ export function formatReport(results: MigrationStats[]): string {
         verified.padStart(9),
       ].join(' '),
     );
+    for (const [reason, count] of Object.entries(r.skipReasons ?? {})) {
+      lines.push(`    - skipped ${count}: ${reason}`);
+    }
     for (const error of r.errors) lines.push(`    ! ${error}`);
   }
   return lines.join('\n');

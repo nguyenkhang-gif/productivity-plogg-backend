@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import * as fs from 'fs';
 import { Readable } from 'stream';
-import * as XLSX from 'xlsx';
+import { Workbook, CellValue } from 'exceljs';
 
 @Injectable()
 export class DriveService implements OnModuleInit {
@@ -135,19 +135,17 @@ export class DriveService implements OnModuleInit {
       // Tải file Excel dưới dạng Buffer
       const buffer = await this.downloadFileAsBuffer(fileId);
 
-      // Đọc file Excel từ Buffer
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const workbook = new Workbook();
+      await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
 
-      // Lấy danh sách các sheet
-      const sheetNames = workbook.SheetNames;
-
-      // Chuyển tất cả sheet thành JSON
-      const jsonData: { [sheet: string]: any[] } = {};
-      sheetNames.forEach((sheetName) => {
-        const worksheet = workbook.Sheets[sheetName];
-        jsonData[sheetName] = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
+      const jsonData: { [sheet: string]: unknown[][] } = {};
+      workbook.eachSheet((worksheet) => {
+        const rows: unknown[][] = [];
+        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+          const values = (row.values as CellValue[]).slice(1);
+          rows[rowNumber - 1] = values.map((v) => toPlainCellValue(v));
         });
+        jsonData[worksheet.name] = Array.from(rows, (r) => r ?? []);
       });
 
       return jsonData;
@@ -157,22 +155,15 @@ export class DriveService implements OnModuleInit {
       );
     }
   }
-  convertJsonToXlsxBuffer(jsonData: any[]): Promise<Buffer> {
+  async convertJsonToXlsxBuffer(
+    jsonData: Record<string, unknown[][]>,
+  ): Promise<Buffer> {
     try {
-      // Create a new workbook
-      const workbook = XLSX.utils.book_new();
-
-      // Iterate over each sheet in the JSON data
-      Object.keys(jsonData).forEach((sheetName) => {
-        // Convert the array of arrays to a worksheet
-        const worksheet = XLSX.utils.aoa_to_sheet(jsonData[sheetName]);
-        // Append the worksheet to the workbook
-        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-      });
-
-      // Write the workbook to a buffer
-      const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-      return buffer;
+      const workbook = new Workbook();
+      for (const sheetName of Object.keys(jsonData)) {
+        workbook.addWorksheet(sheetName).addRows(jsonData[sheetName] ?? []);
+      }
+      return Buffer.from(await workbook.xlsx.writeBuffer());
     } catch (error) {
       throw new Error(
         `Không thể chuyển đổi JSON sang buffer XLSX: ${error.message}`,
@@ -215,4 +206,14 @@ export class DriveService implements OnModuleInit {
       throw new Error(`Không thể ghi đè file từ buffer: ${error.message}`);
     }
   }
+}
+
+function toPlainCellValue(value: CellValue | undefined): unknown {
+  if (value === null || value === undefined) return undefined;
+  if (value instanceof Date || typeof value !== 'object') return value;
+  if ('result' in value) return value.result;
+  if ('richText' in value) return value.richText.map((t) => t.text).join('');
+  if ('text' in value) return value.text;
+  if ('error' in value) return value.error;
+  return undefined;
 }

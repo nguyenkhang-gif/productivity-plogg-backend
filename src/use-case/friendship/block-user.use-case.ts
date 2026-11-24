@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {
   FRIENDSHIP_REPOSITORY,
   FriendshipRepository,
@@ -20,6 +25,9 @@ export class BlockUserUseCase {
     if (existing) {
       if (existing.status === 'blocked' && existing.userId === userId) {
         throw new BadRequestException('User is already blocked');
+      }
+      if (existing.status === 'blocked' && existing.userId !== userId) {
+        throw new ForbiddenException('Unable to block this user');
       }
       // Reuse the existing record: update to blocked, set userId = blocker
       if (existing.userId !== userId) {

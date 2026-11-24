@@ -16,6 +16,7 @@ import { Post as PostEntity } from 'src/core/domain/entities/post.entity';
 import { Post, PostDocument } from '../schemas/post.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
+import { escapeRegex } from 'src/shared/http/regex';
 import { PostEmbedCard } from 'src/core/domain/entities/message-embed.entity';
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -219,6 +220,21 @@ export class MongoPostRepository implements PostRepository {
     );
   }
 
+  private async isHiddenByPrivateAccount(
+    authorId: string,
+    currentUserId?: string,
+  ): Promise<boolean> {
+    if (currentUserId && currentUserId === authorId) return false;
+    if (!Types.ObjectId.isValid(authorId)) return false;
+    const author: any = await this.userModel
+      .findById(authorId, { isPrivate: 1 })
+      .lean();
+    if (!author?.isPrivate) return false;
+    if (!currentUserId) return true;
+    const friendIds = await this.getFriendIds(currentUserId);
+    return !friendIds.has(authorId);
+  }
+
   private async buildVisibilityFilter(currentUserId: string) {
     const [friendIds, privateUsers] = await Promise.all([
       this.getFriendIds(currentUserId),
@@ -325,6 +341,10 @@ export class MongoPostRepository implements PostRepository {
     const moderationStatus = doc.moderationStatus ?? 'APPROVED';
     const authorId = doc.authorId;
 
+    if (await this.isHiddenByPrivateAccount(authorId, currentUserId)) {
+      return null;
+    }
+
     // A PUBLIC post that is still PENDING/REJECTED is visible only to its author.
     if (
       visibility === 'PUBLIC' &&
@@ -418,6 +438,13 @@ export class MongoPostRepository implements PostRepository {
     const skip = (page - 1) * limit;
     const isSelf = currentUserId === authorId;
     let visibilityCondition: any;
+
+    if (await this.isHiddenByPrivateAccount(authorId, currentUserId)) {
+      return {
+        items: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      };
+    }
 
     if (isSelf) {
       // author sees all their own posts
@@ -518,7 +545,7 @@ export class MongoPostRepository implements PostRepository {
       type: { $ne: 'REPOST' },
     };
     if (search) {
-      matchFilter.title = new RegExp(search, 'i');
+      matchFilter.title = new RegExp(escapeRegex(search), 'i');
     }
     if (authorId) matchFilter.authorId = authorId;
     if (moderationStatus) matchFilter.moderationStatus = moderationStatus;

@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
+import { clampPagination } from 'src/shared/http/pagination';
 import { CreateCommentDto } from 'src/core/dtos/create-comment.dto';
 import { UpdateCommentDto } from 'src/core/dtos/update-comment.dto';
 import { CreateCommentUseCase } from 'src/use-case/comment/create-comment.use-case';
@@ -44,13 +45,21 @@ export class CommentController {
     });
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll(
     @Param('postId') postId: string,
+    @Req() req,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.getCommentsByPost.execute(postId, Number(page), Number(limit));
+    const pg = clampPagination(page, limit);
+    return this.getCommentsByPost.execute(
+      postId,
+      req.user.userId,
+      pg.page,
+      pg.limit,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

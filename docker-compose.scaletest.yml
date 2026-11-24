@@ -1,0 +1,145 @@
+# Test scale ngang THUẦN KHIẾT — so 1 emit-core vs 2 emit-core, DÙNG REDIS LOCAL.
+#   - profile "single": 1 instance, 1 core             (1 emit-core)
+#   - profile "double": 2 instance, 1 core mỗi cái     (2 emit-core) + Nginx + Redis
+#
+# Redis LOCAL (container `redis`, cùng docker network) thay cho Upstash cloud —
+# loại bỏ round-trip internet mỗi lần pub/sub. 2 instance = 2 container coi như
+# 2 "máy riêng" (network riêng, CPU riêng qua cpus limit).
+#
+# Postgres vẫn qua host.docker.internal (dùng lại data đã restore ở compose dev).
+#
+# ── Baseline (1 instance @ 1 core, redis local) ────────────────────
+#   docker compose -f docker-compose.scaletest.yml --profile single up -d --build
+#   SERVER_URL=http://localhost:3001/guild FAKE_IP=false node load-test-sustained.tmp.js tokens.tmp.txt 1000 20 2500
+#   docker compose -f docker-compose.scaletest.yml --profile single down
+#
+# ── Scaled (2 instance @ 1 core, redis local) qua Nginx ────────────
+#   docker compose -f docker-compose.scaletest.yml --profile double up -d --build
+#   docker compose -f docker-compose.nginx-local.yml up -d
+#   SERVER_URL=http://localhost:8090/guild node load-test-sustained.tmp.js tokens.tmp.txt 1000 20 2500
+#   docker compose -f docker-compose.scaletest.yml --profile double down
+
+services:
+  # ---- Redis LOCAL (luôn chạy, không gắn profile) ----
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"   # publish 6380 host để soi nếu cần (tránh đụng redis khác)
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    restart: "no"
+
+  # ---- Baseline: 1 instance, 1 core ----
+  api-single:
+    profiles: ["single"]
+    build:
+      context: .
+    image: backend-api
+    cpuset: "0"
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+      - REDIS_URL=${TEST_REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+
+  # ---- Scaled: 2 instance, 1 core mỗi cái ----
+  api-a:
+    profiles: ["double", "triple", "quad"]
+    build:
+      context: .
+    image: backend-api
+    cpuset: "0"
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+      - REDIS_URL=${TEST_REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+
+  api-b:
+    profiles: ["double", "triple", "quad"]
+    build:
+      context: .
+    image: backend-api
+    cpuset: "1"
+    ports:
+      - "3002:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+      - REDIS_URL=${TEST_REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+
+  api-c:
+    profiles: ["triple", "quad"]
+    build:
+      context: .
+    image: backend-api
+    cpuset: "2"
+    ports:
+      - "3003:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+      - REDIS_URL=${TEST_REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+
+  api-d:
+    profiles: ["quad"]
+    build:
+      context: .
+    image: backend-api
+    cpuset: "3"
+    ports:
+      - "3004:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+      - REDIS_URL=${TEST_REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"

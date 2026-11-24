@@ -1,0 +1,172 @@
+enum PostType {
+  ORIGINAL
+  REPOST
+
+  @@map("post_type")
+}
+
+enum PostVisibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+
+  @@map("post_visibility")
+}
+
+enum PostModerationStatus {
+  APPROVED
+  PENDING
+  REJECTED
+
+  @@map("post_moderation_status")
+}
+
+enum FriendshipStatus {
+  pending
+  accepted
+  blocked
+
+  @@map("friendship_status")
+}
+
+model Category {
+  id        String   @id @db.VarChar(24)
+  name      String
+  slug      String   @unique
+  postCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+
+  @@index([postCount(sort: Desc)])
+  @@map("categories")
+}
+
+model Tag {
+  id        String    @id @db.VarChar(24)
+  name      String
+  slug      String    @unique
+  postCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  postTags  PostTag[]
+
+  @@index([postCount(sort: Desc)])
+  @@map("tags")
+}
+
+/// A post or a repost (type REPOST with originalPostId + caption). reactCount
+/// and commentCount are not columns: like Mongo they are computed on read from
+/// reactions / comments. shareCount and viewCount are stored counters.
+model Post {
+  id               String               @id @db.VarChar(24)
+  authorId         String               @db.VarChar(24)
+  author           User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  type             PostType             @default(ORIGINAL)
+  title            String?
+  content          String               @default("")
+  imageUrls        String[]             @default([])
+  isPublished      Boolean              @default(true)
+  categoryId       String?              @db.VarChar(24)
+  category         Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  viewCount        Int                  @default(0)
+  shareCount       Int                  @default(0)
+  visibility       PostVisibility       @default(PUBLIC)
+  moderationStatus PostModerationStatus @default(APPROVED)
+  /// Moderator user id; deliberately not a foreign key so history survives user deletion.
+  moderatedBy      String?              @db.VarChar(24)
+  moderatedAt      DateTime?
+  rejectionReason  String?              @db.VarChar(500)
+  originalPostId   String?              @db.VarChar(24)
+  originalPost     Post?                @relation("Reposts", fields: [originalPostId], references: [id], onDelete: Cascade)
+  reposts          Post[]               @relation("Reposts")
+  caption          String?              @db.VarChar(280)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  tags             PostTag[]
+  comments         Comment[]
+  reactions        Reaction[]
+  bookmarks        Bookmark[]
+
+  @@unique([originalPostId, authorId])
+  @@index([isPublished, createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([visibility, moderationStatus, createdAt(sort: Desc)])
+  @@index([categoryId, createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model PostTag {
+  postId String @db.VarChar(24)
+  tagId  String @db.VarChar(24)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@map("post_tags")
+}
+
+model Comment {
+  id        String   @id @db.VarChar(24)
+  postId    String   @db.VarChar(24)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String   @db.VarChar(24)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  iconUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model Reaction {
+  id        String   @id @db.VarChar(24)
+  postId    String   @db.VarChar(24)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String   @db.VarChar(24)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("reactions")
+}
+
+model Bookmark {
+  id        String   @id @db.VarChar(24)
+  userId    String   @db.VarChar(24)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String   @db.VarChar(24)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("bookmarks")
+}
+
+/// Directed edge: userId is whoever acted (sent the request / placed the block).
+/// Block rules depend on that direction, so it is never normalised away.
+model Friendship {
+  id        String           @id @db.VarChar(24)
+  userId    String           @db.VarChar(24)
+  user      User             @relation("FriendshipRequester", fields: [userId], references: [id], onDelete: Cascade)
+  friendId  String           @db.VarChar(24)
+  friend    User             @relation("FriendshipTarget", fields: [friendId], references: [id], onDelete: Cascade)
+  status    FriendshipStatus @default(pending)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([userId, friendId])
+  @@index([userId, status])
+  @@index([friendId, status])
+  @@map("friendships")
+}

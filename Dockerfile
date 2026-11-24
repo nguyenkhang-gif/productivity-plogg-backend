@@ -1,0 +1,36 @@
+# ─── Stage 1: Build ───────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npx prisma generate
+RUN npm run build
+
+# ─── Stage 2: Production ──────────────────────────────────────────
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy Prisma generated client (output = "../generated/prisma" in schema)
+COPY --from=builder /app/generated ./generated
+COPY prisma ./prisma
+
+# Copy compiled output
+COPY --from=builder /app/dist ./dist
+
+RUN mkdir -p /app/storage && chown -R node:node /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
+
+USER node
+
+CMD ["node", "dist/main"]

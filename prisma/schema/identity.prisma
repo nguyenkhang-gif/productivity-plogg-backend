@@ -1,0 +1,68 @@
+enum UserGender {
+  male
+  female
+  other
+
+  @@map("user_gender")
+}
+
+enum UserMembership {
+  basic
+  advance
+  premium
+
+  @@map("user_membership")
+}
+
+enum UserAccountRole {
+  user
+  moderator
+  admin
+
+  @@map("user_account_role")
+}
+
+model User {
+  id                 String          @id @db.VarChar(24)
+  fullName           String
+  username           String          @unique
+  email              String          @unique
+  passwordHash       String          @default("")
+  gender             UserGender      @default(other)
+  profilePic         String?
+  membership         UserMembership  @default(basic)
+  role               UserAccountRole @default(user)
+  isPrivate          Boolean         @default(false)
+  resetPasswordToken String?
+  googleId           String?         @unique
+  facebookId         String?         @unique
+  lastSeen           DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // labs
+  epubs               Epub[]
+  storyContexts       StoryContext[]
+  translationContexts TranslationContext[]
+
+  // social
+  posts               Post[]
+  comments            Comment[]
+  reactions           Reaction[]
+  bookmarks           Bookmark[]
+  friendshipsSent     Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipTarget")
+
+  @@index([role])
+  @@index([membership])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+
+  // productivity
+  focusSessionsRaw    FocusSessionRaw[]
+  focusRollupsDaily   FocusRollupDaily[]
+  focusRollupsWeekly  FocusRollupWeekly[]
+  focusRollupsMonthly FocusRollupMonthly[]
+  userProgress        UserProgress?
+  encryptedVaults     EncryptedVault[]
+}

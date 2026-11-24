@@ -1,0 +1,82 @@
+enum MailLogStatus {
+  sent
+  failed
+
+  @@map("mail_log_status")
+}
+
+model Epub {
+  id            String   @id @db.VarChar(24)
+  createdUserId String   @db.VarChar(24)
+  sampleUrl     String?
+  properties    Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [createdUserId], references: [id], onDelete: Cascade)
+
+  @@index([createdUserId, createdAt(sort: Desc)])
+  @@map("epubs")
+}
+
+model StoryContext {
+  id               String   @id @db.VarChar(24)
+  userId           String   @db.VarChar(24)
+  title            String
+  author           String
+  genre            String
+  setting          String
+  targetTone       String
+  sourceLanguage   String   @default("en")
+  targetLanguage   String   @default("vi")
+  characters       Json     @default("[]")
+  glossary         Json     @default("[]")
+  styleGuide       Json
+  chapterSummaries Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("story_contexts")
+}
+
+model TranslationContext {
+  id               String   @id @db.VarChar(24)
+  userId           String   @db.VarChar(24)
+  title            String
+  genre            String
+  setting          String
+  targetTone       String
+  sourceLanguage   String   @default("en")
+  targetLanguage   String   @default("vi")
+  characters       Json     @default("[]")
+  glossary         Json     @default("[]")
+  styleGuide       Json
+  chapterSummaries Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("translation_contexts")
+}
+
+/// Append-only audit trail of outgoing mail. Not owned by a user.
+model MailLog {
+  id        String        @id @db.VarChar(24)
+  to        String
+  subject   String
+  body      String
+  status    MailLogStatus
+  error     String?
+  sentAt    DateTime
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([sentAt(sort: Desc)])
+  @@index([to, sentAt(sort: Desc)])
+  @@map("mail_logs")
+}

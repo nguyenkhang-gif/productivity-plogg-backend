@@ -1,0 +1,14 @@
+# Override CHỈ DÙNG cho load test local — không phải deploy.
+# Chạy kèm file chính:
+#   docker compose -f docker-compose.yml -f docker-compose.loadtest.yml up -d --build api
+#
+# Mục đích: app trong container gọi Postgres local trên host qua
+# host.docker.internal (localhost trong container = chính container, không phải máy host).
+services:
+  api:
+    environment:
+      - POSTGRES_URL=postgresql://plog:plog@host.docker.internal:5432/plog_dev
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Test thì không cần auto-restart che giấu crash
+    restart: "no"

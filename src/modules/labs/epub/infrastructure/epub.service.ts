@@ -1,62 +1,60 @@
 import {
+  BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import {
-  Epub,
-  EpubDocument,
-} from 'src/modules/labs/epub/infrastructure/epub.schema';
+import { Epub } from 'src/modules/labs/epub/domain/epub.entity';
 import { epubI } from 'src/modules/labs/epub/domain/epub.interfaces';
+import {
+  EPUB_REPOSITORY,
+  EpubRepository,
+} from 'src/modules/labs/epub/domain/epub.repository.interface';
+import { isObjectId } from 'src/shared/database/object-id';
 
 @Injectable()
 export class EpubService {
-  constructor(@InjectModel(Epub.name) private epubModel: Model<EpubDocument>) {}
+  constructor(
+    @Inject(EPUB_REPOSITORY) private readonly epubRepository: EpubRepository,
+  ) {}
 
-  async create(item: epubI): Promise<Epub> {
-    return new this.epubModel(item).save();
+  private assertValidId(id: string) {
+    if (!isObjectId(id)) throw new BadRequestException('Invalid ID');
   }
 
-  async read(conditions: Record<string, any>): Promise<Epub[]> {
-    return this.epubModel.find(conditions).sort({ createdAt: -1 }).exec();
+  async create(item: epubI): Promise<Epub> {
+    return this.epubRepository.create(new Epub(item));
+  }
+
+  async findAll(userId: string): Promise<Epub[]> {
+    return this.epubRepository.findAllByUser(userId);
   }
 
   async findOne(id: string, userId: string): Promise<Epub> {
-    if (!Types.ObjectId.isValid(id))
-      throw new BadRequestException('Invalid ID');
-    const epub = await this.epubModel
-      .findOne({ _id: id, createdUserId: userId })
-      .exec();
+    this.assertValidId(id);
+    const epub = await this.epubRepository.findByIdForUser(id, userId);
     if (!epub) throw new NotFoundException('Epub not found');
     return epub;
   }
 
   async update(
     id: string,
-    updateData: Partial<Epub>,
+    updateData: Partial<Pick<Epub, 'sampleUrl' | 'properties'>>,
     userId: string,
   ): Promise<Epub> {
-    if (!Types.ObjectId.isValid(id))
-      throw new BadRequestException('Invalid ID');
-    const epub = await this.epubModel
-      .findOneAndUpdate(
-        { _id: id, createdUserId: userId },
-        { $set: updateData },
-        { new: true },
-      )
-      .exec();
+    this.assertValidId(id);
+    const epub = await this.epubRepository.updateForUser(
+      id,
+      userId,
+      updateData,
+    );
     if (!epub) throw new NotFoundException('Epub not found or no permission');
     return epub;
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    if (!Types.ObjectId.isValid(id))
-      throw new BadRequestException('Invalid ID');
-    const result = await this.epubModel
-      .findOneAndDelete({ _id: id, createdUserId: userId })
-      .exec();
-    if (!result) throw new NotFoundException('Epub not found or no permission');
+    this.assertValidId(id);
+    const deleted = await this.epubRepository.deleteForUser(id, userId);
+    if (!deleted) throw new NotFoundException('Epub not found or no permission');
   }
 }

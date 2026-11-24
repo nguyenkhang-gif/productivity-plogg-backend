@@ -5,7 +5,13 @@ import {
   TranslationContextSchema,
 } from 'src/modules/labs/translation-context/infrastructure/translation-context.schema';
 import { MongoTranslationContextRepository } from 'src/modules/labs/translation-context/infrastructure/translation-context.repository';
-import { TRANSLATION_CONTEXT_REPOSITORY } from 'src/modules/labs/translation-context/domain/translation-context.repository.interface';
+import { PrismaTranslationContextRepository } from 'src/modules/labs/translation-context/infrastructure/translation-context.prisma.repository';
+import {
+  TRANSLATION_CONTEXT_REPOSITORY,
+  type TranslationContextRepository,
+} from 'src/modules/labs/translation-context/domain/translation-context.repository.interface';
+import { PrismaModule } from 'src/shared/database/prisma.module';
+import { backendProvider } from 'src/shared/database/backend-provider';
 import { TranslationContextController } from 'src/modules/labs/translation-context/presentation/translation-context.controller';
 import { CreateTranslationContextUseCase } from 'src/modules/labs/translation-context/application/create-translation-context.use-case';
 import { GetTranslationContextUseCase } from 'src/modules/labs/translation-context/application/get-translation-context.use-case';
@@ -15,16 +21,20 @@ import { DeleteTranslationContextUseCase } from 'src/modules/labs/translation-co
 
 @Module({
   imports: [
+    PrismaModule,
     MongooseModule.forFeature([
       { name: TranslationContext.name, schema: TranslationContextSchema },
     ]),
   ],
   controllers: [TranslationContextController],
   providers: [
-    {
-      provide: TRANSLATION_CONTEXT_REPOSITORY,
-      useClass: MongoTranslationContextRepository,
-    },
+    MongoTranslationContextRepository,
+    PrismaTranslationContextRepository,
+    backendProvider<TranslationContextRepository>(
+      TRANSLATION_CONTEXT_REPOSITORY,
+      MongoTranslationContextRepository,
+      PrismaTranslationContextRepository,
+    ),
     CreateTranslationContextUseCase,
     GetTranslationContextUseCase,
     GetUserTranslationContextsUseCase,

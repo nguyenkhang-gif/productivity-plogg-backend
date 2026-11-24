@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Epub } from 'src/modules/labs/epub/domain/epub.entity';
 import { EpubService } from 'src/modules/labs/epub/infrastructure/epub.service';
 import { JwtAuthGuard } from 'src/shared/security/jwt-auth.guard';
 
@@ -36,6 +37,9 @@ class UpdateEpubDto {
   properties?: Record<string, any>;
 }
 
+/** Keeps the legacy Mongo-style `_id` next to `id` so clients keep working. */
+const present = (epub: Epub) => ({ ...epub, _id: epub.id });
+
 @UseGuards(JwtAuthGuard)
 @Controller('api/epub')
 export class EpubController {
@@ -43,20 +47,22 @@ export class EpubController {
 
   @Post()
   async create(@Req() req, @Body() body: CreateEpubDto) {
-    return this.epubService.create({
-      ...body,
-      createdUserId: req.user.userId,
-    } as any);
+    return present(
+      await this.epubService.create({
+        ...body,
+        createdUserId: req.user.userId,
+      }),
+    );
   }
 
   @Get()
   async findAll(@Req() req) {
-    return this.epubService.read({ createdUserId: req.user.userId });
+    return (await this.epubService.findAll(req.user.userId)).map(present);
   }
 
   @Get(':id')
   async findOne(@Req() req, @Param('id') id: string) {
-    return this.epubService.findOne(id, req.user.userId);
+    return present(await this.epubService.findOne(id, req.user.userId));
   }
 
   @Patch(':id')
@@ -65,7 +71,7 @@ export class EpubController {
     @Param('id') id: string,
     @Body() body: UpdateEpubDto,
   ) {
-    return this.epubService.update(id, body, req.user.userId);
+    return present(await this.epubService.update(id, body, req.user.userId));
   }
 
   @Delete(':id')

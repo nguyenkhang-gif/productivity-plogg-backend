@@ -47,4 +47,44 @@ export class MongoEpubRepository implements EpubRepository {
     if (!updatedEpub) throw new Error('Epub not found');
     return this.mapToDomain(updatedEpub);
   }
+
+  async findAllByUser(userId: string): Promise<EpubEntity[]> {
+    const docs = await this.epubModel
+      .find({ createdUserId: userId })
+      .sort({ createdAt: -1 })
+      .exec();
+    return docs.map((doc) => this.mapToDomain(doc));
+  }
+
+  async findByIdForUser(
+    id: string,
+    userId: string,
+  ): Promise<EpubEntity | null> {
+    const doc = await this.epubModel
+      .findOne({ _id: id, createdUserId: userId })
+      .exec();
+    return doc ? this.mapToDomain(doc) : null;
+  }
+
+  async updateForUser(
+    id: string,
+    userId: string,
+    data: Partial<Pick<EpubEntity, 'sampleUrl' | 'properties'>>,
+  ): Promise<EpubEntity | null> {
+    const doc = await this.epubModel
+      .findOneAndUpdate(
+        { _id: id, createdUserId: userId },
+        { $set: data },
+        { new: true },
+      )
+      .exec();
+    return doc ? this.mapToDomain(doc) : null;
+  }
+
+  async deleteForUser(id: string, userId: string): Promise<boolean> {
+    const doc = await this.epubModel
+      .findOneAndDelete({ _id: id, createdUserId: userId })
+      .exec();
+    return doc !== null;
+  }
 }

@@ -1,35 +1,15 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
-import {
-  CHANNEL_REPOSITORY,
-  ChannelRepository,
-} from 'src/modules/community/channel/domain/channel.repository.interface';
-import { GuildRealtime } from '../domain/guild-realtime.interface';
 
 @Injectable()
-export class GuildRealtimeService implements GuildRealtime {
-  private readonly logger = new Logger(GuildRealtimeService.name);
-  private server?: Pick<Server, 'in'>;
+export class GuildRealtimeService {
+  private server?: Server;
 
-  constructor(
-    @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
-  ) {}
-
-  setServer(server: Pick<Server, 'in'>) {
+  setServer(server: Server) {
     this.server = server;
   }
 
-  async evictFromGuild(userId: string, guildId: string): Promise<void> {
-    if (!this.server) return;
-    try {
-      const channels = await this.channelRepo.findByGuild(guildId);
-      const rooms = [
-        `guild:${guildId}`,
-        ...channels.map((c) => `channel:${c.id}`),
-      ];
-      this.server.in(`user:${userId}`).socketsLeave(rooms);
-    } catch (e) {
-      this.logger.warn(`evictFromGuild failed: ${(e as Error).message}`);
-    }
+  getServer(): Server | undefined {
+    return this.server;
   }
 }

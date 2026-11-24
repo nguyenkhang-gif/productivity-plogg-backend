@@ -19,6 +19,8 @@ describe('role hierarchy', () => {
     findById: jest.fn(),
   };
 
+  const events = { publish: jest.fn() };
+
   const create = new CreateRoleUseCase(
     roleRepo as any,
     memberRepo as any,
@@ -28,11 +30,13 @@ describe('role hierarchy', () => {
     roleRepo as any,
     memberRepo as any,
     guildRepo as any,
+    events as any,
   );
   const assign = new AssignRoleUseCase(
     memberRepo as any,
     guildRepo as any,
     roleRepo as any,
+    events as any,
   );
 
   function actorWith(perms: bigint, position: number) {

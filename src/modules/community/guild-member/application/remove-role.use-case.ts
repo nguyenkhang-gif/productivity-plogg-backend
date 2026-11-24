@@ -26,6 +26,11 @@ import {
   resolveMemberPosition,
   resolveRoleActor,
 } from 'src/modules/community/role/application/role-hierarchy';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MemberRolesChanged } from 'src/modules/community/guild-member/domain/events/member.events';
 
 @Injectable()
 export class RemoveRoleUseCase {
@@ -34,6 +39,8 @@ export class RemoveRoleUseCase {
     private readonly memberRepo: GuildMemberRepository,
     @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
     @Inject(ROLE_REPOSITORY) private readonly roleRepo: RoleRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -60,5 +67,8 @@ export class RemoveRoleUseCase {
     );
 
     await this.memberRepo.removeRole(guildId, targetId, roleId);
+    this.events.publish(
+      new MemberRolesChanged(guildId, targetId, roleId, 'removed'),
+    );
   }
 }

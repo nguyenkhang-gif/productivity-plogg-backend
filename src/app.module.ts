@@ -5,6 +5,7 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HttpThrottlerGuard } from './shared/security/http-throttler.guard';
 import { AppController } from './app.controller';
@@ -44,6 +45,7 @@ import { PrismaModule } from './shared/database/prisma.module';
 @Module({
   imports: [
     AppConfigModule,
+    EventEmitterModule.forRoot(),
     CacheModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     TagModule,

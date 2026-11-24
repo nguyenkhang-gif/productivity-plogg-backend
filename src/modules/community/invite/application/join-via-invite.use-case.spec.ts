@@ -5,10 +5,12 @@ describe('JoinViaInviteUseCase', () => {
   const inviteRepo = { findByCode: jest.fn(), joinWithInvite: jest.fn() };
   const memberRepo = { isMember: jest.fn() };
   const roleRepo = { findDefaultByGuild: jest.fn() };
+  const events = { publish: jest.fn() };
   const useCase = new JoinViaInviteUseCase(
     inviteRepo as any,
     memberRepo as any,
     roleRepo as any,
+    events as any,
   );
   const input = { code: 'abc', userId: 'u1', username: 'user' };
 

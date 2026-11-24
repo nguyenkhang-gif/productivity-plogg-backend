@@ -16,6 +16,11 @@ import {
   ROLE_REPOSITORY,
   RoleRepository,
 } from 'src/modules/community/role/domain/role.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MemberJoined } from 'src/modules/community/guild-member/domain/events/member.events';
 
 export interface JoinViaInviteInput {
   code: string;
@@ -32,6 +37,8 @@ export class JoinViaInviteUseCase {
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
     @Inject(ROLE_REPOSITORY) private readonly roleRepo: RoleRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(input: JoinViaInviteInput): Promise<{ guildId: string }> {
@@ -61,6 +68,15 @@ export class JoinViaInviteUseCase {
     });
     if (result === 'unavailable')
       throw new GoneException('Invite is no longer valid');
+
+    this.events.publish(
+      new MemberJoined(
+        guildId,
+        input.userId,
+        input.username,
+        input.avatar ?? null,
+      ),
+    );
 
     return { guildId };
   }

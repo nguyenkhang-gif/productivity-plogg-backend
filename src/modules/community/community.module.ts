@@ -11,7 +11,9 @@ import { ChannelPrismaRepository } from 'src/modules/community/channel/infrastru
 import { GuildMemberPrismaRepository } from 'src/modules/community/guild-member/infrastructure/guild-member.prisma.repository';
 import { MessagePrismaRepository } from 'src/modules/community/message/infrastructure/message.prisma.repository';
 
-import { GUILD_REALTIME } from './realtime/domain/guild-realtime.interface';
+import { COMMUNITY_EVENT_PUBLISHER } from 'src/modules/community/shared/domain/community-event-publisher';
+import { EventEmitterCommunityEventPublisher } from 'src/modules/community/shared/infrastructure/event-emitter-community-event-publisher';
+import { GuildRealtimeListener } from './realtime/infrastructure/guild-realtime.listener';
 import { GuildRealtimeService } from './realtime/infrastructure/guild-realtime.service';
 import { DeleteInviteUseCase } from 'src/modules/community/invite/application/delete-invite.use-case';
 import { GuildGateway } from 'src/modules/community/realtime/presentation/guild.gateway';
@@ -74,7 +76,11 @@ import { DeleteRoleUseCase } from 'src/modules/community/role/application/delete
     { provide: ROLE_REPOSITORY, useClass: RolePrismaRepository },
     { provide: GUILD_INVITE_REPOSITORY, useClass: GuildInvitePrismaRepository },
     GuildRealtimeService,
-    { provide: GUILD_REALTIME, useExisting: GuildRealtimeService },
+    {
+      provide: COMMUNITY_EVENT_PUBLISHER,
+      useClass: EventEmitterCommunityEventPublisher,
+    },
+    GuildRealtimeListener,
     GuildGateway,
     CreateGuildUseCase,
     GetMyGuildsUseCase,

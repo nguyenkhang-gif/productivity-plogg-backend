@@ -202,15 +202,13 @@ export class GuildGateway
   ): Promise<void> {
     if (this.throttled(this.messageLimiter, client, 'send_message')) return;
 
-    const message = await this.sendMessageUseCase.execute({
+    await this.sendMessageUseCase.execute({
       channelId: payload.channelId,
       senderId: client.data.userId,
       senderName: client.data.username,
       content: payload.content,
       replyToId: payload.replyToId,
     });
-
-    this.server.to(`channel:${message.channelId}`).emit('new_message', message);
   }
 
   @SubscribeMessage('edit_message')
@@ -219,18 +217,12 @@ export class GuildGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { messageId, channelId, content } = payload;
-    const message = await this.editMessageUseCase.execute(
+    await this.editMessageUseCase.execute(
       messageId,
       channelId,
       client.data.userId,
       content,
     );
-
-    this.server.to(`channel:${message.channelId}`).emit('message_edited', {
-      messageId: messageId,
-      content: message.content,
-      editedAt: message.editedAt,
-    });
   }
 
   @SubscribeMessage('delete_message')
@@ -239,15 +231,11 @@ export class GuildGateway
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     const { messageId, channelId } = payload;
-    const result = await this.delelteMessageUseCase.execute(
+    await this.delelteMessageUseCase.execute(
       messageId,
       channelId,
       client.data.userId,
     );
-
-    this.server.to(`channel:${result.channelId}`).emit('message_deleted', {
-      messageId: messageId,
-    });
   }
 
   @SubscribeMessage('add_reaction')
@@ -259,18 +247,12 @@ export class GuildGateway
 
     const { messageId, channelId, emoji } = payload;
 
-    const result = await this.addReactionUseCase.execute(
+    await this.addReactionUseCase.execute(
       messageId,
       channelId,
       client.data.userId,
       emoji,
     );
-
-    this.server.to(`channel:${result.channelId}`).emit('reaction_updated', {
-      messageId,
-      emoji,
-      userId: client.data.userId,
-    });
   }
 
   @SubscribeMessage('typing')

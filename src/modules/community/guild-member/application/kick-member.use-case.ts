@@ -17,9 +17,10 @@ import {
   GuildRepository,
 } from 'src/modules/community/guild/domain/guild.repository.interface';
 import {
-  GUILD_REALTIME,
-  GuildRealtime,
-} from 'src/modules/community/realtime/domain/guild-realtime.interface';
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MemberKicked } from 'src/modules/community/guild-member/domain/events/member.events';
 
 @Injectable()
 export class KickMemberUseCase {
@@ -28,7 +29,8 @@ export class KickMemberUseCase {
     private readonly memberRepo: GuildMemberRepository,
     @Inject(GUILD_REPOSITORY)
     private readonly guildRepo: GuildRepository,
-    @Inject(GUILD_REALTIME) private readonly realtime: GuildRealtime,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -61,6 +63,6 @@ export class KickMemberUseCase {
     }
 
     await this.memberRepo.remove(guildId, targetId);
-    await this.realtime.evictFromGuild(targetId, guildId);
+    this.events.publish(new MemberKicked(guildId, targetId, actorId));
   }
 }

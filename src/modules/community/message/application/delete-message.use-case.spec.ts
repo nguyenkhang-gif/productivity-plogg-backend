@@ -1,5 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { GuildPermissions } from 'src/modules/community/guild/domain/guild-permissions';
+import { MessageDeleted } from 'src/modules/community/message/domain/events/message.events';
 import { DeleteMessageUseCase } from './delete-message.use-case';
 
 describe('DeleteMessageUseCase', () => {
@@ -9,10 +10,12 @@ describe('DeleteMessageUseCase', () => {
   };
   const channelRepo = { findById: jest.fn() };
   const memberRepo = { getResolvedPermissions: jest.fn() };
+  const events = { publish: jest.fn() };
   const useCase = new DeleteMessageUseCase(
     messageRepo as any,
     channelRepo as any,
     memberRepo as any,
+    events as any,
   );
 
   beforeEach(() => {
@@ -31,6 +34,7 @@ describe('DeleteMessageUseCase', () => {
     );
     expect(memberRepo.getResolvedPermissions).not.toHaveBeenCalled();
     expect(messageRepo.softDelete).not.toHaveBeenCalled();
+    expect(events.publish).not.toHaveBeenCalled();
   });
 
   it('rejects when the message does not exist', async () => {
@@ -53,6 +57,9 @@ describe('DeleteMessageUseCase', () => {
     expect(memberRepo.getResolvedPermissions).toHaveBeenCalledWith('g1', 'u1');
     expect(messageRepo.softDelete).toHaveBeenCalledWith('m1', 'c1', 'u1');
     expect(result).toEqual({ channelId: 'c1' });
+    expect(events.publish).toHaveBeenCalledWith(
+      new MessageDeleted('g1', 'c1', 'm1'),
+    );
   });
 
   it('lets MANAGE_MESSAGES delete any message in the channel', async () => {

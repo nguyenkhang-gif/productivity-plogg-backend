@@ -23,6 +23,11 @@ import {
   MESSAGE_REPOSITORY,
   MessageRepository,
 } from 'src/modules/community/message/domain/message.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MessageCreated } from 'src/modules/community/message/domain/events/message.events';
 
 export interface SendMessageInput {
   channelId: string;
@@ -40,6 +45,8 @@ export class SendMessageUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(input: SendMessageInput): Promise<Message> {
@@ -67,7 +74,7 @@ export class SendMessageUseCase {
       safeDisplayName(input.senderName, input.senderId),
     );
 
-    return this.messageRepo.create({
+    const message = await this.messageRepo.create({
       channelId: input.channelId,
       senderId: input.senderId,
       senderName,
@@ -75,5 +82,9 @@ export class SendMessageUseCase {
       replyToId: input.replyToId,
       content: input.content,
     });
+    this.events.publish(
+      new MessageCreated(channel.guildId, message.channelId, message),
+    );
+    return message;
   }
 }

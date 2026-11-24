@@ -16,6 +16,11 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/modules/community/guild-member/domain/guild-member.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { ChannelDeleted } from 'src/modules/community/channel/domain/events/channel.events';
 
 @Injectable()
 export class DeleteChannelUseCase {
@@ -23,6 +28,8 @@ export class DeleteChannelUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(channelId: string, userId: string): Promise<void> {
@@ -37,5 +44,6 @@ export class DeleteChannelUseCase {
       throw new ForbiddenException();
 
     await this.channelRepo.delete(channelId);
+    this.events.publish(new ChannelDeleted(channel.guildId, channelId));
   }
 }

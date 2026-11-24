@@ -21,6 +21,11 @@ import {
   GuildRepository,
 } from 'src/modules/community/guild/domain/guild.repository.interface';
 import { assertCanManagePosition, resolveRoleActor } from './role-hierarchy';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { RoleDeleted } from 'src/modules/community/role/domain/events/role.events';
 
 @Injectable()
 export class DeleteRoleUseCase {
@@ -29,6 +34,8 @@ export class DeleteRoleUseCase {
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
     @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -52,5 +59,6 @@ export class DeleteRoleUseCase {
     assertCanManagePosition(actor, role.position);
 
     await this.roleRepo.delete(roleId);
+    this.events.publish(new RoleDeleted(role.guildId, roleId));
   }
 }

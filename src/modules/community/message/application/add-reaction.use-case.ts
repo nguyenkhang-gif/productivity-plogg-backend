@@ -20,6 +20,11 @@ import {
   MESSAGE_REPOSITORY,
   MessageRepository,
 } from 'src/modules/community/message/domain/message.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { ReactionChanged } from 'src/modules/community/message/domain/events/message.events';
 
 @Injectable()
 export class AddReactionUseCase {
@@ -28,6 +33,8 @@ export class AddReactionUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -51,6 +58,15 @@ export class AddReactionUseCase {
       throw new ForbiddenException();
 
     await this.messageRepo.addReaction(messageId, userId, emoji);
+    this.events.publish(
+      new ReactionChanged(
+        channel.guildId,
+        message.channelId,
+        messageId,
+        emoji,
+        userId,
+      ),
+    );
     return { channelId: message.channelId };
   }
 }

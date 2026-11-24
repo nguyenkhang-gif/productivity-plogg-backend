@@ -27,6 +27,11 @@ import {
   assertCanManagePosition,
   resolveRoleActor,
 } from './role-hierarchy';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { RoleUpdated } from 'src/modules/community/role/domain/events/role.events';
 
 @Injectable()
 export class UpdateRoleUseCase {
@@ -35,6 +40,8 @@ export class UpdateRoleUseCase {
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
     @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -64,6 +71,8 @@ export class UpdateRoleUseCase {
       role.isDefault,
     );
 
-    return this.roleRepo.update(roleId, data);
+    const updated = await this.roleRepo.update(roleId, data);
+    this.events.publish(new RoleUpdated(role.guildId, updated));
+    return updated;
   }
 }

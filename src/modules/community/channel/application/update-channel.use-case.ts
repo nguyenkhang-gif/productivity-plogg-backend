@@ -18,6 +18,11 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/modules/community/guild-member/domain/guild-member.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { ChannelUpdated } from 'src/modules/community/channel/domain/events/channel.events';
 
 @Injectable()
 export class UpdateChannelUseCase {
@@ -25,6 +30,8 @@ export class UpdateChannelUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -42,6 +49,8 @@ export class UpdateChannelUseCase {
     if (!hasPermission(perms, GuildPermissions.MANAGE_CHANNELS))
       throw new ForbiddenException();
 
-    return this.channelRepo.update(channelId, data);
+    const updated = await this.channelRepo.update(channelId, data);
+    this.events.publish(new ChannelUpdated(channel.guildId, updated));
+    return updated;
   }
 }

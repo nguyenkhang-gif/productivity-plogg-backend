@@ -20,6 +20,11 @@ import {
   MESSAGE_REPOSITORY,
   MessageRepository,
 } from 'src/modules/community/message/domain/message.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MessageDeleted } from 'src/modules/community/message/domain/events/message.events';
 
 @Injectable()
 export class DeleteMessageUseCase {
@@ -28,6 +33,8 @@ export class DeleteMessageUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -58,6 +65,9 @@ export class DeleteMessageUseCase {
     );
     if (!deleted) throw new NotFoundException('Not found or already deleted');
 
+    this.events.publish(
+      new MessageDeleted(channel.guildId, message.channelId, messageId),
+    );
     return { channelId: message.channelId };
   }
 }

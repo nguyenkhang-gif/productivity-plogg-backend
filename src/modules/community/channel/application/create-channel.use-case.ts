@@ -12,6 +12,11 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/modules/community/guild-member/domain/guild-member.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { ChannelCreated } from 'src/modules/community/channel/domain/events/channel.events';
 
 export interface CreateChannelInput {
   guildId: string;
@@ -28,6 +33,8 @@ export class CreateChannelUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(input: CreateChannelInput): Promise<Channel> {
@@ -42,7 +49,7 @@ export class CreateChannelUseCase {
     // Channel mới xuống cuối: position = max hiện có + 1 (guild rỗng → 0).
     const maxPosition = await this.channelRepo.getMaxPosition(input.guildId);
 
-    return this.channelRepo.create({
+    const channel = await this.channelRepo.create({
       guildId: input.guildId,
       name: input.name,
       type: input.type,
@@ -50,5 +57,7 @@ export class CreateChannelUseCase {
       topic: input.topic,
       position: maxPosition + 1,
     });
+    this.events.publish(new ChannelCreated(channel.guildId, channel));
+    return channel;
   }
 }

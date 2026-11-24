@@ -21,6 +21,11 @@ import {
   MESSAGE_REPOSITORY,
   MessageRepository,
 } from 'src/modules/community/message/domain/message.repository.interface';
+import {
+  COMMUNITY_EVENT_PUBLISHER,
+  CommunityEventPublisher,
+} from 'src/modules/community/shared/domain/community-event-publisher';
+import { MessageEdited } from 'src/modules/community/message/domain/events/message.events';
 
 @Injectable()
 export class EditMessageUseCase {
@@ -29,6 +34,8 @@ export class EditMessageUseCase {
     @Inject(CHANNEL_REPOSITORY) private readonly channelRepo: ChannelRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(COMMUNITY_EVENT_PUBLISHER)
+    private readonly events: CommunityEventPublisher,
   ) {}
 
   async execute(
@@ -60,6 +67,15 @@ export class EditMessageUseCase {
     if (!updated)
       throw new ForbiddenException('Not the author or message not found');
 
+    this.events.publish(
+      new MessageEdited(
+        channel.guildId,
+        message.channelId,
+        messageId,
+        updated.content,
+        updated.editedAt,
+      ),
+    );
     return updated;
   }
 }

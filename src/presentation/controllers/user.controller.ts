@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { clampPagination } from 'src/shared/http/pagination';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { SearchUsersUseCase } from 'src/use-case/auth/search-users.use-case';
 import { GetUserProfileUseCase } from 'src/use-case/auth/get-user-profile.use-case';
@@ -20,7 +21,8 @@ export class UserController {
 
   @Get('suggestions')
   async suggestions(@Query('limit') limit = 5, @Req() req) {
-    return this.getSuggestions.execute(req.user.userId, Number(limit));
+    const pg = clampPagination(1, limit, 50, 5);
+    return this.getSuggestions.execute(req.user.userId, pg.limit);
   }
 
   @Get(':id/profile')

@@ -9,6 +9,7 @@ import { User, UserDocument } from '../schemas/user.schema';
 import { Friendship, FriendshipDocument } from '../schemas/friendship.schema';
 import { Post, PostDocument } from '../schemas/post.schema';
 import { Model } from 'mongoose';
+import { escapeRegex } from 'src/shared/http/regex';
 import { User as UserEntity } from 'src/core/domain/entities/user.entity';
 
 @Injectable()
@@ -82,7 +83,7 @@ export class MongoUserRepository implements UserRepository {
   }
 
   async search(query: string, excludeUserId: string): Promise<UserEntity[]> {
-    const regex = new RegExp(query, 'i');
+    const regex = new RegExp(escapeRegex(query), 'i');
     const docs = await this.userModel
       .find({
         _id: { $ne: excludeUserId },
@@ -136,7 +137,7 @@ export class MongoUserRepository implements UserRepository {
     const query: Record<string, any> = {};
 
     if (search) {
-      const regex = new RegExp(search, 'i');
+      const regex = new RegExp(escapeRegex(search), 'i');
       query.$or = [{ fullName: regex }, { username: regex }, { email: regex }];
     }
     if (role) query.role = role;

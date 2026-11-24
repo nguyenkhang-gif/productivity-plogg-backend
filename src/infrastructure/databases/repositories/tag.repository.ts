@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { escapeRegex } from 'src/shared/http/regex';
 import { TagRepository } from 'src/core/domain/repositories/tag.repository.interface';
 import { Tag as TagEntity } from 'src/core/domain/entities/tag.entity';
 import { Tag, TagDocument } from '../schemas/tag.schema';
@@ -32,7 +33,9 @@ export class MongoTagRepository implements TagRepository {
 
   async findBySlugSearch(search: string, limit: number): Promise<TagEntity[]> {
     const docs = await this.tagModel
-      .find({ slug: { $regex: search.toLowerCase(), $options: 'i' } })
+      .find({
+        slug: { $regex: escapeRegex(search.toLowerCase()), $options: 'i' },
+      })
       .sort({ postCount: -1 })
       .limit(limit)
       .lean();

@@ -12,6 +12,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { clampPagination } from 'src/shared/http/pagination';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/presentation/guards/roles.guard';
 import { Roles } from 'src/presentation/decorators/roles.decorator';
@@ -84,12 +85,8 @@ export class PostController {
             ? (-1 as const)
             : undefined,
     };
-    return this.getPosts.execute(
-      Number(page),
-      Number(limit),
-      req.user.userId,
-      filter,
-    );
+    const pg = clampPagination(page, limit, 50, 10);
+    return this.getPosts.execute(pg.page, pg.limit, req.user.userId, filter);
   }
 
   // ── Static routes BEFORE :id ───────────────────────────────────────────────
@@ -97,7 +94,8 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @Get('trending')
   trending(@Query('limit') limit = 5, @Req() req) {
-    return this.getTrendingPosts.execute(Number(limit), req.user.userId);
+    const pg = clampPagination(1, limit, 50, 5);
+    return this.getTrendingPosts.execute(pg.limit, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -112,7 +110,8 @@ export class PostController {
   @Roles('moderator', 'admin')
   @Get('moderation/pending')
   pending(@Query('page') page = 1, @Query('limit') limit = 10) {
-    return this.getPendingPosts.execute(Number(page), Number(limit));
+    const pg = clampPagination(page, limit, 50, 10);
+    return this.getPendingPosts.execute(pg.page, pg.limit);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -123,10 +122,11 @@ export class PostController {
     @Query('limit') limit = 10,
     @Req() req,
   ) {
+    const pg = clampPagination(page, limit, 50, 10);
     return this.getPostsByAuthor.execute(
       authorId,
-      Number(page),
-      Number(limit),
+      pg.page,
+      pg.limit,
       req.user.userId,
     );
   }

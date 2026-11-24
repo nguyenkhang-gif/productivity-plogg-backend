@@ -1,4 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { clampPagination } from 'src/shared/http/pagination';
 import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
 import { SearchTagsUseCase } from 'src/use-case/tag/search-tags.use-case';
 import { GetTrendingTagsUseCase } from 'src/use-case/tag/get-trending-tags.use-case';
@@ -13,11 +14,13 @@ export class TagController {
 
   @Get('trending')
   trending(@Query('limit') limit = 10) {
-    return this.getTrendingTags.execute(Number(limit));
+    const pg = clampPagination(1, limit, 50, 10);
+    return this.getTrendingTags.execute(pg.limit);
   }
 
   @Get()
   search(@Query('search') search = '', @Query('limit') limit = 10) {
-    return this.searchTags.execute(search, Number(limit));
+    const pg = clampPagination(1, limit, 50, 10);
+    return this.searchTags.execute(search, pg.limit);
   }
 }

@@ -44,4 +44,9 @@ model User {
   @@index([membership])
   @@index([createdAt(sort: Desc)])
   @@map("users")
+
+  // labs
+  epubs               Epub[]
+  storyContexts       StoryContext[]
+  translationContexts TranslationContext[]
 }

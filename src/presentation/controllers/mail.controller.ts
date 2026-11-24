@@ -1,8 +1,13 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/presentation/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/presentation/guards/roles.guard';
+import { Roles } from 'src/presentation/decorators/roles.decorator';
 import { SendMailDto } from 'src/core/dtos/mail.dto';
 import { SendMailUseCase } from 'src/use-case/mail/send-mail.use-case';
 import { GetMailLogsUseCase } from 'src/use-case/mail/get-mail-logs.use-case';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 @Controller('api/mail')
 export class MailController {
   constructor(

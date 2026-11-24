@@ -1,5 +1,10 @@
 import { google, drive_v3 } from 'googleapis';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import * as fs from 'fs';
 import { Readable } from 'stream';
 import * as XLSX from 'xlsx';
@@ -8,6 +13,25 @@ import * as XLSX from 'xlsx';
 export class DriveService implements OnModuleInit {
   private driveClient: drive_v3.Drive;
   private readonly folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  private readonly logger = new Logger(DriveService.name);
+
+  async assertFileInFolder(fileId: string) {
+    let parents: string[] | null | undefined;
+    try {
+      const res = await this.driveClient.files.get({
+        fileId,
+        fields: 'parents',
+        supportsAllDrives: true,
+      });
+      parents = res.data.parents;
+    } catch (error) {
+      this.logger.error(`Drive lookup failed: ${error.message}`);
+      throw new ForbiddenException('File not accessible');
+    }
+    if (!this.folderId || !parents || !parents.includes(this.folderId)) {
+      throw new ForbiddenException('File not accessible');
+    }
+  }
 
   async onModuleInit() {
     const oAuth2Client = new google.auth.OAuth2(
@@ -76,6 +100,7 @@ export class DriveService implements OnModuleInit {
   }
 
   async downloadFileAsBuffer(fileId: string): Promise<Buffer> {
+    await this.assertFileInFolder(fileId);
     try {
       const res = await this.driveClient.files.get(
         {
@@ -105,6 +130,7 @@ export class DriveService implements OnModuleInit {
   }
 
   async convertExcelToJson(fileId: string): Promise<any> {
+    await this.assertFileInFolder(fileId);
     try {
       // Tải file Excel dưới dạng Buffer
       const buffer = await this.downloadFileAsBuffer(fileId);
@@ -159,6 +185,7 @@ export class DriveService implements OnModuleInit {
     buffer: Buffer,
     mimeType: string,
   ) {
+    await this.assertFileInFolder(fileId);
     try {
       // Tạo Readable stream từ Buffer
       const stream = new Readable();

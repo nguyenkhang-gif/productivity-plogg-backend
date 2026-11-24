@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { displayNameFromClaims } from 'src/core/domain/constants/display-name';
 import { GetInvitePreviewUseCase } from 'src/use-case/invite/get-invite-preview.use-case';
 import { JoinViaInviteUseCase } from 'src/use-case/invite/join-via-invite.use-case';
 
@@ -22,7 +23,7 @@ export class PublicInviteController {
     return this.joinViaInvite.execute({
       code,
       userId: req.user.userId,
-      username: req.user.email,
+      username: displayNameFromClaims(req.user),
       avatar: null,
     });
   }

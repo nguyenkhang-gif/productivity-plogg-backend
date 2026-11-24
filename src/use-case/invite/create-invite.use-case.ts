@@ -32,7 +32,11 @@ export class CreateInviteUseCase {
     private readonly memberRepo: GuildMemberRepository,
   ) {}
 
-  async execute(guildId: string, actorId: string): Promise<{ code: string }> {
+  async execute(
+    guildId: string,
+    actorId: string,
+    options: { maxUses?: number; expiresInSeconds?: number } = {},
+  ): Promise<{ code: string }> {
     const perms = await this.memberRepo.getResolvedPermissions(
       guildId,
       actorId,
@@ -41,7 +45,15 @@ export class CreateInviteUseCase {
       throw new ForbiddenException();
 
     const code = generateCode();
-    await this.inviteRepo.create({ code, guildId, createdBy: actorId });
+    await this.inviteRepo.create({
+      code,
+      guildId,
+      createdBy: actorId,
+      maxUses: options.maxUses ?? null,
+      expiresAt: options.expiresInSeconds
+        ? new Date(Date.now() + options.expiresInSeconds * 1000)
+        : null,
+    });
     return { code };
   }
 }

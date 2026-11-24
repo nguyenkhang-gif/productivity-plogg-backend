@@ -10,9 +10,20 @@ export interface CreateInviteData {
   expiresAt?: Date | null;
 }
 
+export interface JoinWithInviteData {
+  code: string;
+  guildId: string;
+  userId: string;
+  username: string;
+  avatar?: string | null;
+  defaultRoleId?: string | null;
+}
+
+export type JoinWithInviteResult = 'joined' | 'unavailable' | 'already_member';
+
 export interface GuildInviteRepository {
   create(data: CreateInviteData): Promise<GuildInvite>;
   findByCode(code: string): Promise<GuildInvite | null>;
-  incrementUses(code: string): Promise<void>;
-  // Full: findByGuild(guildId), delete(code)
+  joinWithInvite(data: JoinWithInviteData): Promise<JoinWithInviteResult>;
+  delete(code: string): Promise<void>;
 }

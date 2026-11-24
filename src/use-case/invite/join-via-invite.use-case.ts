@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  GoneException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   GUILD_INVITE_REPOSITORY,
   GuildInviteRepository,
@@ -32,28 +37,31 @@ export class JoinViaInviteUseCase {
   async execute(input: JoinViaInviteInput): Promise<{ guildId: string }> {
     const invite = await this.inviteRepo.findByCode(input.code);
     if (!invite) throw new NotFoundException('Invite not found');
-    // MVP: chưa check expiresAt/maxUses (Full sẽ thêm → 410 Gone).
 
     const guildId = invite.guildId;
 
-    // Đã là member → vào thẳng, không tăng uses (idempotent).
     if (await this.memberRepo.isMember(guildId, input.userId)) {
       return { guildId };
     }
 
-    await this.memberRepo.add({
+    const expired =
+      !!invite.expiresAt && invite.expiresAt.getTime() <= Date.now();
+    const exhausted = invite.maxUses != null && invite.uses >= invite.maxUses;
+    if (expired || exhausted)
+      throw new GoneException('Invite is no longer valid');
+
+    const defaultRole = await this.roleRepo.findDefaultByGuild(guildId);
+    const result = await this.inviteRepo.joinWithInvite({
+      code: input.code,
       guildId,
       userId: input.userId,
       username: input.username,
       avatar: input.avatar ?? null,
+      defaultRoleId: defaultRole?.id ?? null,
     });
+    if (result === 'unavailable')
+      throw new GoneException('Invite is no longer valid');
 
-    const defaultRole = await this.roleRepo.findDefaultByGuild(guildId);
-    if (defaultRole) {
-      await this.memberRepo.assignRole(guildId, input.userId, defaultRole.id);
-    }
-
-    await this.inviteRepo.incrementUses(input.code);
     return { guildId };
   }
 }

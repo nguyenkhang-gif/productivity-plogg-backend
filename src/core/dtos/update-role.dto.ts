@@ -1,6 +1,8 @@
 import {
   IsInt,
-  IsNumberString,
+  Matches,
+  Max,
+  Min,
   IsOptional,
   IsString,
   MaxLength,
@@ -17,10 +19,12 @@ export class UpdateRoleDto {
   color?: string;
 
   @IsInt()
+  @Min(0)
+  @Max(10000)
   @IsOptional()
   position?: number;
 
-  @IsNumberString()
+  @Matches(/^\d{1,18}$/)
   @IsOptional()
   permissions?: string;
 }

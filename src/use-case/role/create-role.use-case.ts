@@ -1,4 +1,9 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   GuildPermissions,
   hasPermission,
@@ -13,6 +18,15 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/core/domain/repositories/guild-member.repository.interface';
+import {
+  GUILD_REPOSITORY,
+  GuildRepository,
+} from 'src/core/domain/repositories/guild.repository.interface';
+import {
+  assertCanChangePermissions,
+  assertCanManagePosition,
+  resolveRoleActor,
+} from './role-hierarchy';
 
 export interface CreateRoleInput {
   guildId: string;
@@ -29,15 +43,19 @@ export class CreateRoleUseCase {
     @Inject(ROLE_REPOSITORY) private readonly roleRepo: RoleRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
   ) {}
 
   async execute(input: CreateRoleInput): Promise<Role> {
-    const perms = await this.memberRepo.getResolvedPermissions(
-      input.guildId,
-      input.actorId,
-    );
-    if (!hasPermission(perms, GuildPermissions.MANAGE_ROLES))
+    const guild = await this.guildRepo.findById(input.guildId);
+    if (!guild) throw new NotFoundException('Guild not found');
+
+    const actor = await resolveRoleActor(this.memberRepo, guild, input.actorId);
+    if (!hasPermission(actor.permissions, GuildPermissions.MANAGE_ROLES))
       throw new ForbiddenException();
+
+    assertCanManagePosition(actor, input.position ?? 0);
+    assertCanChangePermissions(actor, 0n, input.permissions, false);
 
     const data: CreateRoleData = {
       guildId: input.guildId,

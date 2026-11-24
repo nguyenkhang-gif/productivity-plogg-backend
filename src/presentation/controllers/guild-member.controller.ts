@@ -11,7 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { JoinGuildUseCase } from 'src/use-case/guild-member/join-guild.use-case';
+import { AssignRoleDto } from 'src/core/dtos/assign-role.dto';
+import { clampLimit } from 'src/infrastructure/guild/pagination';
 import { LeaveGuildUseCase } from 'src/use-case/guild-member/leave-guild.use-case';
 import { KickMemberUseCase } from 'src/use-case/guild-member/kick-member.use-case';
 import { AssignRoleUseCase } from 'src/use-case/guild-member/assign-role.use-case';
@@ -22,23 +23,12 @@ import { GetMembersUseCase } from 'src/use-case/guild-member/get-members.use-cas
 @Controller('api/guilds/:guildId')
 export class GuildMemberController {
   constructor(
-    private readonly joinGuild: JoinGuildUseCase,
     private readonly leaveGuild: LeaveGuildUseCase,
     private readonly kickMember: KickMemberUseCase,
     private readonly assignRole: AssignRoleUseCase,
     private readonly removeRole: RemoveRoleUseCase,
     private readonly getMembers: GetMembersUseCase,
   ) {}
-
-  @Post('join')
-  join(@Param('guildId') guildId: string, @Req() req) {
-    return this.joinGuild.execute({
-      guildId,
-      userId: req.user.userId,
-      username: req.user.email,
-      avatar: null,
-    });
-  }
 
   @Delete('leave')
   @HttpCode(204)
@@ -60,10 +50,15 @@ export class GuildMemberController {
   assignRoleToMember(
     @Param('guildId') guildId: string,
     @Param('userId') targetId: string,
-    @Body('roleId') roleId: string,
+    @Body() body: AssignRoleDto,
     @Req() req,
   ) {
-    return this.assignRole.execute(guildId, req.user.userId, targetId, roleId);
+    return this.assignRole.execute(
+      guildId,
+      req.user.userId,
+      targetId,
+      body.roleId,
+    );
   }
 
   @Delete('members/:userId/roles/:roleId')
@@ -88,7 +83,7 @@ export class GuildMemberController {
       guildId,
       req.user.userId,
       cursor,
-      limit ? Number(limit) : undefined,
+      clampLimit(limit, 50),
     );
   }
 }

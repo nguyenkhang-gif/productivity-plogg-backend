@@ -51,11 +51,12 @@ export class RoleController {
 
   @Patch(':roleId')
   update(
+    @Param('guildId') guildId: string,
     @Param('roleId') roleId: string,
     @Body() body: UpdateRoleDto,
     @Req() req,
   ) {
-    return this.updateRole.execute(roleId, req.user.userId, {
+    return this.updateRole.execute(roleId, guildId, req.user.userId, {
       name: body.name,
       color: body.color,
       position: body.position,
@@ -66,7 +67,11 @@ export class RoleController {
 
   @Delete(':roleId')
   @HttpCode(204)
-  delete(@Param('roleId') roleId: string, @Req() req) {
-    return this.deleteRole.execute(roleId, req.user.userId);
+  delete(
+    @Param('guildId') guildId: string,
+    @Param('roleId') roleId: string,
+    @Req() req,
+  ) {
+    return this.deleteRole.execute(roleId, guildId, req.user.userId);
   }
 }

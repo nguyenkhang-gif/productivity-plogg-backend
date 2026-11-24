@@ -10,6 +10,15 @@ export const GuildPermissions = {
   ADMINISTRATOR: 1n << 8n, // bypass tất cả checks
 } as const;
 
+export const DEFAULT_ROLE_FORBIDDEN_PERMISSIONS =
+  GuildPermissions.ADMINISTRATOR |
+  GuildPermissions.MANAGE_ROLES |
+  GuildPermissions.MANAGE_GUILD |
+  GuildPermissions.MANAGE_CHANNELS |
+  GuildPermissions.MANAGE_MESSAGES |
+  GuildPermissions.KICK_MEMBERS |
+  GuildPermissions.BAN_MEMBERS;
+
 export function hasPermission(perms: bigint, required: bigint): boolean {
   return !!(perms & GuildPermissions.ADMINISTRATOR) || !!(perms & required);
 }

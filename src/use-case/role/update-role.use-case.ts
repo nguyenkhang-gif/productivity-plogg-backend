@@ -18,6 +18,15 @@ import {
   GUILD_MEMBER_REPOSITORY,
   GuildMemberRepository,
 } from 'src/core/domain/repositories/guild-member.repository.interface';
+import {
+  GUILD_REPOSITORY,
+  GuildRepository,
+} from 'src/core/domain/repositories/guild.repository.interface';
+import {
+  assertCanChangePermissions,
+  assertCanManagePosition,
+  resolveRoleActor,
+} from './role-hierarchy';
 
 @Injectable()
 export class UpdateRoleUseCase {
@@ -25,22 +34,35 @@ export class UpdateRoleUseCase {
     @Inject(ROLE_REPOSITORY) private readonly roleRepo: RoleRepository,
     @Inject(GUILD_MEMBER_REPOSITORY)
     private readonly memberRepo: GuildMemberRepository,
+    @Inject(GUILD_REPOSITORY) private readonly guildRepo: GuildRepository,
   ) {}
 
   async execute(
     roleId: string,
+    guildId: string,
     actorId: string,
     data: UpdateRoleData,
   ): Promise<Role> {
     const role = await this.roleRepo.findById(roleId);
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role || role.guildId !== guildId)
+      throw new NotFoundException('Role not found');
 
-    const perms = await this.memberRepo.getResolvedPermissions(
-      role.guildId,
-      actorId,
-    );
-    if (!hasPermission(perms, GuildPermissions.MANAGE_ROLES))
+    const guild = await this.guildRepo.findById(role.guildId);
+    if (!guild) throw new NotFoundException('Guild not found');
+
+    const actor = await resolveRoleActor(this.memberRepo, guild, actorId);
+    if (!hasPermission(actor.permissions, GuildPermissions.MANAGE_ROLES))
       throw new ForbiddenException();
+
+    assertCanManagePosition(actor, role.position);
+    if (data.position !== undefined)
+      assertCanManagePosition(actor, data.position);
+    assertCanChangePermissions(
+      actor,
+      role.permissions,
+      data.permissions ?? role.permissions,
+      role.isDefault,
+    );
 
     return this.roleRepo.update(roleId, data);
   }

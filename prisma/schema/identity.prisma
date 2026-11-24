@@ -40,13 +40,21 @@ model User {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
-  @@index([role])
-  @@index([membership])
-  @@index([createdAt(sort: Desc)])
-  @@map("users")
-
   // labs
   epubs               Epub[]
   storyContexts       StoryContext[]
   translationContexts TranslationContext[]
+
+  // social
+  posts               Post[]
+  comments            Comment[]
+  reactions           Reaction[]
+  bookmarks           Bookmark[]
+  friendshipsSent     Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipTarget")
+
+  @@index([role])
+  @@index([membership])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
 }

@@ -9,34 +9,37 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { HttpThrottlerGuard } from './shared/security/http-throttler.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LastSeenMiddleware } from './presentation/middleware/last-seen.middleware';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigService } from '@nestjs/config';
-import { MailModule } from './infrastructure/mail/mail.module';
-import { EpubModule } from './infrastructure/epub/epub.module';
-import { DriveModule } from './infrastructure/google/google.module';
-import { AppConfigModule } from './infrastructure/config/config.module';
-import { AuthModule } from './infrastructure/auth/auth.module';
-import { PostModule } from './infrastructure/post/post.module';
-import { FriendshipModule } from './infrastructure/friendship/friendship.module';
-import { FocusModule } from './infrastructure/focus/focus.module';
-import { VaultModule } from './infrastructure/vault/vault.module';
-import { CommentModule } from './infrastructure/comment/comment.module';
-import { StorageModule } from './infrastructure/storage/storage.module';
-import { ReactionModule } from './infrastructure/reaction/reaction.module';
-import { AiModule } from './infrastructure/ai/ai.module';
-import { TranslationContextModule } from './infrastructure/translation-context/translation-context.module';
-import { StoryContextModule } from './infrastructure/story-context/story-context.module';
-import { CacheModule } from './infrastructure/cache/cache.module';
-import { TagModule } from './infrastructure/tag/tag.module';
-import { CategoryModule } from './infrastructure/category/category.module';
-import { BookmarkModule } from './infrastructure/bookmark/bookmark.module';
 import {
+  LastSeenMiddleware,
+  AuthModule,
   User,
   UserSchema,
-} from './infrastructure/databases/schemas/user.schema';
-import { GuildModule } from './infrastructure/guild/guild.module';
-import { PrismaModule } from './infrastructure/databases/prisma/prisma.module';
+} from 'src/modules/identity';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
+import {
+  MailModule,
+  EpubModule,
+  DriveModule,
+  AiModule,
+  TranslationContextModule,
+  StoryContextModule,
+} from 'src/modules/labs';
+import { AppConfigModule } from './shared/config/config.module';
+import {
+  PostModule,
+  FriendshipModule,
+  CommentModule,
+  ReactionModule,
+  TagModule,
+  CategoryModule,
+  BookmarkModule,
+} from 'src/modules/social';
+import { FocusModule, VaultModule } from 'src/modules/productivity';
+import { StorageModule } from 'src/modules/media';
+import { CacheModule } from './shared/cache/cache.module';
+import { GuildModule } from 'src/modules/community';
+import { PrismaModule } from './shared/database/prisma.module';
 
 @Module({
   imports: [

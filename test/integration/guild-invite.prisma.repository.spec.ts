@@ -6,8 +6,8 @@ if (!process.env.POSTGRES_URL) {
   );
 }
 
-import { PrismaService } from 'src/infrastructure/databases/prisma/prisma.service';
-import { GuildInvitePrismaRepository } from 'src/infrastructure/databases/repositories/guild-invite.prisma.repository';
+import { PrismaService } from 'src/shared/database/prisma.service';
+import { GuildInvitePrismaRepository } from 'src/modules/community/invite/infrastructure/guild-invite.prisma.repository';
 
 describe('GuildInvitePrismaRepository.joinWithInvite (integration)', () => {
   let prisma: PrismaService;

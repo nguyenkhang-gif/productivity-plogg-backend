@@ -1,0 +1,189 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { clampPagination } from 'src/shared/http/pagination';
+import { JwtAuthGuard } from 'src/shared/security/jwt-auth.guard';
+import { RolesGuard } from 'src/shared/security/roles.guard';
+import { Roles } from 'src/shared/security/roles.decorator';
+import { CreatePostDto } from 'src/modules/social/post/application/dto/create-post.dto';
+import { UpdatePostDto } from 'src/modules/social/post/application/dto/update-post.dto';
+import { CreatePostUseCase } from 'src/modules/social/post/application/create-post.use-case';
+import { GetPostsUseCase } from 'src/modules/social/post/application/get-posts.use-case';
+import { GetPostUseCase } from 'src/modules/social/post/application/get-post.use-case';
+import { GetPostsByAuthorUseCase } from 'src/modules/social/post/application/get-posts-by-author.use-case';
+import { UpdatePostUseCase } from 'src/modules/social/post/application/update-post.use-case';
+import { DeletePostUseCase } from 'src/modules/social/post/application/delete-post.use-case';
+import { IncrementViewUseCase } from 'src/modules/social/post/application/increment-view.use-case';
+import { GetTrendingPostsUseCase } from 'src/modules/social/post/application/get-trending-posts.use-case';
+import { GetMyStatsUseCase } from 'src/modules/social/post/application/get-my-stats.use-case';
+import { AddBookmarkUseCase } from 'src/modules/social/bookmark/application/add-bookmark.use-case';
+import { RemoveBookmarkUseCase } from 'src/modules/social/bookmark/application/remove-bookmark.use-case';
+import { GetPendingPostsUseCase } from 'src/modules/social/post/application/get-pending-posts.use-case';
+import { ApprovePostUseCase } from 'src/modules/social/post/application/approve-post.use-case';
+import { RejectPostUseCase } from 'src/modules/social/post/application/reject-post.use-case';
+
+@Controller('api/posts')
+export class PostController {
+  constructor(
+    private readonly createPost: CreatePostUseCase,
+    private readonly getPosts: GetPostsUseCase,
+    private readonly getPost: GetPostUseCase,
+    private readonly getPostsByAuthor: GetPostsByAuthorUseCase,
+    private readonly updatePost: UpdatePostUseCase,
+    private readonly deletePost: DeletePostUseCase,
+    private readonly incrementView: IncrementViewUseCase,
+    private readonly getTrendingPosts: GetTrendingPostsUseCase,
+    private readonly getMyStats: GetMyStatsUseCase,
+    private readonly addBookmark: AddBookmarkUseCase,
+    private readonly removeBookmark: RemoveBookmarkUseCase,
+    private readonly getPendingPosts: GetPendingPostsUseCase,
+    private readonly approvePost: ApprovePostUseCase,
+    private readonly rejectPost: RejectPostUseCase,
+  ) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  create(@Body() body: CreatePostDto, @Req() req) {
+    return this.createPost.execute({ ...body, authorId: req.user.userId });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('categoryId') categoryId?: string,
+    @Query('tags') tags?: string,
+    @Query('excludeId') excludeId?: string,
+    @Query('sortByUpdatedAt') sortByUpdatedAt?: string,
+    @Req() req = null,
+  ) {
+    const filter = {
+      categoryId,
+      tags: tags
+        ? tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
+      excludeId,
+      sortByUpdatedAt:
+        sortByUpdatedAt === '1'
+          ? (1 as const)
+          : sortByUpdatedAt === '-1'
+            ? (-1 as const)
+            : undefined,
+    };
+    const pg = clampPagination(page, limit, 50, 10);
+    return this.getPosts.execute(pg.page, pg.limit, req.user.userId, filter);
+  }
+
+  // ── Static routes BEFORE :id ───────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('trending')
+  trending(@Query('limit') limit = 5, @Req() req) {
+    const pg = clampPagination(1, limit, 50, 5);
+    return this.getTrendingPosts.execute(pg.limit, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('stats/me')
+  myStats(@Req() req) {
+    return this.getMyStats.execute(req.user.userId);
+  }
+
+  // ── Moderation (moderator/admin only) ───────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Get('moderation/pending')
+  pending(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const pg = clampPagination(page, limit, 50, 10);
+    return this.getPendingPosts.execute(pg.page, pg.limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('author/:authorId')
+  findByAuthor(
+    @Param('authorId') authorId: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Req() req,
+  ) {
+    const pg = clampPagination(page, limit, 50, 10);
+    return this.getPostsByAuthor.execute(
+      authorId,
+      pg.page,
+      pg.limit,
+      req.user.userId,
+    );
+  }
+
+  // ── :id routes ─────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  findOne(@Param('id') id: string, @Req() req) {
+    return this.getPost.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() body: UpdatePostDto, @Req() req) {
+    return this.updatePost.execute(id, req.user.userId, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string, @Req() req) {
+    return this.deletePost.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Patch(':id/approve')
+  approve(@Param('id') id: string, @Req() req) {
+    return this.approvePost.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('moderator', 'admin')
+  @Patch(':id/reject')
+  reject(@Param('id') id: string, @Body('reason') reason: string, @Req() req) {
+    return this.rejectPost.execute(id, req.user.userId, reason);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/view')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  recordView(@Param('id') id: string, @Req() req) {
+    return this.incrementView.execute(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/bookmark')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  bookmark(@Param('id') id: string, @Req() req) {
+    return this.addBookmark.execute(req.user.userId, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/bookmark')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  unbookmark(@Param('id') id: string, @Req() req) {
+    return this.removeBookmark.execute(req.user.userId, id);
+  }
+}

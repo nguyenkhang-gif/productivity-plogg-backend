@@ -7,7 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
-import { RedisIoAdapter } from './infrastructure/websocket/redis-io.adapter';
+import { RedisIoAdapter } from './shared/realtime/redis-io.adapter';
 
 const LARGE_BODY_PREFIXES = [
   '/api/epub',

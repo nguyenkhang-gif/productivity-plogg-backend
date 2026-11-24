@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import mongoose from 'mongoose';
-import { PrismaService } from './infrastructure/databases/prisma/prisma.service';
+import { PrismaService } from './shared/database/prisma.service';
 
 @Injectable()
 export class AppService {

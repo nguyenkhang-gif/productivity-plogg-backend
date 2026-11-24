@@ -16,8 +16,8 @@ if (!process.env.POSTGRES_URL) {
   );
 }
 
-import { PrismaService } from 'src/infrastructure/databases/prisma/prisma.service';
-import { GuildMemberPrismaRepository } from 'src/infrastructure/databases/repositories/guild-member.prisma.repository';
+import { PrismaService } from 'src/shared/database/prisma.service';
+import { GuildMemberPrismaRepository } from 'src/modules/community/guild-member/infrastructure/guild-member.prisma.repository';
 
 describe('GuildMemberPrismaRepository.findByGuild (integration)', () => {
   let prisma: PrismaService;

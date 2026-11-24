@@ -16,8 +16,8 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import * as jwt from 'jsonwebtoken';
 import { AppModule } from './../src/app.module';
-import { PrismaService } from './../src/infrastructure/databases/prisma/prisma.service';
-import { GuildPermissions } from './../src/core/domain/constants/guild-permissions';
+import { PrismaService } from '../src/shared/database/prisma.service';
+import { GuildPermissions } from '../src/modules/community/guild/domain/guild-permissions';
 
 describe('Invite flow (e2e)', () => {
   let app: INestApplication;

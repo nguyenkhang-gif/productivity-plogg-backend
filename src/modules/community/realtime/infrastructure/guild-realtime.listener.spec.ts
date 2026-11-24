@@ -1,4 +1,3 @@
-
 import { ChannelDeleted } from 'src/modules/community/channel/domain/events/channel.events';
 import {
   MemberKicked,

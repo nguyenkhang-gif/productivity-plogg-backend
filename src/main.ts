@@ -35,7 +35,9 @@ async function bootstrap() {
   try {
     await redisIoAdapter.connectToRedis();
   } catch (err) {
-    logger.warn(`Redis adapter unavailable, running single-instance: ${err.message}`);
+    logger.warn(
+      `Redis adapter unavailable, running single-instance: ${err.message}`,
+    );
   }
   app.useWebSocketAdapter(redisIoAdapter);
 

@@ -197,7 +197,9 @@ export class GuildRealtimeListener {
         if (allowed) socket.emit(event, payload);
       }
     } catch (err) {
-      this.logger.warn(`emitToChannelViewers failed: ${(err as Error).message}`);
+      this.logger.warn(
+        `emitToChannelViewers failed: ${(err as Error).message}`,
+      );
     }
   }
 

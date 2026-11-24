@@ -74,7 +74,10 @@ describe('social migrators (integration)', () => {
       reactions: (p) => p.reaction.count({ where: { post: authors } }),
       bookmarks: (p) => p.bookmark.count({ where: { post: authors } }),
     };
-    return MIGRATORS.map((m) => ({ ...m, countTarget: counts[m.name] }));
+    return MIGRATORS.filter((m) => m.name in counts).map((m) => ({
+      ...m,
+      countTarget: counts[m.name],
+    }));
   };
 
   const oid = () => new ObjectId();

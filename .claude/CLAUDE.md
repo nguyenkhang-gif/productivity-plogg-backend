@@ -28,6 +28,16 @@ Rules (enforced by `npm run lint:arch`):
 - New HTTP list endpoints clamp pagination with `clampPagination` (`src/shared/http/pagination.ts`); user text used in Mongo `$regex` goes through `escapeRegex`; uploads go through `requireImageType`.
 - WebSocket handlers validate payload DTOs and must check permissions before `client.join` and emit to rooms derived from DB data, never client-supplied ids.
 
+# Mongo → Postgres migration
+
+- `DATA_BACKEND=mongo|postgres` (default `mongo`, validated in `src/shared/config/env.validation.ts`) selects the implementation behind each migrated repository token. Both implementations stay wired; the Mongo connection is still required.
+- `backendProvider<Iface>(TOKEN, MongoImpl, PrismaImpl)` (`src/shared/database/backend-provider.ts`) returns the provider; the module lists both concrete classes plus `PrismaModule`. Domain interfaces and callers do not change.
+- Ids stay 24-hex ObjectId strings (`@id @db.VarChar(24)`; FKs also `VarChar(24)`); new rows use `newObjectId()` (`src/shared/database/object-id.ts`). User text in `contains` goes through `escapeLike` (`src/shared/database/like.ts`) because Prisma does not escape `%`/`_`.
+- Schema: one file per module in `prisma/schema/<module>.prisma`, `@@map` snake_case plural tables, camelCase columns, `createdAt`/`updatedAt`. Migrations: `SHADOW_POSTGRES_URL=... POSTGRES_URL=... npx prisma migrate dev --name <name>`.
+- Contract tests: `test/contracts/<x>-repository.contract.ts` export a `describe...Contract(name, factory)`; Prisma implementation runs it from `test/integration/<x>.prisma.repository.spec.ts`. Cross-module reads a repository needs (e.g. `UserRelations`) are ports backed by Mongo until their owner migrates; swap the binding then.
+- Data migration: `npm run migrate:mongo-to-pg -- [--only=users,posts] [--dry-run] [--batch=500]` (`src/scripts/migrate-mongo-to-postgres/`). Add a `migrators/<x>.migrator.ts` + `.spec.ts` and register it in `registry.ts`; `dependsOn` sets the order. Writes are per-row upserts in one transaction per batch (idempotent re-runs).
+- Per-module checklist: schema → migration → Prisma repository → `backendProvider` → contract test → migrator + transform tests. Then list remaining direct Mongo model usages.
+
 # graphify
 
 This project has a code knowledge graph at `graphify-out/` (functions, classes, imports, call edges, communities). It is not committed: the SessionStart hook (`.claude/hooks/graphify-session-start.sh`) installs graphify in cloud sessions and builds or updates the graph with local AST parsing (no API key). Locally, install it with `pip install 'graphifyy[sql,mcp]'`.
